@@ -1,6 +1,23 @@
-# If you prefer the allow list template instead of the deny list, see community template:
-# https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
+# =============================================================================
+# EgenSkriven .gitignore
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# PocketBase
+# -----------------------------------------------------------------------------
+# Data directory contains SQLite database, uploaded files, and logs
+# This is user data, not source code
+pb_data/
+
+# -----------------------------------------------------------------------------
+# Build outputs
+# -----------------------------------------------------------------------------
+# Compiled binary (built with 'make build')
+egenskriven
+
+# Cross-platform release builds
+dist/
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -11,22 +28,81 @@
 # Test binary, built with `go test -c`
 *.test
 
-# Code coverage profiles and other test artifacts
+# -----------------------------------------------------------------------------
+# Development tools
+# -----------------------------------------------------------------------------
+# Air hot reload temp directory
+.air/
+
+# -----------------------------------------------------------------------------
+# Frontend (Phase 2+)
+# -----------------------------------------------------------------------------
+# React build output (embedded in binary)
+ui/dist/
+
+# Node.js dependencies
+ui/node_modules/
+
+# -----------------------------------------------------------------------------
+# Testing
+# -----------------------------------------------------------------------------
+# Coverage reports
 *.out
 coverage.*
 *.coverprofile
 profile.cov
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
-
-# Go workspace file
+# -----------------------------------------------------------------------------
+# Go workspace
+# -----------------------------------------------------------------------------
 go.work
 go.work.sum
 
-# env file
-.env
+# Dependency directories (remove the comment below to include it)
+# vendor/
 
-# Editor/IDE
-# .idea/
-# .vscode/
+# -----------------------------------------------------------------------------
+# IDE and editors
+# -----------------------------------------------------------------------------
+# JetBrains (GoLand, IntelliJ)
+.idea/
+
+# Visual Studio Code
+.vscode/
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*#
+.#*
+
+# -----------------------------------------------------------------------------
+# Operating system
+# -----------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# -----------------------------------------------------------------------------
+# Environment and secrets
+# -----------------------------------------------------------------------------
+# Environment files may contain secrets (API keys, passwords)
+# Never commit these!
+.env
+.env.local
+.env.*.local
+
+# -----------------------------------------------------------------------------
+# Logs
+# -----------------------------------------------------------------------------
+*.log
+logs/
