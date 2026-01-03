@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pocketbase/pocketbase"
+	"github.com/pocketbase/pocketbase/core"
 	"github.com/spf13/cobra"
 
 	"github.com/ramtinj/egenskriven/internal/resolver"
@@ -142,23 +143,9 @@ Examples:
 }
 
 // getTaskLabels extracts labels from a task record.
-func getTaskLabels(task interface{ Get(string) any }) []string {
-	raw := task.Get("labels")
-	if raw == nil {
-		return []string{}
-	}
-
-	if labels, ok := raw.([]any); ok {
-		result := make([]string, 0, len(labels))
-		for _, l := range labels {
-			if s, ok := l.(string); ok {
-				result = append(result, s)
-			}
-		}
-		return result
-	}
-
-	return []string{}
+func getTaskLabels(task *core.Record) []string {
+	// Use GetStringSlice which properly handles types.JSONRaw
+	return task.GetStringSlice("labels")
 }
 
 // updateLabels adds and removes labels from a list.
