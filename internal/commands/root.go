@@ -2,7 +2,6 @@ package commands
 
 import (
 	"github.com/pocketbase/pocketbase"
-	"github.com/spf13/cobra"
 
 	"github.com/ramtinj/egenskriven/internal/output"
 )
@@ -92,11 +91,4 @@ func isValidPriority(p string) bool {
 	return false
 }
 
-// Placeholder command functions - will be replaced as commands are implemented
-
-func newDeleteCmd(app *pocketbase.PocketBase) *cobra.Command {
-	return &cobra.Command{
-		Use:   "delete <task> [task...]",
-		Short: "Delete tasks",
-	}
-}
+// Note: All command functions are now implemented in separate files
