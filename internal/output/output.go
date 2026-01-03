@@ -252,33 +252,13 @@ func groupByColumn(tasks []*core.Record) map[string][]*core.Record {
 }
 
 func getLabels(task *core.Record) []string {
-	raw := task.Get("labels")
-	if raw == nil {
-		return []string{}
-	}
-	if labels, ok := raw.([]any); ok {
-		result := make([]string, len(labels))
-		for i, l := range labels {
-			result[i] = fmt.Sprint(l)
-		}
-		return result
-	}
-	return []string{}
+	// Use GetStringSlice which properly handles types.JSONRaw
+	return task.GetStringSlice("labels")
 }
 
 func getBlockedBy(task *core.Record) []string {
-	raw := task.Get("blocked_by")
-	if raw == nil {
-		return []string{}
-	}
-	if ids, ok := raw.([]any); ok {
-		result := make([]string, len(ids))
-		for i, id := range ids {
-			result[i] = fmt.Sprint(id)
-		}
-		return result
-	}
-	return []string{}
+	// Use GetStringSlice which properly handles types.JSONRaw
+	return task.GetStringSlice("blocked_by")
 }
 
 func shortID(id string) string {
