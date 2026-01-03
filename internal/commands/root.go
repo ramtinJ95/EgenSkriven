@@ -92,13 +92,7 @@ func isValidPriority(p string) bool {
 	return false
 }
 
-// Placeholder command functions - will be implemented in separate files
-func newAddCmd(app *pocketbase.PocketBase) *cobra.Command {
-	return &cobra.Command{
-		Use:   "add <title>",
-		Short: "Add a new task",
-	}
-}
+// Placeholder command functions - will be replaced as commands are implemented
 
 func newListCmd(app *pocketbase.PocketBase) *cobra.Command {
 	return &cobra.Command{
