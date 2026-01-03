@@ -100,9 +100,13 @@ Examples:
 			} else if position >= 0 {
 				// Specific position index
 				newPosition = GetPositionAtIndex(app, targetColumn, position)
-			} else {
-				// Default: end of column
+			} else if position == -1 {
+				// Explicitly bottom of column
 				newPosition = GetNextPosition(app, targetColumn)
+			} else {
+				// Invalid negative position
+				return out.Error(ExitValidation,
+					fmt.Sprintf("invalid position %d, use 0 for top or -1 for bottom", position), nil)
 			}
 
 			// Track changes for history
@@ -130,9 +134,9 @@ Examples:
 			}
 
 			if targetColumn != oldColumn {
-				out.Success(fmt.Sprintf("Moved task [%s] from %s to %s", task.Id[:8], oldColumn, targetColumn))
+				out.Success(fmt.Sprintf("Moved task [%s] from %s to %s", shortID(task.Id), oldColumn, targetColumn))
 			} else {
-				out.Success(fmt.Sprintf("Repositioned task [%s] in %s", task.Id[:8], targetColumn))
+				out.Success(fmt.Sprintf("Repositioned task [%s] in %s", shortID(task.Id), targetColumn))
 			}
 
 			return nil

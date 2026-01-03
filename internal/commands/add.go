@@ -59,7 +59,7 @@ Examples:
 					fmt.Sprintf("invalid column '%s', must be one of: %v", column, ValidColumns), nil)
 			}
 
-			// Determine creator
+			// Determine and validate creator
 			if createdBy == "" {
 				if agentName != "" {
 					createdBy = "agent"
@@ -71,6 +71,9 @@ Examples:
 						createdBy = "cli"
 					}
 				}
+			} else if createdBy != "user" && createdBy != "agent" && createdBy != "cli" {
+				return out.Error(ExitValidation,
+					fmt.Sprintf("invalid created-by '%s', must be one of: user, agent, cli", createdBy), nil)
 			}
 
 			// Find the tasks collection

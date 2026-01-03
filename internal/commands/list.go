@@ -80,8 +80,8 @@ Examples:
 			// Search filter
 			if search != "" {
 				filters = append(filters, dbx.NewExp(
-					"LOWER(title) LIKE {:search}",
-					dbx.Params{"search": "%" + strings.ToLower(search) + "%"},
+					"LOWER(title) LIKE {:search} ESCAPE '\\'",
+					dbx.Params{"search": "%" + escapeLikePattern(strings.ToLower(search)) + "%"},
 				))
 			}
 
