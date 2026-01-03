@@ -94,13 +94,6 @@ func isValidPriority(p string) bool {
 
 // Placeholder command functions - will be replaced as commands are implemented
 
-func newShowCmd(app *pocketbase.PocketBase) *cobra.Command {
-	return &cobra.Command{
-		Use:   "show <task>",
-		Short: "Show task details",
-	}
-}
-
 func newMoveCmd(app *pocketbase.PocketBase) *cobra.Command {
 	return &cobra.Command{
 		Use:   "move <task> [column]",
