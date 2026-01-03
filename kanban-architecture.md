@@ -56,17 +56,38 @@ egenskriven/
 ├── internal/
 │   ├── commands/
 │   │   ├── root.go              # Root command, global flags
-│   │   ├── add.go               # kanban add "task title"
-│   │   ├── move.go              # kanban move <task> <column>
-│   │   ├── update.go            # kanban update <task> [fields]
-│   │   ├── delete.go            # kanban delete <task>
-│   │   ├── list.go              # kanban list [filters]
-│   │   ├── show.go              # kanban show <task>
-│   │   └── epic.go              # kanban epic [subcommands]
+│   │   ├── add.go               # egenskriven add "task title"
+│   │   ├── move.go              # egenskriven move <task> <column>
+│   │   ├── update.go            # egenskriven update <task> [fields]
+│   │   ├── delete.go            # egenskriven delete <task>
+│   │   ├── list.go              # egenskriven list [filters]
+│   │   ├── show.go              # egenskriven show <task>
+│   │   ├── epic.go              # egenskriven epic [subcommands]
+│   │   ├── board.go             # egenskriven board [subcommands]
+│   │   ├── prime.go             # egenskriven prime (agent instructions)
+│   │   ├── prime.tmpl           # Agent instructions template
+│   │   ├── context.go           # egenskriven context (project summary)
+│   │   ├── suggest.go           # egenskriven suggest (task suggestions)
+│   │   ├── init.go              # egenskriven init (config setup)
+│   │   ├── template.go          # egenskriven template [subcommands]
+│   │   ├── export.go            # egenskriven export
+│   │   ├── import.go            # egenskriven import
+│   │   ├── version.go           # egenskriven version
+│   │   ├── completion.go        # egenskriven completion
+│   │   ├── position.go          # Position calculation helpers
+│   │   ├── *_test.go            # Command tests
+│   │   └── position_test.go     # Position calculation tests
+│   ├── config/
+│   │   ├── config.go            # Project config loading
+│   │   └── config_test.go       # Config tests
 │   ├── output/
-│   │   └── output.go            # JSON/human output formatting
+│   │   ├── output.go            # JSON/human output formatting
+│   │   └── output_test.go       # Output tests
 │   ├── resolver/
-│   │   └── resolver.go          # ID/title task resolution
+│   │   ├── resolver.go          # ID/title task resolution
+│   │   └── resolver_test.go     # Resolver tests
+│   ├── testutil/
+│   │   └── testutil.go          # Shared test helpers
 │   └── hooks/
 │       └── hooks.go             # PocketBase event hooks
 ├── ui/
@@ -75,41 +96,109 @@ egenskriven/
 │   │   ├── components/
 │   │   │   ├── Board.tsx        # Main kanban board
 │   │   │   ├── Column.tsx       # Single column
-│   │   │   └── TaskCard.tsx     # Draggable task card
+│   │   │   ├── TaskCard.tsx     # Draggable task card
+│   │   │   ├── TaskDetail.tsx   # Task detail panel
+│   │   │   ├── QuickCreate.tsx  # Quick create modal
+│   │   │   ├── CommandPalette.tsx # Command palette (Cmd+K)
+│   │   │   ├── Sidebar.tsx      # Board/view sidebar
+│   │   │   ├── FilterBar.tsx    # Filter controls
+│   │   │   ├── FilterBuilder.tsx # Filter construction UI
+│   │   │   ├── ListView.tsx     # List view alternative
+│   │   │   ├── Search.tsx       # Search input component
+│   │   │   ├── Settings.tsx     # Settings panel
+│   │   │   ├── BoardSettings.tsx # Board configuration
+│   │   │   ├── ShortcutsHelp.tsx # Keyboard shortcuts modal
+│   │   │   ├── Toast.tsx        # Toast notifications
+│   │   │   ├── DisplayOptions.tsx # View display settings
+│   │   │   ├── MarkdownEditor.tsx # Description editor
+│   │   │   ├── StatusPicker.tsx  # Status selector popover
+│   │   │   ├── PriorityPicker.tsx # Priority selector popover
+│   │   │   ├── TypePicker.tsx    # Type selector popover
+│   │   │   ├── LabelPicker.tsx   # Label selector popover
+│   │   │   ├── EpicList.tsx     # Epic listing
+│   │   │   ├── EpicDetail.tsx   # Epic detail view
+│   │   │   └── EpicPicker.tsx   # Epic selector
 │   │   ├── hooks/
-│   │   │   └── usePocketBase.ts # PocketBase SDK wrapper
-│   │   └── lib/
-│   │       └── pb.ts            # PocketBase client instance
+│   │   │   ├── usePocketBase.ts # PocketBase SDK wrapper
+│   │   │   └── useKeyboard.ts   # Keyboard shortcut manager
+│   │   ├── stores/
+│   │   │   ├── selection.ts     # Task selection state
+│   │   │   └── filters.ts       # Filter state
+│   │   ├── styles/
+│   │   │   ├── tokens.css       # Design tokens
+│   │   │   └── light.css        # Light mode overrides
+│   │   ├── lib/
+│   │   │   └── pb.ts            # PocketBase client instance
+│   │   └── test/
+│   │       └── setup.ts         # Test setup
 │   ├── dist/                    # Vite build output
 │   ├── embed.go                 # go:embed directive
 │   ├── package.json
-│   └── vite.config.ts
+│   ├── vite.config.ts
+│   └── vitest.config.ts         # Vitest configuration
 ├── migrations/                  # PocketBase migrations
-│   └── 1234567890_initial.go
+│   └── 1_initial.go
+├── .egenskriven/                # Project-specific config (created by init)
+│   └── config.json              # Agent workflow configuration
+├── .opencode/                   # OpenCode agent integration
+│   └── plugin/
+│       └── egenskriven-prime.ts # OpenCode plugin for prime injection
+├── .claude/                     # Claude Code agent integration
+│   └── settings.json            # Claude hooks configuration
 ├── pb_data/                     # SQLite + uploads (gitignored)
 ├── go.mod
 ├── go.sum
 ├── Makefile
+├── .air.toml                    # Hot reload configuration
+├── .gitignore
 └── README.md
 ```
 
 ## Data Model (PocketBase Collections)
 
 ### tasks
-| Field       | Type     | Description                              |
-|-------------|----------|------------------------------------------|
-| id          | string   | Auto-generated (or user-provided for idempotency) |
-| title       | string   | Task title                               |
-| description | string   | Optional longer description              |
-| type        | select   | bug, feature, chore                      |
-| priority    | select   | low, medium, high, urgent                |
-| column      | select   | backlog, todo, in_progress, review, done |
-| position    | number   | Order within column (fractional allowed) |
-| epic        | relation | Optional link to epics collection        |
-| labels      | json     | Array of label strings                   |
-| blocked_by  | json     | Array of task IDs that block this task   |
-| created     | date     | Auto-generated                           |
-| updated     | date     | Auto-generated                           |
+| Field            | Type     | Description                              |
+|------------------|----------|------------------------------------------|
+| id               | string   | Auto-generated (or user-provided for idempotency) |
+| title            | string   | Task title                               |
+| description      | string   | Optional longer description              |
+| type             | select   | bug, feature, chore                      |
+| priority         | select   | low, medium, high, urgent                |
+| column           | select   | backlog, todo, in_progress, review, done |
+| position         | number   | Order within column (fractional allowed) |
+| board            | relation | Link to boards collection (multi-board)  |
+| epic             | relation | Optional link to epics collection        |
+| parent           | relation | Optional parent task (for sub-tasks)     |
+| labels           | json     | Array of label strings                   |
+| blocked_by       | json     | Array of task IDs that block this task   |
+| due_date         | date     | Optional due date                        |
+| created_by       | select   | user, agent, cli - who created this task |
+| created_by_agent | string   | Agent identifier (e.g., "claude", "opencode") |
+| history          | json     | Array of activity entries (see below)    |
+| created          | date     | Auto-generated                           |
+| updated          | date     | Auto-generated                           |
+
+### history (JSON array within task)
+
+Each entry in the `history` array tracks a change:
+
+```json
+{
+  "timestamp": "2024-01-15T10:30:00Z",
+  "action": "created",
+  "actor": "agent",
+  "actor_detail": "claude",
+  "changes": null
+}
+```
+
+| Field        | Description                                    |
+|--------------|------------------------------------------------|
+| timestamp    | ISO 8601 timestamp                             |
+| action       | created, updated, moved, completed, deleted    |
+| actor        | user, agent, cli                               |
+| actor_detail | Optional identifier (agent name, username)     |
+| changes      | Object with `field`, `from`, `to` for updates  |
 
 ### epics
 | Field       | Type     | Description                              |
@@ -118,6 +207,44 @@ egenskriven/
 | title       | string   | Epic title                               |
 | description | string   | Epic description                         |
 | color       | string   | Hex color for visual grouping            |
+
+### boards
+| Field       | Type     | Description                              |
+|-------------|----------|------------------------------------------|
+| id          | string   | Auto-generated                           |
+| name        | string   | Board name (e.g., "Work", "Personal")    |
+| prefix      | string   | Task ID prefix (e.g., "WRK"), unique     |
+| columns     | json     | Array of column definitions              |
+| color       | string   | Accent color for board                   |
+| created     | date     | Auto-generated                           |
+| updated     | date     | Auto-generated                           |
+
+### views
+| Field       | Type     | Description                              |
+|-------------|----------|------------------------------------------|
+| id          | string   | Auto-generated                           |
+| name        | string   | View name                                |
+| board       | relation | Link to boards collection                |
+| filters     | json     | Saved filter state                       |
+| display     | json     | View preferences (board/list, fields)    |
+| is_favorite | boolean  | Whether view is starred                  |
+| created     | date     | Auto-generated                           |
+| updated     | date     | Auto-generated                           |
+
+### templates
+| Field       | Type     | Description                              |
+|-------------|----------|------------------------------------------|
+| id          | string   | Auto-generated or user-provided name     |
+| name        | string   | Template name (e.g., "bug-report")       |
+| type        | select   | Default task type                        |
+| priority    | select   | Default priority                         |
+| column      | select   | Default column                           |
+| labels      | json     | Default labels array                     |
+| epic        | relation | Default epic link                        |
+| description | string   | Default description template             |
+| created     | date     | Auto-generated                           |
+
+**Note:** When multi-board support is enabled, tasks have a `board` relation field linking them to a board. Task IDs are displayed with board prefix (e.g., "WRK-123") but stored as auto-generated IDs internally.
 
 ## CLI Interface
 
@@ -130,6 +257,7 @@ All commands support these flags:
 | `--json`   | `-j`  | Output in JSON format                |
 | `--quiet`  | `-q`  | Suppress non-essential output        |
 | `--data`   |       | Path to pb_data directory            |
+| `--board`  | `-b`  | Specify board by name or prefix (multi-board mode) |
 
 ### Task Resolution
 
@@ -166,6 +294,9 @@ egenskriven add "Setup CI pipeline" --id ci-setup-001
 # With labels and epic
 egenskriven add "Add user avatars" --label ui --label frontend --epic abc123
 
+# Agent creating a task (identifies itself for activity tracking)
+egenskriven add "Refactor auth module" --type chore --agent claude
+
 # Batch: from stdin (one JSON per line)
 echo '{"title":"Task 1"}
 {"title":"Task 2","priority":"high"}' | egenskriven add --stdin
@@ -186,6 +317,12 @@ egenskriven add --file tasks.json
 | `--id`       |       |           | Custom ID (for idempotency)        |
 | `--stdin`    |       |           | Read tasks from stdin (JSON lines) |
 | `--file`     | `-f`  |           | Read tasks from JSON file          |
+| `--created-by` |     |           | Creator type: user, agent, cli     |
+| `--agent`    |       |           | Agent identifier (e.g., "claude", "opencode") |
+| `--template` |       |           | Use a task template                |
+| `--due`      |       |           | Due date (ISO 8601 or natural language) |
+| `--parent`   |       |           | Parent task ID (creates sub-task)  |
+| `--blocked-by` |     |           | Blocking task ID (repeatable)      |
 
 **Output (human):**
 ```
@@ -235,6 +372,9 @@ egenskriven list --search "login"
 
 # Output as JSON (for agents)
 egenskriven list --json
+
+# List all boards' tasks
+egenskriven list --all-boards
 ```
 
 **Flags:**
@@ -253,6 +393,13 @@ egenskriven list --json
 | `--is-blocked` |       | Only show tasks blocked by others                |
 | `--not-blocked`|       | Only show tasks not blocked by others            |
 | `--fields`     |       | Comma-separated fields to include in JSON output |
+| `--created-by` |       | Filter by creator: user, agent, cli              |
+| `--agent`      |       | Filter by specific agent name                    |
+| `--all-boards` |       | Show tasks from all boards (multi-board mode)    |
+| `--due-before` |       | Tasks due before date                            |
+| `--due-after`  |       | Tasks due after date                             |
+| `--has-parent` |       | Show only sub-tasks                              |
+| `--no-parent`  |       | Show only top-level tasks (exclude sub-tasks)    |
 
 **Output (human):**
 ```
@@ -378,6 +525,8 @@ egenskriven update abc123 --remove-blocked-by def456
 | `--remove-label`    | Remove label (repeatable)              |
 | `--blocked-by`      | Add blocking task ID (repeatable)      |
 | `--remove-blocked-by` | Remove blocking task ID (repeatable) |
+| `--due`             | Set due date (ISO 8601, or "" to clear)|
+| `--parent`          | Set parent task (for sub-tasks)        |
 
 #### `egenskriven delete`
 
@@ -420,6 +569,185 @@ egenskriven epic show abc123
 
 # Delete epic (tasks remain, unlinked)
 egenskriven epic delete abc123
+```
+
+#### `egenskriven board`
+
+Manage multiple boards.
+
+```bash
+# List all boards
+egenskriven board list
+
+# Create a new board
+egenskriven board add "Work" --prefix WRK --color "#3B82F6"
+
+# Show board details
+egenskriven board show work
+
+# Delete a board (tasks are also deleted!)
+egenskriven board delete work --force
+
+# Set default board for CLI
+egenskriven board use work
+```
+
+**Flags for `board add`:**
+
+| Flag       | Short | Default   | Description                        |
+|------------|-------|-----------|------------------------------------|
+| `--prefix` | `-p`  | Required  | Task ID prefix (e.g., "WRK")       |
+| `--color`  | `-c`  |           | Accent color (hex)                 |
+| `--columns`|       |           | Custom columns (JSON array)        |
+
+**Output (JSON):**
+```json
+{
+  "id": "abc123",
+  "name": "Work",
+  "prefix": "WRK",
+  "columns": ["backlog", "todo", "in_progress", "review", "done"],
+  "color": "#3B82F6",
+  "task_count": 15
+}
+```
+
+#### `egenskriven init`
+
+Initialize EgenSkriven configuration for a project.
+
+```bash
+# Initialize with defaults
+egenskriven init
+
+# Initialize with specific workflow mode
+egenskriven init --workflow strict
+
+# Initialize with specific agent mode
+egenskriven init --mode collaborative
+```
+
+Creates `.egenskriven/config.json` with project-specific agent configuration.
+
+**Flags:**
+
+| Flag         | Default   | Description                              |
+|--------------|-----------|------------------------------------------|
+| `--workflow` | light     | Workflow mode: strict, light, minimal    |
+| `--mode`     | autonomous| Agent mode: autonomous, collaborative, supervised |
+
+#### `egenskriven version`
+
+Display version and build information.
+
+```bash
+egenskriven version
+```
+
+**Output (human):**
+```
+EgenSkriven v1.0.0
+Build date: 2025-01-03T10:00:00Z
+Go version: go1.21.0
+```
+
+**Output (JSON):**
+```json
+{
+  "version": "1.0.0",
+  "build_date": "2025-01-03T10:00:00Z",
+  "go_version": "go1.21.0"
+}
+```
+
+#### `egenskriven export`
+
+Export tasks and boards to a file.
+
+```bash
+# Export all data as JSON
+egenskriven export --format json > backup.json
+
+# Export tasks only as CSV
+egenskriven export --format csv > tasks.csv
+
+# Export specific board
+egenskriven export --board work --format json > work-backup.json
+```
+
+**Flags:**
+
+| Flag       | Short | Default | Description                        |
+|------------|-------|---------|------------------------------------|
+| `--format` | `-f`  | json    | Output format: json, csv           |
+| `--board`  | `-b`  |         | Export specific board only         |
+
+#### `egenskriven import`
+
+Import tasks and boards from a file.
+
+```bash
+# Import from JSON backup
+egenskriven import backup.json
+
+# Import with merge strategy (skip existing)
+egenskriven import backup.json --strategy merge
+
+# Import with replace strategy (overwrite existing)
+egenskriven import backup.json --strategy replace
+```
+
+**Flags:**
+
+| Flag         | Default | Description                              |
+|--------------|---------|------------------------------------------|
+| `--strategy` | merge   | Import strategy: merge, replace          |
+| `--dry-run`  | false   | Preview changes without applying         |
+
+#### `egenskriven template`
+
+Manage task templates for quick creation.
+
+```bash
+# List templates
+egenskriven template list
+
+# Create a template
+egenskriven template add bug-report --type bug --priority high --label bug
+
+# Use template when creating task
+egenskriven add "Login crashes on Safari" --template bug-report
+
+# Delete template
+egenskriven template delete bug-report
+```
+
+**Flags for `template add`:**
+
+| Flag         | Description                              |
+|--------------|------------------------------------------|
+| `--type`     | Default task type                        |
+| `--priority` | Default priority                         |
+| `--column`   | Default column                           |
+| `--label`    | Default labels (repeatable)              |
+| `--epic`     | Default epic                             |
+
+#### `egenskriven completion`
+
+Generate shell completion scripts.
+
+```bash
+# Bash
+egenskriven completion bash > /etc/bash_completion.d/egenskriven
+
+# Zsh
+egenskriven completion zsh > "${fpath[1]}/_egenskriven"
+
+# Fish
+egenskriven completion fish > ~/.config/fish/completions/egenskriven.fish
+
+# PowerShell
+egenskriven completion powershell > egenskriven.ps1
 ```
 
 #### `egenskriven prime`
@@ -472,6 +800,12 @@ egenskriven suggest --json
 # Limit suggestions
 egenskriven suggest --json --limit 3
 ```
+
+**Flags:**
+
+| Flag      | Short | Default | Description                        |
+|-----------|-------|---------|------------------------------------|
+| `--limit` | `-l`  | 5       | Maximum number of suggestions      |
 
 **Output (JSON):**
 ```json
@@ -919,8 +1253,27 @@ export interface Task extends RecordModel {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   column: 'backlog' | 'todo' | 'in_progress' | 'review' | 'done';
   position: number;
+  board?: string;
   epic?: string;
+  parent?: string;
   labels?: string[];
+  blocked_by?: string[];
+  due_date?: string;
+  created_by?: 'user' | 'agent' | 'cli';
+  created_by_agent?: string;
+  history?: HistoryEntry[];
+}
+
+export interface HistoryEntry {
+  timestamp: string;
+  action: 'created' | 'updated' | 'moved' | 'completed' | 'deleted';
+  actor: 'user' | 'agent' | 'cli';
+  actor_detail?: string;
+  changes?: {
+    field: string;
+    from: any;
+    to: any;
+  };
 }
 
 export function useTasks() {
@@ -1118,6 +1471,24 @@ EOF
 ./egenskriven add "Setup CI" --id ci-setup-001
 ./egenskriven add "Setup CI" --id ci-setup-001  # no-op if exists
 
+# Multi-board operations
+./egenskriven board add "Work" --prefix WRK
+./egenskriven board add "Personal" --prefix PER
+./egenskriven board use work
+./egenskriven add "Task in work board" --board work
+./egenskriven list --all-boards
+
+# Project initialization for agents
+./egenskriven init --workflow strict --mode collaborative
+
+# Templates
+./egenskriven template add bug-report --type bug --priority high
+./egenskriven add "Safari crash" --template bug-report
+
+# Backup and restore
+./egenskriven export --format json > backup.json
+./egenskriven import backup.json
+
 # View board in browser
 open http://localhost:8090
 ```
@@ -1133,11 +1504,21 @@ open http://localhost:8090
 
 ## Future Enhancements
 
-1. **Offline CLI mode**: Queue operations when server isn't running, sync on next `serve`
-2. **TUI mode**: Full terminal UI with Bubble Tea (`egenskriven board` opens interactive view)
+### Planned for V1 (see plan.md for phases)
+- **Multi-board support**: Multiple boards with prefixed task IDs
+- **Saved views**: Filter + display settings saved and accessible from sidebar
+- **Due dates**: Task deadlines with overdue indicators
+- **Sub-tasks**: Nested tasks with parent-child relationships
+- **Epics UI**: Visual epic management in the web interface
+- **Import/Export**: Backup and restore functionality
+- **Task templates**: Predefined task structures for common patterns
+
+### Post-V1
+1. **Custom themes**: User-defined color themes via JSON files
+2. **TUI mode**: Full terminal UI with Bubble Tea (`egenskriven tui` opens interactive view)
 3. **Git integration**: Auto-create tasks from commit messages, link branches to tasks
-4. **Templates**: `egenskriven add --template bug-report` for predefined task structures
-5. **Archiving**: `egenskriven archive` to move done tasks to archive, keeping board clean
+4. **Archiving**: `egenskriven archive` to move done tasks to archive, keeping board clean
+5. **Sync & Collaboration**: Optional cloud sync and multi-user support
 
 ## AI Agent Integration
 
@@ -1151,6 +1532,7 @@ Agent behavior is configurable per project via `.egenskriven/config.json`:
 {
   "agent": {
     "workflow": "strict",
+    "mode": "autonomous",
     "overrideTodoWrite": true,
     "requireSummary": true,
     "structuredSections": true
@@ -1166,11 +1548,20 @@ Agent behavior is configurable per project via `.egenskriven/config.json`:
 | `light` | Basic tracking: create/complete tasks, no structured sections required |
 | `minimal` | Just tracking: no workflow enforcement, agent decides when to use |
 
+**Agent modes:**
+
+| Mode | Description |
+|------|-------------|
+| `autonomous` | Agent executes actions directly. Human reviews asynchronously via activity history. Best for experienced users who trust the agent. |
+| `collaborative` | Agent proposes major changes (complete, delete) and explains intent, but executes minor updates (status, priority). Human confirms major actions. |
+| `supervised` | Agent is read-only. Can only query tasks and suggest actions. Outputs CLI commands for human to run. Best for learning or sensitive projects. |
+
 **Configuration options:**
 
 | Option | Default | Description |
 |--------|---------|-------------|
 | `workflow` | `light` | Workflow enforcement level |
+| `mode` | `autonomous` | Agent autonomy level |
 | `overrideTodoWrite` | `true` | Tell agents to ignore built-in todo tools |
 | `requireSummary` | `false` | Require `## Summary of Changes` on completion |
 | `structuredSections` | `false` | Encourage structured markdown sections in descriptions |
@@ -1395,7 +1786,7 @@ Output:
 
 ### Prime Command Template
 
-The prime command uses an embedded template (`cmd/prime.tmpl`) that adapts based on project configuration:
+The prime command uses an embedded template (`internal/commands/prime.tmpl`) that adapts based on project configuration:
 
 ```markdown
 <EXTREMELY_IMPORTANT>
@@ -1409,12 +1800,27 @@ This project uses **EgenSkriven**, a local-first kanban board.
 
 All commands support `--json` for machine-readable output.
 
+## Agent Mode: {{.AgentMode}}
+
+{{if eq .AgentMode "autonomous"}}
+You have full autonomy to create, update, and complete tasks directly.
+Always identify yourself when making changes: use `--agent <your-name>` flag.
+The human will review your actions asynchronously via the activity history.
+{{else if eq .AgentMode "collaborative"}}
+You can execute minor updates (status, priority, labels) directly.
+For major actions (completing tasks, deleting), explain your intent and let the human confirm.
+Example: "I believe task WRK-123 is complete. Run `egenskriven move WRK-123 done` to confirm."
+{{else}}
+You are in supervised/read-only mode. You can query tasks and make suggestions.
+Output CLI commands for the human to execute. Do not run commands that modify tasks.
+{{end}}
+
 ## Workflow Mode: {{.WorkflowMode}}
 
 {{if eq .WorkflowMode "strict"}}
 ### BEFORE starting any task:
 1. Check for existing task: `egenskriven list --json --search "keyword"`
-2. Create if needed: `egenskriven add "Title" --type <type> --column todo --json`
+2. Create if needed: `egenskriven add "Title" --type <type> --column todo --agent {{.AgentName}} --json`
 3. Start work: `egenskriven move <id> in_progress`
 
 ### DURING work:
@@ -1435,7 +1841,7 @@ All commands support `--json` for machine-readable output.
 - Reference task ID in commits: "feat: implement X [WRK-123]"
 {{else if eq .WorkflowMode "light"}}
 ### Workflow
-- Create task for substantial work: `egenskriven add "Title" --type <type> --json`
+- Create task for substantial work: `egenskriven add "Title" --type <type> --agent {{.AgentName}} --json`
 - Update status when done: `egenskriven move <id> done`
 - Reference task ID in commits when relevant
 {{else}}
@@ -1453,8 +1859,8 @@ egenskriven list --json --ready
 # Show task details
 egenskriven show <id> --json
 
-# Create task
-egenskriven add "Title" --type bug --priority urgent --json
+# Create task (always include --agent to identify yourself)
+egenskriven add "Title" --type bug --priority urgent --agent <your-name> --json
 
 # Move task
 egenskriven move <id> in_progress
@@ -1467,6 +1873,9 @@ egenskriven suggest --json
 
 # Get project context
 egenskriven context --json
+
+# View activity history for a task
+egenskriven show <id> --json  # includes history array
 ```
 
 ## Task Types
@@ -1509,3 +1918,8 @@ Use `--blocked-by` to track dependencies:
 | JSON output | Structured data for programmatic use |
 | Fractional positions | Avoids rebalancing on every move |
 | Blocking relationships | Enable agents to identify parallelizable work |
+| Per-project config | Different workflows for different projects |
+| Multi-board support | Separate contexts (work, personal, etc.) |
+| Activity history | Track who changed what, when (human or agent) |
+| Templates | Quick creation of common task patterns |
+| Sub-tasks | Break down complex work into trackable pieces |

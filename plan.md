@@ -47,8 +47,13 @@ egenskriven/
 │       └── main.go
 ├── internal/
 │   ├── commands/
+│   │   └── *_test.go     # Command integration tests
 │   ├── output/
+│   │   └── output_test.go
 │   ├── resolver/
+│   │   └── resolver_test.go
+│   ├── testutil/
+│   │   └── testutil.go   # Shared test helpers
 │   └── hooks/
 ├── ui/
 │   └── embed.go          # Placeholder for now
@@ -90,11 +95,61 @@ ui/node_modules/
 .air/
 ```
 
+#### 0.7 Setup Testing Infrastructure
+
+**Go testing setup:**
+- Use Go's built-in `testing` package
+- Add `github.com/stretchr/testify` for assertions and mocks
+- Create `internal/testutil/` for shared test helpers
+
+**Test helper file:** `internal/testutil/testutil.go`
+```go
+package testutil
+
+import (
+    "os"
+    "testing"
+    
+    "github.com/pocketbase/pocketbase"
+    "github.com/pocketbase/pocketbase/tests"
+)
+
+// NewTestApp creates a PocketBase instance with a temporary database
+func NewTestApp(t *testing.T) *pocketbase.PocketBase {
+    t.Helper()
+    
+    // Create temp directory for test database
+    tmpDir, err := os.MkdirTemp("", "egenskriven-test-*")
+    if err != nil {
+        t.Fatal(err)
+    }
+    t.Cleanup(func() { os.RemoveAll(tmpDir) })
+    
+    app := pocketbase.New()
+    // Configure for testing...
+    return app
+}
+```
+
+**Update Makefile:**
+```makefile
+.PHONY: dev build clean test test-coverage
+
+test:
+	go test ./... -v
+
+test-coverage:
+	go test ./... -coverprofile=coverage.out
+	go tool cover -html=coverage.out -o coverage.html
+```
+
 ### Test Criteria
 - [ ] `make build` produces a binary
 - [ ] `./egenskriven serve` starts PocketBase on port 8090
 - [ ] Admin UI accessible at `http://localhost:8090/_/`
 - [ ] `make dev` hot-reloads on Go file changes
+- [ ] `make test` runs successfully (no tests yet, but infrastructure works)
+- [ ] Test helper creates isolated test database
 
 ### Dependencies
 None - this is the foundation.
@@ -118,6 +173,24 @@ Define `tasks` collection with fields:
 - position (number)
 - labels (json)
 - blocked_by (json) - array of task IDs that block this task
+- created_by (select: user, agent, cli) - who created this task
+- created_by_agent (string, optional) - agent identifier (e.g., "claude", "opencode", "cursor")
+- history (json) - array of activity entries for tracking changes
+
+**History entry format:**
+```json
+{
+  "timestamp": "2024-01-15T10:30:00Z",
+  "action": "created|updated|moved|completed",
+  "actor": "user|agent|cli",
+  "actor_detail": "claude",  // optional
+  "changes": {
+    "field": "column",
+    "from": "todo",
+    "to": "in_progress"
+  }
+}
+```
 
 **File:** `migrations/1_initial.go`
 
@@ -149,14 +222,17 @@ Define `tasks` collection with fields:
 
 - Basic: `egenskriven add "title"`
 - Flags: `--type`, `--priority`, `--column`, `--label`, `--id`
+- Flags for actor tracking: `--created-by` (user|agent|cli), `--agent` (agent identifier)
 - Position management (append to column)
 - Human and JSON output
+- Record creation in history array
 
 #### 1.6 Implement `list` Command
 **File:** `internal/commands/list.go`
 
 - List all tasks grouped by column
 - Flags: `--column`, `--type`, `--priority` (basic filters)
+- Flags for actor filtering: `--created-by` (user|agent|cli), `--agent` (filter by agent name)
 - Human output: grouped by column
 - JSON output: flat array with count
 
@@ -196,7 +272,117 @@ Implement consistent exit codes:
 - 4: Ambiguous reference
 - 5: Validation error
 
+#### 1.12 Write Unit Tests
+
+**File:** `internal/resolver/resolver_test.go`
+```go
+func TestResolveTask_ExactID(t *testing.T) {
+    app := testutil.NewTestApp(t)
+    // Create test task
+    // Assert exact ID resolution works
+}
+
+func TestResolveTask_IDPrefix(t *testing.T) {
+    // Test ID prefix matching
+}
+
+func TestResolveTask_TitleMatch(t *testing.T) {
+    // Test title substring matching
+}
+
+func TestResolveTask_Ambiguous(t *testing.T) {
+    // Test ambiguous reference returns matches
+}
+
+func TestResolveTask_NotFound(t *testing.T) {
+    // Test not found error
+}
+```
+
+**File:** `internal/output/output_test.go`
+```go
+func TestFormatter_Task_JSON(t *testing.T) {
+    // Test JSON output format
+}
+
+func TestFormatter_Task_Human(t *testing.T) {
+    // Test human-readable output
+}
+
+func TestFormatter_Error_JSON(t *testing.T) {
+    // Test error JSON format with code
+}
+```
+
+**File:** `internal/commands/position_test.go`
+```go
+func TestGetNextPosition_EmptyColumn(t *testing.T) {
+    // Should return 1000.0
+}
+
+func TestGetNextPosition_WithExistingTasks(t *testing.T) {
+    // Should return last position + 1000
+}
+
+func TestGetPositionBetween(t *testing.T) {
+    // Test fractional position calculation
+}
+```
+
+#### 1.13 Write Integration Tests
+
+**File:** `internal/commands/commands_test.go`
+```go
+func TestAddCommand(t *testing.T) {
+    app := testutil.NewTestApp(t)
+    
+    // Test basic add
+    err := runCommand(app, "add", "Test task")
+    assert.NoError(t, err)
+    
+    // Verify task exists
+    tasks, _ := app.FindAllRecords("tasks")
+    assert.Len(t, tasks, 1)
+    assert.Equal(t, "Test task", tasks[0].GetString("title"))
+}
+
+func TestAddCommand_WithFlags(t *testing.T) {
+    // Test --type, --priority, --column flags
+}
+
+func TestAddCommand_CustomID(t *testing.T) {
+    // Test --id flag for idempotency
+}
+
+func TestListCommand_GroupedByColumn(t *testing.T) {
+    // Create tasks in different columns
+    // Verify output groups correctly
+}
+
+func TestMoveCommand(t *testing.T) {
+    // Create task, move to different column
+    // Verify column and position updated
+}
+
+func TestDeleteCommand_WithConfirmation(t *testing.T) {
+    // Test delete requires confirmation
+}
+
+func TestDeleteCommand_Force(t *testing.T) {
+    // Test --force skips confirmation
+}
+```
+
 ### Test Criteria
+
+**Automated Tests (must pass):**
+- [ ] `make test` passes with all unit tests
+- [ ] Resolver tests cover: exact ID, prefix, title match, ambiguous, not found
+- [ ] Output formatter tests cover: JSON and human formats
+- [ ] Position calculation tests cover: empty column, existing tasks, between positions
+- [ ] Integration tests cover: add, list, show, move, update, delete commands
+
+**Manual Verification:**
 - [ ] `egenskriven add "Test task"` creates a task
 - [ ] `egenskriven list` shows tasks grouped by column
 - [ ] `egenskriven show <id>` displays task details (including blocked_by)
@@ -234,6 +420,7 @@ Agent behavior is configurable per project, allowing different workflows for dif
 {
   "agent": {
     "workflow": "strict",
+    "mode": "autonomous",
     "overrideTodoWrite": true,
     "requireSummary": true,
     "structuredSections": true
@@ -245,6 +432,11 @@ Agent behavior is configurable per project, allowing different workflows for dif
 - `strict`: Full enforcement (create before, update during, summary after)
 - `light`: Basic tracking (create/complete, no structured sections)
 - `minimal`: No enforcement (agent decides when to use)
+
+**Agent modes:**
+- `autonomous`: Agent executes actions directly (create, update, complete tasks). Human reviews asynchronously via activity history.
+- `collaborative`: Agent proposes actions and explains intent, but waits for human to confirm before major changes (completing tasks, deleting). Minor updates allowed.
+- `supervised`: Agent can only read tasks and make suggestions. Human executes all changes. Agent outputs commands for human to run.
 
 ### Tasks
 
@@ -276,6 +468,7 @@ import (
 
 type AgentConfig struct {
     Workflow           string `json:"workflow"`           // strict, light, minimal
+    Mode               string `json:"mode"`               // autonomous, collaborative, supervised
     OverrideTodoWrite  bool   `json:"overrideTodoWrite"`
     RequireSummary     bool   `json:"requireSummary"`
     StructuredSections bool   `json:"structuredSections"`
@@ -295,6 +488,7 @@ func LoadProjectConfig() (*Config, error) {
         return &Config{
             Agent: AgentConfig{
                 Workflow:           "light",
+                Mode:               "autonomous",
                 OverrideTodoWrite:  true,
                 RequireSummary:     false,
                 StructuredSections: false,
@@ -353,6 +547,7 @@ rather than manually.`,
         
         return tmpl.Execute(os.Stdout, TemplateData{
             WorkflowMode:       workflowMode,
+            AgentMode:          cfg.Agent.Mode,
             OverrideTodoWrite:  cfg.Agent.OverrideTodoWrite,
             RequireSummary:     cfg.Agent.RequireSummary,
             StructuredSections: cfg.Agent.StructuredSections,
@@ -377,12 +572,14 @@ Template content (see kanban-architecture.md for full template).
 
 Key sections:
 - `<EXTREMELY_IMPORTANT>` wrapper for priority
-- Conditional workflow instructions based on mode (strict/light/minimal)
+- Conditional workflow instructions based on workflow mode (strict/light/minimal)
+- Conditional behavior based on agent mode (autonomous/collaborative/supervised)
 - Override TodoWrite instruction (configurable)
 - Structured sections guidance (when enabled)
 - CLI quick reference
 - Blocking relationship usage
 - Types, priorities, columns reference
+- Actor identification (agent must identify itself via `--created-by-agent` flag)
 
 The template uses Go template conditionals to adapt output:
 ```go
@@ -392,6 +589,15 @@ The template uses Go template conditionals to adapt output:
 // Light workflow instructions
 {{else}}
 // Minimal instructions
+{{end}}
+
+{{if eq .AgentMode "autonomous"}}
+// Execute actions directly, human reviews async
+{{else if eq .AgentMode "collaborative"}}
+// Propose major changes, execute minor ones
+// For completing/deleting: explain intent, let human confirm
+{{else}}
+// Supervised: read-only, output commands for human to run
 {{end}}
 ```
 
@@ -637,8 +843,87 @@ egenskriven init
 egenskriven init --workflow strict
 ```
 
+#### 1.5.15 Write Unit Tests for Agent Features
+
+**File:** `internal/config/config_test.go`
+```go
+func TestLoadProjectConfig_Defaults(t *testing.T) {
+    // No config file should return defaults
+}
+
+func TestLoadProjectConfig_FromFile(t *testing.T) {
+    // Create temp config file, verify it loads
+}
+
+func TestLoadProjectConfig_InvalidJSON(t *testing.T) {
+    // Invalid JSON should return error
+}
+```
+
+**File:** `internal/commands/blocking_test.go`
+```go
+func TestBlockedBy_PreventsSelfBlocking(t *testing.T) {
+    // Task cannot block itself
+}
+
+func TestBlockedBy_PreventsCircularDependency(t *testing.T) {
+    // A blocks B, B cannot block A
+}
+
+func TestBlockedBy_ReferencedTaskMustExist(t *testing.T) {
+    // Cannot block by non-existent task
+}
+
+func TestListReady_FiltersCorrectly(t *testing.T) {
+    // --ready shows only unblocked todo/backlog tasks
+}
+
+func TestListIsBlocked_FiltersCorrectly(t *testing.T) {
+    // --is-blocked shows only blocked tasks
+}
+```
+
+**File:** `internal/commands/prime_test.go`
+```go
+func TestPrime_OutputChangesWithWorkflowMode(t *testing.T) {
+    modes := []string{"strict", "light", "minimal"}
+    for _, mode := range modes {
+        // Verify output differs per mode
+    }
+}
+
+func TestPrime_RespectsConfigFile(t *testing.T) {
+    // Create config with strict mode
+    // Verify prime output matches
+}
+```
+
+**File:** `internal/commands/suggest_test.go`
+```go
+func TestSuggest_PrioritizesInProgress(t *testing.T) {
+    // In-progress tasks should come first
+}
+
+func TestSuggest_PrioritizesUrgent(t *testing.T) {
+    // Urgent unblocked tasks should come before high priority
+}
+
+func TestSuggest_IncludesUnblockingTasks(t *testing.T) {
+    // Tasks that unblock others should be suggested
+}
+```
+
 ### Test Criteria
 
+**Automated Tests (must pass):**
+- [ ] `make test` passes with all new unit tests
+- [ ] Config loading tests: defaults, from file, invalid JSON
+- [ ] Blocking validation tests: self-blocking, circular deps, missing refs
+- [ ] List filter tests: --ready, --is-blocked, --not-blocked
+- [ ] Prime command tests: output varies by mode, respects config
+- [ ] Suggest command tests: prioritization logic
+
+**Manual Verification:**
 - [ ] `egenskriven init` creates `.egenskriven/config.json`
 - [ ] `egenskriven prime` outputs complete agent instructions
 - [ ] `egenskriven prime` reads config from `.egenskriven/config.json`
@@ -789,7 +1074,81 @@ Using @dnd-kit:
 - `Enter` - open selected task
 - Click task to select/open
 
+#### 2.14 Setup UI Testing
+
+**Install Vitest:**
+```bash
+cd ui
+npm install -D vitest @testing-library/react @testing-library/jest-dom jsdom
+```
+
+**File:** `ui/vitest.config.ts`
+```typescript
+import { defineConfig } from 'vitest/config'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+  },
+})
+```
+
+**File:** `ui/src/hooks/usePocketBase.test.ts`
+```typescript
+import { renderHook, waitFor } from '@testing-library/react'
+import { useTasks } from './usePocketBase'
+
+describe('useTasks', () => {
+  it('fetches tasks on mount', async () => {
+    // Mock PocketBase client
+    // Verify tasks are loaded
+  })
+  
+  it('updates state on realtime events', async () => {
+    // Simulate create/update/delete events
+  })
+})
+```
+
+**File:** `ui/src/components/TaskCard.test.tsx`
+```typescript
+import { render, screen } from '@testing-library/react'
+import { TaskCard } from './TaskCard'
+
+describe('TaskCard', () => {
+  it('renders task title', () => {
+    render(<TaskCard task={mockTask} />)
+    expect(screen.getByText('Test Task')).toBeInTheDocument()
+  })
+  
+  it('shows priority indicator', () => {
+    // Test urgent/high/medium/low indicators
+  })
+})
+```
+
+**Update package.json:**
+```json
+{
+  "scripts": {
+    "test": "vitest",
+    "test:coverage": "vitest --coverage"
+  }
+}
+```
+
 ### Test Criteria
+
+**Automated Tests (must pass):**
+- [ ] `cd ui && npm test` passes all component tests
+- [ ] usePocketBase hook tests: fetch, create, update, delete, realtime
+- [ ] TaskCard tests: renders title, priority, labels
+- [ ] Board tests: renders columns, groups tasks correctly
+
+**Manual Verification:**
 - [ ] `make build && ./egenskriven serve` serves the UI
 - [ ] Board displays columns: Backlog, Todo, In Progress, Review, Done
 - [ ] Tasks created via CLI appear in UI (after refresh)
@@ -1382,7 +1741,7 @@ Show in task detail panel.
 ### Tasks
 
 #### 9.1 Cross-Platform Build
-Update Makefile for all platforms:
+Update Makefile for all platforms (5 builds):
 ```makefile
 release: build-ui
 	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o dist/egenskriven-darwin-arm64 ./cmd/egenskriven
@@ -1391,6 +1750,13 @@ release: build-ui
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o dist/egenskriven-linux-arm64 ./cmd/egenskriven
 	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o dist/egenskriven-windows-amd64.exe ./cmd/egenskriven
 ```
+
+**Platforms:**
+- macOS (Apple Silicon / ARM64)
+- macOS (Intel / AMD64)
+- Linux (AMD64)
+- Linux (ARM64 - for Raspberry Pi, ARM servers)
+- Windows (AMD64)
 
 #### 9.2 Add Version Embedding
 ```go
@@ -1534,23 +1900,76 @@ Phase 1.5 (Agent Integration)     Phase 2 (Minimal UI)
 
 ## Testing Strategy
 
-### Unit Tests
-- Resolver logic
-- Position calculation
-- Filter logic
-- Output formatting
+### Philosophy
 
-### Integration Tests
-- CLI command flows
-- Database operations
-- API endpoints
+Tests are written **alongside implementation**, not after. Each phase includes specific test tasks and automated tests must pass before the phase is considered complete.
 
-### E2E Tests (Optional)
-- Playwright for UI testing
-- Full user flows
+### Test Pyramid
 
-### Manual Testing Checklist (Per Phase)
-Each phase includes specific test criteria that must pass before moving to next phase.
+```
+        /\
+       /  \      E2E Tests (Phase 2+)
+      /----\     - Playwright for UI
+     /      \    - Full user flows
+    /--------\   
+   /          \  Integration Tests (Phase 1+)
+  /------------\ - CLI command flows
+ /              \- Database operations
+/----------------\
+|  Unit Tests    | - Resolver logic
+|  (Phase 1+)    | - Position calculation
+|                | - Filter logic
+|                | - Output formatting
+------------------
+```
+
+### Tools
+
+| Tool | Purpose | Phase Introduced |
+|------|---------|------------------|
+| Go `testing` | Unit & integration tests | Phase 0 |
+| `testify` | Assertions, mocks | Phase 0 |
+| `testutil.NewTestApp()` | Isolated test database | Phase 0 |
+| Vitest | React component tests | Phase 2 |
+| Playwright | E2E browser tests | Phase 4 (optional) |
+
+### Test Requirements Per Phase
+
+| Phase | Requirement |
+|-------|-------------|
+| 0 | Test infrastructure set up, `make test` works |
+| 1 | Unit tests for resolver, output, position; integration tests for commands |
+| 1.5 | Unit tests for config, blocking, prime, suggest |
+| 2 | React component tests with Vitest |
+| 3+ | Tests for new features before merging |
+
+### Running Tests
+
+```bash
+# Run all Go tests
+make test
+
+# Run with coverage report
+make test-coverage
+
+# Run specific package
+go test ./internal/resolver/... -v
+
+# Run UI tests (Phase 2+)
+cd ui && npm test
+```
+
+### Coverage Goals
+
+- **Phase 1-1.5**: 80%+ coverage on `internal/resolver`, `internal/output`, `internal/config`
+- **Phase 2+**: Component tests for critical UI paths
+- Focus on logic-heavy code, not boilerplate
+
+### Manual Testing Checklist
+
+Each phase includes specific test criteria that must pass before moving to next phase. These are split into:
+- **Automated Tests**: Must pass in CI/locally via `make test`
+- **Manual Verification**: Human testing for UX and edge cases
 
 ---
 
