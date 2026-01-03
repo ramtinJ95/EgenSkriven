@@ -150,9 +150,16 @@ Slides in from right when task is opened (`Enter` or click):
 │ WRK-123                                 │  ← ID (copyable)
 │                                         │
 │ ┌─────────────────────────────────────┐ │
+│ │ ## Approach                         │ │
+│ │ Increase timeout, add retry logic   │ │
 │ │                                     │ │
-│ │ Description (markdown editor)       │ │  ← Rich text
+│ │ ## Checklist                        │ │
+│ │ - [x] Reproduce issue               │ │
+│ │ - [ ] Implement fix                 │ │
+│ │ - [ ] Add tests                     │ │
 │ │                                     │ │
+│ │ ## Open Questions                   │ │
+│ │ - Should we add exponential backoff?│ │
 │ └─────────────────────────────────────┘ │
 │                                         │
 │ ─────────────────────────────────────── │
@@ -178,6 +185,25 @@ Slides in from right when task is opened (`Enter` or click):
 - Slide-in animation: 150ms ease
 - Close: `Esc` or click outside
 - Properties editable inline via click or shortcut
+
+### Structured Description Sections
+
+The description field supports structured markdown sections for agent workflows:
+
+| Section | Purpose |
+|---------|---------|
+| `## Approach` | How the work will be implemented |
+| `## Checklist` | Step-by-step tasks with checkboxes |
+| `## Open Questions` | Uncertainties to resolve |
+| `## Summary of Changes` | What was done (filled on completion) |
+| `## Follow-up` | Related work identified during implementation |
+
+**UI enhancements for sections:**
+- Section headers rendered with slight background highlight
+- Checkboxes (`- [ ]` / `- [x]`) rendered as interactive toggles
+- Quick-add buttons for common sections
+- Collapse/expand individual sections
+- Progress indicator based on checkbox completion
 
 ---
 

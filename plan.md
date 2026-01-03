@@ -10,6 +10,7 @@ A phased implementation plan from zero to full product. Each phase ends with a t
 |-------|------|-------------------|-------------|
 | 0 | Project Setup | 1-2 days | Build system, dev environment |
 | 1 | Core CLI | 3-5 days | Fully functional CLI (no UI) |
+| 1.5 | Agent Integration | 2-3 days | Prime command, hooks, agent-friendly CLI |
 | 2 | Minimal UI | 5-7 days | Basic board view, single board |
 | 3 | Full CLI | 3-4 days | All CLI commands, batch ops |
 | 4 | Interactive UI | 5-7 days | Keyboard shortcuts, command palette |
@@ -19,7 +20,7 @@ A phased implementation plan from zero to full product. Each phase ends with a t
 | 8 | Advanced Features | 7-10 days | Epics, due dates, sub-tasks |
 | 9 | Release | 2-3 days | Cross-compilation, distribution |
 
-**Total estimated time: 6-10 weeks**
+**Total estimated time: 7-11 weeks**
 
 ---
 
@@ -116,6 +117,7 @@ Define `tasks` collection with fields:
 - column (select: backlog, todo, in_progress, review, done)
 - position (number)
 - labels (json)
+- blocked_by (json) - array of task IDs that block this task
 
 **File:** `migrations/1_initial.go`
 
@@ -197,7 +199,7 @@ Implement consistent exit codes:
 ### Test Criteria
 - [ ] `egenskriven add "Test task"` creates a task
 - [ ] `egenskriven list` shows tasks grouped by column
-- [ ] `egenskriven show <id>` displays task details
+- [ ] `egenskriven show <id>` displays task details (including blocked_by)
 - [ ] `egenskriven move <id> in_progress` moves task
 - [ ] `egenskriven update <id> --priority urgent` updates task
 - [ ] `egenskriven delete <id>` deletes task (with confirmation)
@@ -207,6 +209,456 @@ Implement consistent exit codes:
 
 ### Dependencies
 - Phase 0 complete
+
+---
+
+## Phase 1.5: Agent Integration
+
+**Goal:** Make EgenSkriven agent-native so AI coding assistants use it as their primary task tracker.
+
+### Philosophy
+
+EgenSkriven should replace built-in agent todo systems (like `TodoWrite`). Agents should:
+1. Automatically receive context about the task system via hooks
+2. Use CLI commands for all task management
+3. Be able to identify parallelizable work via blocking relationships
+4. Get structured JSON output optimized for token efficiency
+
+### Per-Project Configuration
+
+Agent behavior is configurable per project, allowing different workflows for different contexts:
+
+**Configuration file:** `.egenskriven/config.json`
+
+```json
+{
+  "agent": {
+    "workflow": "strict",
+    "overrideTodoWrite": true,
+    "requireSummary": true,
+    "structuredSections": true
+  }
+}
+```
+
+**Workflow modes:**
+- `strict`: Full enforcement (create before, update during, summary after)
+- `light`: Basic tracking (create/complete, no structured sections)
+- `minimal`: No enforcement (agent decides when to use)
+
+### Tasks
+
+#### 1.5.1 Add Blocking Relationships to Data Model
+
+Update `tasks` collection migration:
+```go
+// Add blocked_by field
+record.Set("blocked_by", []string{}) // Array of task IDs
+```
+
+**Validation rules:**
+- Cannot block self
+- Cannot create circular dependencies
+- Referenced tasks must exist
+
+#### 1.5.2 Implement Config Loading
+
+**File:** `internal/config/config.go`
+
+```go
+package config
+
+import (
+    "encoding/json"
+    "os"
+    "path/filepath"
+)
+
+type AgentConfig struct {
+    Workflow           string `json:"workflow"`           // strict, light, minimal
+    OverrideTodoWrite  bool   `json:"overrideTodoWrite"`
+    RequireSummary     bool   `json:"requireSummary"`
+    StructuredSections bool   `json:"structuredSections"`
+}
+
+type Config struct {
+    Agent AgentConfig `json:"agent"`
+}
+
+func LoadProjectConfig() (*Config, error) {
+    // Look for .egenskriven/config.json in current directory
+    configPath := filepath.Join(".egenskriven", "config.json")
+    
+    data, err := os.ReadFile(configPath)
+    if os.IsNotExist(err) {
+        // Return defaults
+        return &Config{
+            Agent: AgentConfig{
+                Workflow:           "light",
+                OverrideTodoWrite:  true,
+                RequireSummary:     false,
+                StructuredSections: false,
+            },
+        }, nil
+    }
+    if err != nil {
+        return nil, err
+    }
+    
+    var cfg Config
+    if err := json.Unmarshal(data, &cfg); err != nil {
+        return nil, err
+    }
+    
+    return &cfg, nil
+}
+```
+
+#### 1.5.3 Implement Prime Command
+
+**File:** `internal/commands/prime.go`
+
+```go
+//go:embed prime.tmpl
+var agentPromptTemplate string
+
+var primeMode string
+
+var primeCmd = &cobra.Command{
+    Use:   "prime",
+    Short: "Output instructions for AI coding agents",
+    Long: `Outputs a complete guide for AI agents to use EgenSkriven.
+    
+Reads configuration from .egenskriven/config.json in the current project.
+Use --mode to override the workflow mode.
+
+This is typically called automatically via agent hooks (Claude, OpenCode)
+rather than manually.`,
+    RunE: func(cmd *cobra.Command, args []string) error {
+        cfg, err := config.LoadProjectConfig()
+        if err != nil {
+            return err
+        }
+        
+        // Override mode if specified
+        workflowMode := cfg.Agent.Workflow
+        if primeMode != "" {
+            workflowMode = primeMode
+        }
+        
+        tmpl, err := template.New("prime").Parse(agentPromptTemplate)
+        if err != nil {
+            return err
+        }
+        
+        return tmpl.Execute(os.Stdout, TemplateData{
+            WorkflowMode:       workflowMode,
+            OverrideTodoWrite:  cfg.Agent.OverrideTodoWrite,
+            RequireSummary:     cfg.Agent.RequireSummary,
+            StructuredSections: cfg.Agent.StructuredSections,
+            Types:              []string{"bug", "feature", "chore"},
+            Priorities:         []string{"low", "medium", "high", "urgent"},
+            Columns:            []string{"backlog", "todo", "in_progress", "review", "done"},
+        })
+    },
+}
+
+func init() {
+    primeCmd.Flags().StringVar(&primeMode, "mode", "", 
+        "Override workflow mode (strict, light, minimal)")
+}
+```
+
+#### 1.5.4 Create Prime Template
+
+**File:** `internal/commands/prime.tmpl`
+
+Template content (see kanban-architecture.md for full template).
+
+Key sections:
+- `<EXTREMELY_IMPORTANT>` wrapper for priority
+- Conditional workflow instructions based on mode (strict/light/minimal)
+- Override TodoWrite instruction (configurable)
+- Structured sections guidance (when enabled)
+- CLI quick reference
+- Blocking relationship usage
+- Types, priorities, columns reference
+
+The template uses Go template conditionals to adapt output:
+```go
+{{if eq .WorkflowMode "strict"}}
+// Strict workflow instructions
+{{else if eq .WorkflowMode "light"}}
+// Light workflow instructions
+{{else}}
+// Minimal instructions
+{{end}}
+```
+
+#### 1.5.5 Add `--ready` Filter to List
+
+```go
+// In list.go
+var listReady bool
+
+func init() {
+    listCmd.Flags().BoolVar(&listReady, "ready", false, 
+        "Show unblocked tasks in todo/backlog (agent-friendly)")
+}
+
+// In RunE:
+if listReady {
+    // Filter: column in (todo, backlog) AND not blocked
+    filter.Column = []string{"todo", "backlog"}
+    filter.NotBlocked = true
+}
+```
+
+#### 1.5.6 Add Blocking Filters to List
+
+```go
+var listIsBlocked bool
+var listNotBlocked bool
+
+func init() {
+    listCmd.Flags().BoolVar(&listIsBlocked, "is-blocked", false, 
+        "Show only tasks blocked by others")
+    listCmd.Flags().BoolVar(&listNotBlocked, "not-blocked", false, 
+        "Show only tasks not blocked by others")
+}
+```
+
+#### 1.5.7 Add `--fields` Flag for Selective Output
+
+```go
+var listFields string
+
+func init() {
+    listCmd.Flags().StringVar(&listFields, "fields", "", 
+        "Comma-separated fields to include in JSON output")
+}
+
+// In output formatting:
+if listFields != "" {
+    fields := strings.Split(listFields, ",")
+    // Filter output to only include specified fields
+}
+```
+
+#### 1.5.8 Add Blocking Management to Update
+
+```go
+var updateBlockedBy []string
+var updateRemoveBlockedBy []string
+
+func init() {
+    updateCmd.Flags().StringArrayVar(&updateBlockedBy, "blocked-by", nil,
+        "Add blocking task ID (repeatable)")
+    updateCmd.Flags().StringArrayVar(&updateRemoveBlockedBy, "remove-blocked-by", nil,
+        "Remove blocking task ID (repeatable)")
+}
+```
+
+#### 1.5.9 Implement Context Command
+
+**File:** `internal/commands/context.go`
+
+```go
+var contextCmd = &cobra.Command{
+    Use:   "context",
+    Short: "Output project state summary for agents",
+    RunE: func(cmd *cobra.Command, args []string) error {
+        // Gather statistics
+        tasks, _ := getAllTasks(app)
+        
+        summary := ContextSummary{
+            CurrentBoard: getCurrentBoard(),
+            Summary: Summary{
+                Total:      len(tasks),
+                ByColumn:   countByColumn(tasks),
+                ByPriority: countByPriority(tasks),
+            },
+            BlockedCount: countBlocked(tasks),
+            ReadyCount:   countReady(tasks),
+        }
+        
+        return outputJSON(summary)
+    },
+}
+```
+
+#### 1.5.10 Implement Suggest Command
+
+**File:** `internal/commands/suggest.go`
+
+```go
+var suggestCmd = &cobra.Command{
+    Use:   "suggest",
+    Short: "Suggest tasks to work on next",
+    RunE: func(cmd *cobra.Command, args []string) error {
+        suggestions := []Suggestion{}
+        
+        // 1. In-progress tasks (continue current work)
+        inProgress := getTasksByColumn("in_progress")
+        for _, t := range inProgress {
+            suggestions = append(suggestions, Suggestion{
+                Task:   t,
+                Reason: "Continue current work",
+            })
+        }
+        
+        // 2. Urgent unblocked tasks
+        urgent := getUnblockedByPriority("urgent")
+        for _, t := range urgent {
+            suggestions = append(suggestions, Suggestion{
+                Task:   t,
+                Reason: "Urgent priority, unblocked",
+            })
+        }
+        
+        // 3. High priority unblocked
+        high := getUnblockedByPriority("high")
+        for _, t := range high {
+            suggestions = append(suggestions, Suggestion{
+                Task:   t,
+                Reason: "High priority, unblocked",
+            })
+        }
+        
+        // 4. Tasks that unblock others
+        unblocking := getTasksThatUnblockMost()
+        for _, t := range unblocking {
+            suggestions = append(suggestions, Suggestion{
+                Task:   t,
+                Reason: fmt.Sprintf("Unblocks %d other tasks", t.UnblocksCount),
+            })
+        }
+        
+        return outputJSON(SuggestResponse{Suggestions: suggestions[:limit]})
+    },
+}
+```
+
+#### 1.5.11 Create OpenCode Plugin
+
+**File:** `.opencode/plugin/egenskriven-prime.ts`
+
+```typescript
+import type { Plugin } from "@opencode/plugin";
+
+export const EgenSkrivenPlugin: Plugin = async ({ $ }) => {
+  // Check if egenskriven is available
+  try {
+    await $`egenskriven version`.quiet();
+  } catch {
+    return {}; // Not installed, skip
+  }
+
+  const prime = await $`egenskriven prime`.text();
+
+  return {
+    "experimental.chat.system.transform": async (_, output) => {
+      output.system.push(prime);
+    },
+    "experimental.session.compacting": async (_, output) => {
+      output.context.push(prime);
+    },
+  };
+};
+
+export default EgenSkrivenPlugin;
+```
+
+#### 1.5.12 Document Claude Code Integration
+
+Add to README and create example `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [{ "type": "command", "command": "egenskriven prime" }] }
+    ],
+    "PreCompact": [
+      { "hooks": [{ "type": "command", "command": "egenskriven prime" }] }
+    ]
+  }
+}
+```
+
+#### 1.5.13 Update Show Command for Blocking Info
+
+Display blocking relationships in show output:
+
+```
+Task: abc123def456
+Title:       Fix login crash
+...
+Blocked by:  def456 (Setup auth system)
+Blocks:      ghi789 (Add user dashboard)
+```
+
+#### 1.5.14 Implement Init Command for Config
+
+**File:** `internal/commands/init.go`
+
+```go
+var initCmd = &cobra.Command{
+    Use:   "init",
+    Short: "Initialize EgenSkriven configuration for a project",
+    RunE: func(cmd *cobra.Command, args []string) error {
+        // Create .egenskriven directory
+        if err := os.MkdirAll(".egenskriven", 0755); err != nil {
+            return err
+        }
+        
+        // Create default config
+        cfg := Config{
+            Agent: AgentConfig{
+                Workflow:           "light",
+                OverrideTodoWrite:  true,
+                RequireSummary:     false,
+                StructuredSections: false,
+            },
+        }
+        
+        data, _ := json.MarshalIndent(cfg, "", "  ")
+        return os.WriteFile(".egenskriven/config.json", data, 0644)
+    },
+}
+```
+
+Usage:
+```bash
+# Initialize with defaults
+egenskriven init
+
+# Initialize with strict mode
+egenskriven init --workflow strict
+```
+
+### Test Criteria
+
+- [ ] `egenskriven init` creates `.egenskriven/config.json`
+- [ ] `egenskriven prime` outputs complete agent instructions
+- [ ] `egenskriven prime` reads config from `.egenskriven/config.json`
+- [ ] `egenskriven prime --mode strict` overrides config
+- [ ] Prime output changes based on workflow mode (strict/light/minimal)
+- [ ] `egenskriven list --ready` shows unblocked todo/backlog tasks
+- [ ] `egenskriven list --is-blocked` shows blocked tasks
+- [ ] `egenskriven list --not-blocked` shows unblocked tasks
+- [ ] `egenskriven list --json --fields id,title` outputs only those fields
+- [ ] `egenskriven update <id> --blocked-by <other>` adds blocking relationship
+- [ ] `egenskriven update <id> --remove-blocked-by <other>` removes it
+- [ ] `egenskriven context --json` outputs project summary
+- [ ] `egenskriven suggest --json` outputs prioritized suggestions
+- [ ] OpenCode plugin correctly injects prime output
+- [ ] Claude hooks documentation is complete
+- [ ] Circular dependency detection works
+- [ ] Self-blocking is prevented
+
+### Dependencies
+- Phase 1 complete (Core CLI exists)
 
 ---
 
@@ -371,6 +823,8 @@ Update `add` command:
 - `--limit` for max results
 - `--sort` for sort field
 - Multiple values per filter (OR within filter, AND between filters)
+
+Note: `--ready`, `--is-blocked`, `--not-blocked`, and `--fields` filters are implemented in Phase 1.5.
 
 #### 3.3 Add Batch Delete
 Update `delete` command:
@@ -1042,36 +1496,39 @@ Document all features for v1.0.0.
 Phase 0 (Setup)
     │
     ▼
-Phase 1 (Core CLI) ─────────────────────┐
+Phase 1 (Core CLI)
+    │
+    ├───────────────────────────────────┐
+    ▼                                   ▼
+Phase 1.5 (Agent Integration)     Phase 2 (Minimal UI)
     │                                   │
-    ▼                                   │
-Phase 2 (Minimal UI)                    │
-    │                                   │
-    ├───────────────┐                   │
-    ▼               ▼                   ▼
-Phase 4         Phase 3 (Full CLI) ◄────┘
-(Interactive)       │
-    │               │
-    ▼               │
-Phase 5 (Multi-Board) ◄─────────────────┘
-    │
-    ▼
-Phase 6 (Filtering & Views)
-    │
-    ▼
-Phase 7 (Polish)
-    │
-    ▼
-Phase 8 (Advanced)
-    │
-    ▼
-Phase 9 (Release)
+    │                                   ├───────────────┐
+    │                                   ▼               ▼
+    │                               Phase 4         Phase 3 (Full CLI)
+    │                               (Interactive)       │
+    │                                   │               │
+    └───────────────────────────────────┼───────────────┘
+                                        ▼
+                                Phase 5 (Multi-Board)
+                                        │
+                                        ▼
+                                Phase 6 (Filtering & Views)
+                                        │
+                                        ▼
+                                Phase 7 (Polish)
+                                        │
+                                        ▼
+                                Phase 8 (Advanced)
+                                        │
+                                        ▼
+                                Phase 9 (Release)
 ```
 
 **Parallel work opportunities:**
+- Phase 1.5 (Agent Integration) can run parallel to Phase 2 (Minimal UI)
 - Phase 3 (Full CLI) can run parallel to Phase 2 (Minimal UI)
 - Phase 4 (Interactive UI) requires Phase 2
-- Phase 5 (Multi-Board) requires both Phase 3 and Phase 4
+- Phase 5 (Multi-Board) requires Phase 3, Phase 4, and benefits from Phase 1.5
 
 ---
 

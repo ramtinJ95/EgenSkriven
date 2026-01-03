@@ -107,6 +107,7 @@ egenskriven/
 | position    | number   | Order within column (fractional allowed) |
 | epic        | relation | Optional link to epics collection        |
 | labels      | json     | Array of label strings                   |
+| blocked_by  | json     | Array of task IDs that block this task   |
 | created     | date     | Auto-generated                           |
 | updated     | date     | Auto-generated                           |
 
@@ -238,16 +239,20 @@ egenskriven list --json
 
 **Flags:**
 
-| Flag         | Short | Description                           |
-|--------------|-------|---------------------------------------|
-| `--column`   | `-c`  | Filter by column (repeatable)         |
-| `--type`     | `-t`  | Filter by type (repeatable)           |
-| `--priority` | `-p`  | Filter by priority (repeatable)       |
-| `--label`    | `-l`  | Filter by label (repeatable)          |
-| `--epic`     | `-e`  | Filter by epic                        |
-| `--search`   | `-s`  | Search title (case-insensitive)       |
-| `--limit`    |       | Max results (default: no limit)       |
-| `--sort`     |       | Sort field (default: position)        |
+| Flag           | Short | Description                                      |
+|----------------|-------|--------------------------------------------------|
+| `--column`     | `-c`  | Filter by column (repeatable)                    |
+| `--type`       | `-t`  | Filter by type (repeatable)                      |
+| `--priority`   | `-p`  | Filter by priority (repeatable)                  |
+| `--label`      | `-l`  | Filter by label (repeatable)                     |
+| `--epic`       | `-e`  | Filter by epic                                   |
+| `--search`     | `-s`  | Search title (case-insensitive)                  |
+| `--limit`      |       | Max results (default: no limit)                  |
+| `--sort`       |       | Sort field (default: position)                   |
+| `--ready`      |       | Unblocked tasks in todo/backlog (agent-friendly) |
+| `--is-blocked` |       | Only show tasks blocked by others                |
+| `--not-blocked`|       | Only show tasks not blocked by others            |
+| `--fields`     |       | Comma-separated fields to include in JSON output |
 
 **Output (human):**
 ```
@@ -354,19 +359,25 @@ egenskriven update abc123 --epic ""
 
 # Add/remove labels
 egenskriven update abc123 --add-label urgent --remove-label backlog
+
+# Blocking relationships
+egenskriven update abc123 --blocked-by def456
+egenskriven update abc123 --remove-blocked-by def456
 ```
 
 **Flags:**
 
-| Flag             | Description                        |
-|------------------|------------------------------------|
-| `--title`        | New title                          |
-| `--description`  | New description                    |
-| `--type`         | New type                           |
-| `--priority`     | New priority                       |
-| `--epic`         | Link to epic (empty to clear)      |
-| `--add-label`    | Add label (repeatable)             |
-| `--remove-label` | Remove label (repeatable)          |
+| Flag                | Description                            |
+|---------------------|----------------------------------------|
+| `--title`           | New title                              |
+| `--description`     | New description                        |
+| `--type`            | New type                               |
+| `--priority`        | New priority                           |
+| `--epic`            | Link to epic (empty to clear)          |
+| `--add-label`       | Add label (repeatable)                 |
+| `--remove-label`    | Remove label (repeatable)              |
+| `--blocked-by`      | Add blocking task ID (repeatable)      |
+| `--remove-blocked-by` | Remove blocking task ID (repeatable) |
 
 #### `egenskriven delete`
 
@@ -410,6 +421,91 @@ egenskriven epic show abc123
 # Delete epic (tasks remain, unlinked)
 egenskriven epic delete abc123
 ```
+
+#### `egenskriven prime`
+
+Output instructions for AI coding agents.
+
+```bash
+# Output agent instructions (for hook integration)
+egenskriven prime
+
+# Typically used in agent hooks, not directly
+```
+
+This command outputs a complete guide that teaches AI agents how to use EgenSkriven, including workflow patterns, CLI reference, and available options.
+
+#### `egenskriven context`
+
+Output project state summary for agent context.
+
+```bash
+# Get project context
+egenskriven context --json
+```
+
+**Output (JSON):**
+```json
+{
+  "boards": [
+    {"id": "work", "name": "Work", "prefix": "WRK", "task_count": 15}
+  ],
+  "current_board": "work",
+  "summary": {
+    "total": 15,
+    "by_column": {"todo": 5, "in_progress": 2, "review": 1, "done": 7},
+    "by_priority": {"urgent": 1, "high": 3, "medium": 8, "low": 3}
+  },
+  "blocked_count": 2,
+  "ready_count": 3
+}
+```
+
+#### `egenskriven suggest`
+
+Suggest tasks to work on next.
+
+```bash
+# Get work suggestions
+egenskriven suggest --json
+
+# Limit suggestions
+egenskriven suggest --json --limit 3
+```
+
+**Output (JSON):**
+```json
+{
+  "suggestions": [
+    {
+      "task": {
+        "id": "abc123",
+        "title": "Critical security bug",
+        "type": "bug",
+        "priority": "urgent",
+        "column": "todo"
+      },
+      "reason": "Highest priority unblocked task"
+    },
+    {
+      "task": {
+        "id": "def456",
+        "title": "Continue feature work",
+        "type": "feature",
+        "priority": "high",
+        "column": "in_progress"
+      },
+      "reason": "Already in progress"
+    }
+  ]
+}
+```
+
+**Suggestion logic:**
+1. In-progress tasks (continue current work)
+2. Urgent unblocked tasks
+3. High priority unblocked tasks
+4. Tasks that unblock the most other tasks
 
 ### Batch Input Format
 
@@ -1043,6 +1139,363 @@ open http://localhost:8090
 4. **Templates**: `egenskriven add --template bug-report` for predefined task structures
 5. **Archiving**: `egenskriven archive` to move done tasks to archive, keeping board clean
 
+## AI Agent Integration
+
+EgenSkriven is designed to be **agent-native** - AI coding assistants can use it as their primary task tracking system, replacing built-in todo lists.
+
+### Per-Project Configuration
+
+Agent behavior is configurable per project via `.egenskriven/config.json`:
+
+```json
+{
+  "agent": {
+    "workflow": "strict",
+    "overrideTodoWrite": true,
+    "requireSummary": true,
+    "structuredSections": true
+  }
+}
+```
+
+**Workflow modes:**
+
+| Mode | Description |
+|------|-------------|
+| `strict` | Full workflow enforcement: create before work, update during, summary after |
+| `light` | Basic tracking: create/complete tasks, no structured sections required |
+| `minimal` | Just tracking: no workflow enforcement, agent decides when to use |
+
+**Configuration options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `workflow` | `light` | Workflow enforcement level |
+| `overrideTodoWrite` | `true` | Tell agents to ignore built-in todo tools |
+| `requireSummary` | `false` | Require `## Summary of Changes` on completion |
+| `structuredSections` | `false` | Encourage structured markdown sections in descriptions |
+
+The `prime` command reads this config and adjusts its output accordingly.
+
+### The Prime Command
+
+The `egenskriven prime` command outputs a complete guide for AI agents:
+
+```bash
+# Output agent instructions (reads .egenskriven/config.json)
+egenskriven prime
+
+# Override workflow mode
+egenskriven prime --mode strict
+egenskriven prime --mode light
+egenskriven prime --mode minimal
+```
+
+This outputs structured instructions that teach agents:
+- How to discover available work
+- How to create and update tasks
+- Workflow patterns (based on configured mode)
+- CLI reference with examples
+- Available types, priorities, and columns
+
+### Agent Workflow (Strict Mode)
+
+```
+1. DISCOVER WORK
+   egenskriven list --json --ready
+
+2. BEFORE STARTING
+   - Check for existing task: egenskriven list --json --search "keyword"
+   - Create if needed: egenskriven add "Title" --type feature --column todo --json
+   - Move to in_progress: egenskriven move <id> in_progress
+
+3. DURING WORK
+   - Update description with progress notes
+   - Add structured sections (## Approach, ## Open Questions)
+   - Reference blocking tasks if parallelizable work is identified
+
+4. AFTER COMPLETING
+   - Add ## Summary of Changes section to description
+   - Move to done: egenskriven move <id> done
+   - Reference task ID in commit message
+
+5. COMMIT
+   - Include task ID: "feat: implement X [WRK-123]"
+```
+
+### Agent Workflow (Light Mode)
+
+```
+1. For substantial work, create a task
+2. Update status when done
+3. Reference task ID in commits when relevant
+```
+
+### Structured Description Sections
+
+When `structuredSections` is enabled, agents are encouraged to use these markdown sections in task descriptions:
+
+```markdown
+## Approach
+Brief description of how this will be implemented.
+
+## Open Questions
+- Question 1?
+- Question 2?
+
+## Checklist
+- [ ] Step 1
+- [ ] Step 2
+- [x] Completed step
+
+## Summary of Changes
+What was actually done (filled in on completion).
+
+## Follow-up
+- Related work identified during implementation
+```
+
+Agents can update these sections as work progresses. The `## Summary of Changes` section is particularly valuable for project history and context.
+
+### Hook Integration
+
+Agents automatically receive context via lifecycle hooks:
+
+**Claude Code** (`.claude/settings.json`):
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [{ "type": "command", "command": "egenskriven prime" }] }
+    ],
+    "PreCompact": [
+      { "hooks": [{ "type": "command", "command": "egenskriven prime" }] }
+    ]
+  }
+}
+```
+
+**OpenCode** (`.opencode/plugin/egenskriven-prime.ts`):
+```typescript
+import type { Plugin } from "@opencode/plugin";
+
+export const EgenSkrivenPlugin: Plugin = async ({ $ }) => {
+  const prime = await $`egenskriven prime`.text();
+
+  return {
+    "experimental.chat.system.transform": async (_, output) => {
+      output.system.push(prime);
+    },
+    "experimental.session.compacting": async (_, output) => {
+      output.context.push(prime);
+    },
+  };
+};
+
+export default EgenSkrivenPlugin;
+```
+
+### Agent-Optimized CLI Features
+
+#### JSON Output
+
+All commands support `--json` for structured output:
+
+```bash
+egenskriven list --json
+egenskriven show WRK-123 --json
+egenskriven add "Title" --json
+```
+
+#### Field Selection
+
+Reduce token usage by requesting only needed fields:
+
+```bash
+egenskriven list --json --fields id,title,column
+```
+
+Output:
+```json
+{
+  "tasks": [
+    {"id": "abc", "title": "Fix bug", "column": "todo"}
+  ]
+}
+```
+
+#### Ready Filter
+
+Find actionable tasks (not blocked, not in progress/done):
+
+```bash
+egenskriven list --json --ready
+```
+
+#### Blocking Relationships
+
+Track task dependencies for parallelization:
+
+```bash
+# Mark task as blocked by another
+egenskriven update WRK-123 --blocked-by WRK-100
+
+# Find blocked tasks
+egenskriven list --json --is-blocked
+
+# Find unblocked tasks (ready for parallel work)
+egenskriven list --json --not-blocked --column todo
+```
+
+#### Context Summary
+
+Get project state for agent context:
+
+```bash
+egenskriven context --json
+```
+
+Output:
+```json
+{
+  "current_board": "work",
+  "summary": {
+    "total": 15,
+    "by_column": {"todo": 5, "in_progress": 2, "done": 8},
+    "by_priority": {"urgent": 1, "high": 3}
+  },
+  "blocked_count": 2,
+  "ready_count": 3
+}
+```
+
+#### Suggest Command
+
+Get recommendations for what to work on:
+
+```bash
+egenskriven suggest --json
+```
+
+Output:
+```json
+{
+  "suggestions": [
+    {
+      "task": {"id": "WRK-101", "title": "Critical bug", "priority": "urgent"},
+      "reason": "Highest priority in todo"
+    },
+    {
+      "task": {"id": "WRK-105", "title": "Unblocked task"},
+      "reason": "Ready for parallel work"
+    }
+  ]
+}
+```
+
+### Prime Command Template
+
+The prime command uses an embedded template (`cmd/prime.tmpl`) that adapts based on project configuration:
+
+```markdown
+<EXTREMELY_IMPORTANT>
+# EgenSkriven Task Tracker for Agents
+
+This project uses **EgenSkriven**, a local-first kanban board.
+{{if .OverrideTodoWrite}}
+**Always use egenskriven instead of TodoWrite to manage your work and tasks.**
+**Always use egenskriven instead of writing todo lists.**
+{{end}}
+
+All commands support `--json` for machine-readable output.
+
+## Workflow Mode: {{.WorkflowMode}}
+
+{{if eq .WorkflowMode "strict"}}
+### BEFORE starting any task:
+1. Check for existing task: `egenskriven list --json --search "keyword"`
+2. Create if needed: `egenskriven add "Title" --type <type> --column todo --json`
+3. Start work: `egenskriven move <id> in_progress`
+
+### DURING work:
+- Keep task description updated with progress
+{{if .StructuredSections}}
+- Use structured sections in description:
+  - `## Approach` - How you plan to implement
+  - `## Open Questions` - Uncertainties to resolve
+  - `## Checklist` - Steps with checkboxes
+{{end}}
+- Identify blocking relationships for parallel work
+
+### AFTER completing:
+{{if .RequireSummary}}
+- Add `## Summary of Changes` section describing what was done
+{{end}}
+- Mark complete: `egenskriven move <id> done`
+- Reference task ID in commits: "feat: implement X [WRK-123]"
+{{else if eq .WorkflowMode "light"}}
+### Workflow
+- Create task for substantial work: `egenskriven add "Title" --type <type> --json`
+- Update status when done: `egenskriven move <id> done`
+- Reference task ID in commits when relevant
+{{else}}
+### Workflow
+- Use egenskriven for task tracking as needed
+- All commands support `--json` for structured output
+{{end}}
+
+## Quick Reference
+
+```bash
+# Find ready tasks
+egenskriven list --json --ready
+
+# Show task details
+egenskriven show <id> --json
+
+# Create task
+egenskriven add "Title" --type bug --priority urgent --json
+
+# Move task
+egenskriven move <id> in_progress
+
+# Update task
+egenskriven update <id> --priority high --blocked-by <other-id>
+
+# Get suggestions
+egenskriven suggest --json
+
+# Get project context
+egenskriven context --json
+```
+
+## Task Types
+- bug: Something broken that needs fixing
+- feature: New functionality
+- chore: Maintenance, refactoring, docs
+
+## Priorities
+- urgent: Do immediately
+- high: Do before normal work
+- medium: Standard priority
+- low: Can be delayed
+
+## Columns
+- backlog: Not yet planned
+- todo: Ready to start
+- in_progress: Currently working
+- review: Awaiting review
+- done: Completed
+
+## Blocking Relationships
+
+Use `--blocked-by` to track dependencies:
+- `egenskriven update <id> --blocked-by <other-id>` - Mark as blocked
+- `egenskriven list --not-blocked` - Find parallelizable work
+- `egenskriven list --is-blocked` - See what's waiting
+</EXTREMELY_IMPORTANT>
+```
+
 ## Why This Architecture?
 
 | Decision | Rationale |
@@ -1052,6 +1505,7 @@ open http://localhost:8090
 | SQLite | Perfect for local-first, no external DB needed |
 | Cobra CLI | Industry standard, same as kubectl/docker/gh |
 | @dnd-kit | Best React DnD library, accessible, small bundle |
-| Agent-friendly CLI | Any AI can use it directly, no special integration needed |
+| Agent-native CLI | Any AI can use it directly, replaces built-in todo lists |
 | JSON output | Structured data for programmatic use |
 | Fractional positions | Avoids rebalancing on every move |
+| Blocking relationships | Enable agents to identify parallelizable work |
