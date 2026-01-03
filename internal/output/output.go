@@ -155,7 +155,7 @@ func (f *Formatter) Error(code int, message string, data any) error {
 	} else {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", message)
 	}
-	return fmt.Errorf(message)
+	return fmt.Errorf("%s", message)
 }
 
 // AmbiguousError outputs an error for ambiguous task references.
