@@ -10,6 +10,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// mockExit captures the exit code instead of terminating the process.
+// Used in tests to verify exit codes.
+func mockExit(t *testing.T) (getCode func() int, restore func()) {
+	var capturedCode int
+	originalExit := exitFunc
+	exitFunc = func(code int) {
+		capturedCode = code
+	}
+	return func() int { return capturedCode }, func() { exitFunc = originalExit }
+}
+
 func TestFormatter_JSON_Mode(t *testing.T) {
 	f := New(true, false)
 	assert.True(t, f.JSON)
@@ -40,6 +51,10 @@ func TestShortID(t *testing.T) {
 }
 
 func TestFormatter_Error_Output(t *testing.T) {
+	// Mock exit to prevent process termination
+	getCode, restore := mockExit(t)
+	defer restore()
+
 	// Capture stderr
 	old := os.Stderr
 	r, w, _ := os.Pipe()
@@ -61,9 +76,14 @@ func TestFormatter_Error_Output(t *testing.T) {
 	errorObj := result["error"].(map[string]any)
 	assert.Equal(t, float64(1), errorObj["code"])
 	assert.Equal(t, "test error", errorObj["message"])
+	assert.Equal(t, 1, getCode(), "exit code should be 1")
 }
 
 func TestFormatter_Error_WithData(t *testing.T) {
+	// Mock exit to prevent process termination
+	getCode, restore := mockExit(t)
+	defer restore()
+
 	// Capture stderr
 	old := os.Stderr
 	r, w, _ := os.Pipe()
@@ -86,4 +106,39 @@ func TestFormatter_Error_WithData(t *testing.T) {
 	assert.Equal(t, float64(5), errorObj["code"])
 	assert.Equal(t, "validation error", errorObj["message"])
 	assert.NotNil(t, errorObj["data"])
+	assert.Equal(t, 5, getCode(), "exit code should be 5")
+}
+
+func TestFormatter_Error_ExitCodes(t *testing.T) {
+	tests := []struct {
+		name     string
+		code     int
+		message  string
+		wantCode int
+	}{
+		{"general error", 1, "general error", 1},
+		{"not found", 3, "task not found", 3},
+		{"ambiguous", 4, "ambiguous reference", 4},
+		{"validation", 5, "invalid input", 5},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			getCode, restore := mockExit(t)
+			defer restore()
+
+			// Suppress stderr output
+			old := os.Stderr
+			_, w, _ := os.Pipe()
+			os.Stderr = w
+
+			f := New(false, false)
+			f.Error(tt.code, tt.message, nil)
+
+			w.Close()
+			os.Stderr = old
+
+			assert.Equal(t, tt.wantCode, getCode())
+		})
+	}
 }

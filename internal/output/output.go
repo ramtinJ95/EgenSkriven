@@ -10,6 +10,10 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
+// exitFunc is the function called to exit the program.
+// It can be overridden in tests to prevent actual process termination.
+var exitFunc = os.Exit
+
 // Formatter handles output formatting for CLI commands.
 // It supports both human-readable and JSON output modes.
 type Formatter struct {
@@ -138,8 +142,8 @@ func (f *Formatter) Success(message string) {
 	fmt.Println(message)
 }
 
-// Error outputs an error with optional data.
-// Returns the error for convenient chaining.
+// Error outputs an error with optional data and exits with the given code.
+// This function does not return in normal operation - it calls os.Exit().
 func (f *Formatter) Error(code int, message string, data any) error {
 	if f.JSON {
 		errObj := map[string]any{
@@ -155,10 +159,12 @@ func (f *Formatter) Error(code int, message string, data any) error {
 	} else {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", message)
 	}
-	return fmt.Errorf("%s", message)
+	exitFunc(code)
+	return nil // unreachable in production, but satisfies return type for tests
 }
 
-// AmbiguousError outputs an error for ambiguous task references.
+// AmbiguousError outputs an error for ambiguous task references and exits.
+// This function does not return in normal operation - it calls os.Exit(4).
 func (f *Formatter) AmbiguousError(ref string, matches []*core.Record) error {
 	data := map[string]any{
 		"reference": ref,
@@ -173,7 +179,8 @@ func (f *Formatter) AmbiguousError(ref string, matches []*core.Record) error {
 	for _, task := range matches {
 		fmt.Fprintf(os.Stderr, "  [%s] %s\n", shortID(task.Id), task.GetString("title"))
 	}
-	return fmt.Errorf("ambiguous task reference")
+	exitFunc(4)
+	return nil // unreachable in production, but satisfies return type for tests
 }
 
 // --- Helper functions ---
