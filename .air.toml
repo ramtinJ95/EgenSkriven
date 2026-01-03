@@ -11,9 +11,8 @@ tmp_dir = ".air"
   # Command to build the application
   cmd = "go build -o .air/egenskriven ./cmd/egenskriven"
   
-  # Binary to run after building
-  # 'serve' is PocketBase's command to start the HTTP server
-  bin = ".air/egenskriven serve"
+  # Entrypoint to run after building (replaces deprecated 'bin')
+  entrypoint = [".air/egenskriven", "serve"]
   
   # File extensions to watch
   include_ext = ["go", "tpl", "tmpl"]
