@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"strings"
+
 	"github.com/pocketbase/pocketbase"
 
 	"github.com/ramtinj/egenskriven/internal/output"
@@ -10,7 +12,6 @@ var (
 	// Global flags
 	jsonOutput bool
 	quietMode  bool
-	dataDir    string
 )
 
 // Register adds all CLI commands to the PocketBase app.
@@ -24,8 +25,6 @@ func Register(app *pocketbase.PocketBase) {
 		"Output in JSON format")
 	app.RootCmd.PersistentFlags().BoolVarP(&quietMode, "quiet", "q", false,
 		"Suppress non-essential output")
-	app.RootCmd.PersistentFlags().StringVar(&dataDir, "data", "",
-		"Path to data directory (default: pb_data)")
 
 	// Register all commands
 	app.RootCmd.AddCommand(newAddCmd(app))
@@ -89,6 +88,24 @@ func isValidPriority(p string) bool {
 		}
 	}
 	return false
+}
+
+// shortID returns the first 8 characters of an ID for display.
+// Safe to call with IDs shorter than 8 characters.
+func shortID(id string) string {
+	if len(id) > 8 {
+		return id[:8]
+	}
+	return id
+}
+
+// escapeLikePattern escapes SQL LIKE special characters (% and _)
+// to treat them as literal characters in search patterns.
+func escapeLikePattern(s string) string {
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+	s = strings.ReplaceAll(s, "%", "\\%")
+	s = strings.ReplaceAll(s, "_", "\\_")
+	return s
 }
 
 // Note: All command functions are now implemented in separate files

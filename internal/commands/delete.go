@@ -58,14 +58,10 @@ Examples:
 			}
 
 			// Confirm deletion unless --force
-			if !force && !jsonOutput {
+			if !force && !out.Quiet && !out.JSON {
 				fmt.Printf("About to delete %d task(s):\n", len(tasksToDelete))
 				for _, t := range tasksToDelete {
-					shortId := t.task.Id
-					if len(shortId) > 8 {
-						shortId = shortId[:8]
-					}
-					fmt.Printf("  [%s] %s\n", shortId, t.task.GetString("title"))
+					fmt.Printf("  [%s] %s\n", shortID(t.task.Id), t.task.GetString("title"))
 				}
 				fmt.Print("\nConfirm deletion? [y/N]: ")
 
@@ -95,11 +91,7 @@ Examples:
 				deleted++
 			}
 
-			if jsonOutput {
-				out.Success(fmt.Sprintf("Deleted %d task(s)", deleted))
-			} else {
-				fmt.Printf("Deleted %d task(s)\n", deleted)
-			}
+			out.Success(fmt.Sprintf("Deleted %d task(s)", deleted))
 
 			return nil
 		},

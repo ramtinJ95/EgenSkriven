@@ -9,6 +9,15 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
+// escapeLikePattern escapes SQL LIKE special characters (% and _)
+// to treat them as literal characters in search patterns.
+func escapeLikePattern(s string) string {
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+	s = strings.ReplaceAll(s, "%", "\\%")
+	s = strings.ReplaceAll(s, "_", "\\_")
+	return s
+}
+
 // Resolution represents the result of resolving a task reference.
 type Resolution struct {
 	// Task is the resolved task (nil if not found or ambiguous)
@@ -41,7 +50,7 @@ func ResolveTask(app *pocketbase.PocketBase, ref string) (*Resolution, error) {
 
 	// 2. Try ID prefix match
 	tasks, err := app.FindAllRecords("tasks",
-		dbx.NewExp("id LIKE {:prefix}", dbx.Params{"prefix": ref + "%"}),
+		dbx.NewExp("id LIKE {:prefix} ESCAPE '\\'", dbx.Params{"prefix": escapeLikePattern(ref) + "%"}),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("database error: %w", err)
@@ -57,8 +66,8 @@ func ResolveTask(app *pocketbase.PocketBase, ref string) (*Resolution, error) {
 
 	// 3. Try title match (case-insensitive substring)
 	tasks, err = app.FindAllRecords("tasks",
-		dbx.NewExp("LOWER(title) LIKE {:title}",
-			dbx.Params{"title": "%" + strings.ToLower(ref) + "%"}),
+		dbx.NewExp("LOWER(title) LIKE {:title} ESCAPE '\\'",
+			dbx.Params{"title": "%" + escapeLikePattern(strings.ToLower(ref)) + "%"}),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("database error: %w", err)

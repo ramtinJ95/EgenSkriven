@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/pocketbase/pocketbase"
-	"github.com/pocketbase/pocketbase/core"
 	"github.com/spf13/cobra"
 
 	"github.com/ramtinj/egenskriven/internal/resolver"
@@ -104,7 +103,7 @@ Examples:
 
 			// Update labels
 			if len(addLabels) > 0 || len(removeLabels) > 0 {
-				oldLabels := getTaskLabels(task)
+				oldLabels := task.GetStringSlice("labels")
 				newLabels := updateLabels(oldLabels, addLabels, removeLabels)
 				changes["labels"] = map[string]any{
 					"from": oldLabels,
@@ -140,12 +139,6 @@ Examples:
 	cmd.Flags().StringSliceVar(&removeLabels, "remove-label", nil, "Remove label (repeatable)")
 
 	return cmd
-}
-
-// getTaskLabels extracts labels from a task record.
-func getTaskLabels(task *core.Record) []string {
-	// Use GetStringSlice which properly handles types.JSONRaw
-	return task.GetStringSlice("labels")
 }
 
 // updateLabels adds and removes labels from a list.
