@@ -45,7 +45,7 @@ func TestShortID(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		result := shortID(tt.input)
+		result := ShortID(tt.input)
 		assert.Equal(t, tt.expected, result)
 	}
 }
