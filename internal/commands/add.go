@@ -13,6 +13,8 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/spf13/cobra"
 
+	"github.com/ramtinJ95/EgenSkriven/internal/board"
+	"github.com/ramtinJ95/EgenSkriven/internal/config"
 	"github.com/ramtinJ95/EgenSkriven/internal/output"
 )
 
@@ -40,6 +42,7 @@ func newAddCmd(app *pocketbase.PocketBase) *cobra.Command {
 		epic      string
 		stdin     bool
 		file      string
+		boardRef  string
 	)
 
 	cmd := &cobra.Command{
@@ -74,7 +77,7 @@ Examples:
 
 			// Handle batch input
 			if stdin || file != "" {
-				return addBatch(app, out, stdin, file, agentName)
+				return addBatch(app, out, stdin, file, agentName, boardRef)
 			}
 
 			// Single task creation requires title argument
@@ -152,6 +155,21 @@ Examples:
 				epicID = epicRecord.Id
 			}
 
+			// Resolve board
+			boardRecord, err := resolveBoard(app, boardRef)
+			if err != nil {
+				return out.Error(ExitValidation, fmt.Sprintf("invalid board: %v", err), nil)
+			}
+
+			// Get next sequence number for this board
+			var seq int
+			if boardRecord != nil {
+				seq, err = board.GetNextSequence(app, boardRecord.Id)
+				if err != nil {
+					return out.Error(ExitGeneralError, fmt.Sprintf("failed to get sequence: %v", err), nil)
+				}
+			}
+
 			// Set task fields
 			record.Set("title", title)
 			record.Set("type", taskType)
@@ -166,6 +184,10 @@ Examples:
 			}
 			if epicID != "" {
 				record.Set("epic", epicID)
+			}
+			if boardRecord != nil {
+				record.Set("board", boardRecord.Id)
+				record.Set("seq", seq)
 			}
 
 			// Initialize history
@@ -186,7 +208,19 @@ Examples:
 					fmt.Sprintf("failed to create task: %v", err), nil)
 			}
 
-			out.Task(record, "Created")
+			// Format display ID for output
+			var displayID string
+			if boardRecord != nil {
+				displayID = board.FormatDisplayID(boardRecord.GetString("prefix"), seq)
+			} else {
+				displayID = output.ShortID(record.Id)
+			}
+
+			if out.JSON {
+				out.Task(record, "Created")
+			} else {
+				fmt.Printf("Created: %s [%s]\n", title, displayID)
+			}
 			return nil
 		},
 	}
@@ -212,12 +246,50 @@ Examples:
 		"Read tasks from stdin (JSON lines or array)")
 	cmd.Flags().StringVarP(&file, "file", "f", "",
 		"Read tasks from JSON file")
+	cmd.Flags().StringVarP(&boardRef, "board", "b", "",
+		"Board to create task in (name or prefix)")
 
 	return cmd
 }
 
+// resolveBoard determines which board to use for task creation
+// Priority: 1) explicit boardRef, 2) config default, 3) create/use first board
+func resolveBoard(app *pocketbase.PocketBase, boardRef string) (*core.Record, error) {
+	// If explicit board reference provided, use it
+	if boardRef != "" {
+		return board.GetByNameOrPrefix(app, boardRef)
+	}
+
+	// Check config for default board
+	cfg, _ := config.LoadProjectConfig()
+	if cfg != nil && cfg.DefaultBoard != "" {
+		record, err := board.GetByNameOrPrefix(app, cfg.DefaultBoard)
+		if err == nil {
+			return record, nil
+		}
+		// Default board not found, fall through
+	}
+
+	// Get existing boards
+	boards, err := board.GetAll(app)
+	if err != nil || len(boards) == 0 {
+		// No boards exist - create a default board
+		b, err := board.Create(app, board.CreateInput{
+			Name:   "Default",
+			Prefix: "DEF",
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create default board: %w", err)
+		}
+		return app.FindRecordById("boards", b.ID)
+	}
+
+	// Use first board
+	return boards[0], nil
+}
+
 // addBatch handles batch task creation from stdin or file
-func addBatch(app *pocketbase.PocketBase, out *output.Formatter, useStdin bool, filePath string, agent string) error {
+func addBatch(app *pocketbase.PocketBase, out *output.Formatter, useStdin bool, filePath string, agent string, boardRef string) error {
 	var reader io.Reader
 
 	if useStdin {
@@ -283,8 +355,15 @@ func addBatch(app *pocketbase.PocketBase, out *output.Formatter, useStdin bool, 
 		return out.Error(ExitGeneralError, "tasks collection not found - run migrations first", nil)
 	}
 
+	// Resolve board for batch
+	boardRecord, err := resolveBoard(app, boardRef)
+	if err != nil {
+		return out.Error(ExitValidation, fmt.Sprintf("invalid board: %v", err), nil)
+	}
+
 	// Create all tasks
 	var created []*core.Record
+	var createdDisplayIDs []string
 	var errors []string
 
 	for i, input := range inputs {
@@ -365,6 +444,21 @@ func addBatch(app *pocketbase.PocketBase, out *output.Formatter, useStdin bool, 
 		}
 		record.Set("created_by", createdBy)
 
+		// Set board and sequence
+		var displayID string
+		if boardRecord != nil {
+			seq, err := board.GetNextSequence(app, boardRecord.Id)
+			if err != nil {
+				errors = append(errors, fmt.Sprintf("task %d (%s): failed to get sequence: %v", i+1, input.Title, err))
+				continue
+			}
+			record.Set("board", boardRecord.Id)
+			record.Set("seq", seq)
+			displayID = board.FormatDisplayID(boardRecord.GetString("prefix"), seq)
+		} else {
+			displayID = output.ShortID(record.Id)
+		}
+
 		// Initialize history
 		history := []map[string]any{
 			{
@@ -382,19 +476,28 @@ func addBatch(app *pocketbase.PocketBase, out *output.Formatter, useStdin bool, 
 			continue
 		}
 		created = append(created, record)
+		createdDisplayIDs = append(createdDisplayIDs, displayID)
 	}
 
 	// Output results
 	if out.JSON {
 		tasks := make([]map[string]any, 0, len(created))
-		for _, record := range created {
-			tasks = append(tasks, map[string]any{
+		for i, record := range created {
+			taskData := map[string]any{
 				"id":       record.Id,
 				"title":    record.GetString("title"),
 				"type":     record.GetString("type"),
 				"priority": record.GetString("priority"),
 				"column":   record.GetString("column"),
-			})
+			}
+			if i < len(createdDisplayIDs) {
+				taskData["display_id"] = createdDisplayIDs[i]
+			}
+			if record.GetString("board") != "" {
+				taskData["board"] = record.GetString("board")
+				taskData["seq"] = record.GetInt("seq")
+			}
+			tasks = append(tasks, taskData)
 		}
 		return json.NewEncoder(os.Stdout).Encode(map[string]any{
 			"created": len(created),
@@ -405,8 +508,12 @@ func addBatch(app *pocketbase.PocketBase, out *output.Formatter, useStdin bool, 
 	}
 
 	// Human output
-	for _, record := range created {
-		fmt.Printf("Created: %s [%s]\n", record.GetString("title"), shortID(record.Id))
+	for i, record := range created {
+		displayID := shortID(record.Id)
+		if i < len(createdDisplayIDs) {
+			displayID = createdDisplayIDs[i]
+		}
+		fmt.Printf("Created: %s [%s]\n", record.GetString("title"), displayID)
 	}
 
 	if len(errors) > 0 {
