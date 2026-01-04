@@ -74,6 +74,17 @@ export function TaskDetail({ task, onClose, onUpdate }: TaskDetailProps) {
     }
   }
 
+  // Safely format a date string, returning fallback if invalid
+  const formatDate = (dateStr: string | undefined): string => {
+    if (!dateStr) return '-'
+    const date = new Date(dateStr)
+    // Check if date is valid and not the zero date (0001-01-01)
+    if (isNaN(date.getTime()) || date.getFullYear() < 1970) {
+      return '-'
+    }
+    return date.toLocaleDateString()
+  }
+
   return (
     <div className={styles.overlay} onClick={handleOverlayClick}>
       <div ref={panelRef} className={styles.panel}>
@@ -159,11 +170,11 @@ export function TaskDetail({ task, onClose, onUpdate }: TaskDetailProps) {
               </div>
             )}
 
-            {task.due_date && (
+            {task.due_date && formatDate(task.due_date) !== '-' && (
               <div className={styles.property}>
                 <span className={styles.propertyLabel}>Due Date</span>
                 <span className={styles.propertyValue}>
-                  {new Date(task.due_date).toLocaleDateString()}
+                  {formatDate(task.due_date)}
                 </span>
               </div>
             )}
@@ -187,13 +198,13 @@ export function TaskDetail({ task, onClose, onUpdate }: TaskDetailProps) {
             <div className={styles.metaItem}>
               <span className={styles.metaLabel}>Created</span>
               <span className={styles.metaValue}>
-                {new Date(task.created).toLocaleDateString()}
+                {formatDate(task.created)}
               </span>
             </div>
             <div className={styles.metaItem}>
               <span className={styles.metaLabel}>Updated</span>
               <span className={styles.metaValue}>
-                {new Date(task.updated).toLocaleDateString()}
+                {formatDate(task.updated)}
               </span>
             </div>
             {task.created_by && (

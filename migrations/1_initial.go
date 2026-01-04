@@ -81,6 +81,20 @@ func init() {
 			MaxSize: 100000,
 		})
 
+		// Autodate fields for created and updated timestamps
+		collection.Fields.Add(&core.AutodateField{
+			Name:     "created",
+			OnCreate: true,
+			Hidden:   false,
+		})
+
+		collection.Fields.Add(&core.AutodateField{
+			Name:     "updated",
+			OnCreate: true,
+			OnUpdate: true,
+			Hidden:   false,
+		})
+
 		// API Rules - allow public access (local-first tool, no auth needed)
 		// Empty string means "allow all"
 		collection.ListRule = func() *string { s := ""; return &s }()
