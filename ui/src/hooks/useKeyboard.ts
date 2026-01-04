@@ -110,7 +110,11 @@ function matchesCombo(event: KeyboardEvent, combo: KeyCombo): boolean {
 export function useKeyboardShortcuts(shortcuts: ShortcutHandler[]): void {
   // Use ref to always have latest shortcuts without re-adding listener
   const shortcutsRef = useRef(shortcuts)
-  shortcutsRef.current = shortcuts
+
+  // Update ref in effect to avoid updating during render
+  useEffect(() => {
+    shortcutsRef.current = shortcuts
+  })
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {

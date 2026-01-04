@@ -1,48 +1,8 @@
+import { useState, useCallback, type ReactNode } from 'react'
 import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  type ReactNode,
-} from 'react'
-
-export interface SelectionState {
-  // Currently focused/selected task ID (single selection)
-  selectedTaskId: string | null
-
-  // Multi-selected task IDs (for bulk operations)
-  multiSelectedIds: Set<string>
-
-  // Currently focused column (for keyboard navigation)
-  focusedColumn: string | null
-}
-
-export interface SelectionActions {
-  // Select a single task (clears multi-selection)
-  selectTask: (taskId: string | null) => void
-
-  // Toggle a task in multi-selection
-  toggleMultiSelect: (taskId: string) => void
-
-  // Select a range of tasks (Shift+click behavior)
-  selectRange: (fromId: string, toId: string, allTaskIds: string[]) => void
-
-  // Select all visible tasks
-  selectAll: (taskIds: string[]) => void
-
-  // Clear all selection
-  clearSelection: () => void
-
-  // Set focused column (for H/L navigation)
-  setFocusedColumn: (column: string | null) => void
-
-  // Check if a task is selected (single or multi)
-  isSelected: (taskId: string) => boolean
-}
-
-interface SelectionContextValue extends SelectionState, SelectionActions {}
-
-const SelectionContext = createContext<SelectionContextValue | null>(null)
+  SelectionContext,
+  type SelectionContextValue,
+} from './selectionContext'
 
 interface SelectionProviderProps {
   children: ReactNode
@@ -123,29 +83,4 @@ export function SelectionProvider({ children }: SelectionProviderProps) {
       {children}
     </SelectionContext.Provider>
   )
-}
-
-/**
- * Hook to access selection state and actions.
- * Must be used within a SelectionProvider.
- *
- * @example
- * function TaskCard({ task }) {
- *   const { isSelected, selectTask } = useSelection();
- *   return (
- *     <div
- *       className={isSelected(task.id) ? 'selected' : ''}
- *       onClick={() => selectTask(task.id)}
- *     >
- *       {task.title}
- *     </div>
- *   );
- * }
- */
-export function useSelection(): SelectionContextValue {
-  const context = useContext(SelectionContext)
-  if (!context) {
-    throw new Error('useSelection must be used within a SelectionProvider')
-  }
-  return context
 }

@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useCallback,
+  useMemo,
   type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
@@ -26,16 +27,25 @@ interface PropertyPickerProps<T> {
   anchorElement?: HTMLElement | null
 }
 
-export function PropertyPicker<T extends string>({
-  isOpen,
+/**
+ * Inner component that handles the picker logic.
+ * This is remounted when the picker opens, which resets all state automatically.
+ */
+function PropertyPickerInner<T extends string>({
   onClose,
   onSelect,
   options,
   currentValue,
   title,
   anchorElement,
-}: PropertyPickerProps<T>) {
-  const [selectedIndex, setSelectedIndex] = useState(0)
+}: Omit<PropertyPickerProps<T>, 'isOpen'>) {
+  // Calculate initial selected index based on current value
+  const initialIndex = useMemo(() => {
+    const idx = options.findIndex((opt) => opt.value === currentValue)
+    return idx >= 0 ? idx : 0
+  }, [options, currentValue])
+
+  const [selectedIndex, setSelectedIndex] = useState(initialIndex)
   const [query, setQuery] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const pickerRef = useRef<HTMLDivElement>(null)
@@ -47,29 +57,21 @@ export function PropertyPicker<T extends string>({
       )
     : options
 
-  // Reset on open
-  useEffect(() => {
-    if (isOpen) {
-      setQuery('')
-      // Set initial selection to current value
-      const currentIndex = options.findIndex(
-        (opt) => opt.value === currentValue
-      )
-      setSelectedIndex(currentIndex >= 0 ? currentIndex : 0)
-      setTimeout(() => inputRef.current?.focus(), 0)
-    }
-  }, [isOpen, currentValue, options])
+  // Derive bounded selectedIndex to keep in bounds
+  const boundedSelectedIndex = Math.min(
+    selectedIndex,
+    Math.max(0, filteredOptions.length - 1)
+  )
 
-  // Keep selection in bounds
+  // Focus input on mount
   useEffect(() => {
-    if (selectedIndex >= filteredOptions.length) {
-      setSelectedIndex(Math.max(0, filteredOptions.length - 1))
-    }
-  }, [filteredOptions.length, selectedIndex])
+    const timer = setTimeout(() => inputRef.current?.focus(), 0)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Position the picker near the anchor element
   useEffect(() => {
-    if (!isOpen || !anchorElement || !pickerRef.current) return
+    if (!anchorElement || !pickerRef.current) return
 
     const anchorRect = anchorElement.getBoundingClientRect()
     const picker = pickerRef.current
@@ -92,7 +94,7 @@ export function PropertyPicker<T extends string>({
     if (pickerRect.bottom > window.innerHeight - 16) {
       picker.style.top = `${anchorRect.top - pickerRect.height - 8}px`
     }
-  }, [isOpen, anchorElement])
+  }, [anchorElement])
 
   const handleSelect = useCallback(
     (option: PropertyOption<T>) => {
@@ -117,8 +119,8 @@ export function PropertyPicker<T extends string>({
 
         case 'Enter':
           event.preventDefault()
-          if (filteredOptions[selectedIndex]) {
-            handleSelect(filteredOptions[selectedIndex])
+          if (filteredOptions[boundedSelectedIndex]) {
+            handleSelect(filteredOptions[boundedSelectedIndex])
           }
           break
 
@@ -128,12 +130,10 @@ export function PropertyPicker<T extends string>({
           break
       }
     },
-    [filteredOptions, selectedIndex, handleSelect, onClose]
+    [filteredOptions, boundedSelectedIndex, handleSelect, onClose]
   )
 
-  if (!isOpen) return null
-
-  const picker = (
+  return (
     <div className={styles.overlay} onClick={onClose}>
       <div
         ref={pickerRef}
@@ -167,7 +167,7 @@ export function PropertyPicker<T extends string>({
               <button
                 key={option.value}
                 className={`${styles.option} ${
-                  index === selectedIndex ? styles.selected : ''
+                  index === boundedSelectedIndex ? styles.selected : ''
                 }`}
                 onClick={() => handleSelect(option)}
                 onMouseEnter={() => setSelectedIndex(index)}
@@ -191,89 +191,23 @@ export function PropertyPicker<T extends string>({
       </div>
     </div>
   )
+}
+
+/**
+ * PropertyPicker component - renders a picker for selecting property values.
+ * Uses portal to render at document body level.
+ */
+export function PropertyPicker<T extends string>(props: PropertyPickerProps<T>) {
+  const { isOpen, ...rest } = props
+
+  if (!isOpen) return null
+
+  // By conditionally rendering the inner component, we get automatic state reset
+  // when the picker opens (component remounts with fresh state)
+  const picker = <PropertyPickerInner {...rest} />
 
   return createPortal(picker, document.body)
 }
 
-// Pre-configured pickers for common properties
-
-export const STATUS_OPTIONS: PropertyOption<string>[] = [
-  {
-    value: 'backlog',
-    label: 'Backlog',
-    icon: '●',
-    color: 'var(--status-backlog, #6B7280)',
-  },
-  {
-    value: 'todo',
-    label: 'Todo',
-    icon: '●',
-    color: 'var(--status-todo, #E5E5E5)',
-  },
-  {
-    value: 'in_progress',
-    label: 'In Progress',
-    icon: '●',
-    color: 'var(--status-in-progress, #F59E0B)',
-  },
-  {
-    value: 'review',
-    label: 'Review',
-    icon: '●',
-    color: 'var(--status-review, #A855F7)',
-  },
-  {
-    value: 'done',
-    label: 'Done',
-    icon: '●',
-    color: 'var(--status-done, #22C55E)',
-  },
-]
-
-export const PRIORITY_OPTIONS: PropertyOption<string>[] = [
-  {
-    value: 'urgent',
-    label: 'Urgent',
-    icon: '🔴',
-    color: 'var(--priority-urgent, #EF4444)',
-  },
-  {
-    value: 'high',
-    label: 'High',
-    icon: '🟠',
-    color: 'var(--priority-high, #F97316)',
-  },
-  {
-    value: 'medium',
-    label: 'Medium',
-    icon: '🟡',
-    color: 'var(--priority-medium, #EAB308)',
-  },
-  {
-    value: 'low',
-    label: 'Low',
-    icon: '⚪',
-    color: 'var(--priority-low, #6B7280)',
-  },
-]
-
-export const TYPE_OPTIONS: PropertyOption<string>[] = [
-  {
-    value: 'bug',
-    label: 'Bug',
-    icon: '🐛',
-    color: 'var(--type-bug, #EF4444)',
-  },
-  {
-    value: 'feature',
-    label: 'Feature',
-    icon: '✨',
-    color: 'var(--type-feature, #A855F7)',
-  },
-  {
-    value: 'chore',
-    label: 'Chore',
-    icon: '🔧',
-    color: 'var(--type-chore, #6B7280)',
-  },
-]
+// Re-export options from separate file for backwards compatibility
+export { STATUS_OPTIONS, PRIORITY_OPTIONS, TYPE_OPTIONS } from './propertyOptions'
