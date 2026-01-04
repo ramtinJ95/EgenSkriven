@@ -1,6 +1,6 @@
 {
   "agent": {
-    "workflow": "strict",
+    "workflow": "light",
     "mode": "autonomous",
     "overrideTodoWrite": true,
     "requireSummary": false,
