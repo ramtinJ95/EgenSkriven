@@ -1,5 +1,7 @@
 import { useDraggable } from '@dnd-kit/core'
 import type { Task } from '../types/task'
+import type { Board } from '../types/board'
+import { formatDisplayId } from '../types/board'
 import styles from './TaskCard.module.css'
 
 interface TaskCardProps {
@@ -7,13 +9,14 @@ interface TaskCardProps {
   isSelected?: boolean
   onClick?: (task: Task) => void
   onSelect?: (task: Task) => void
+  currentBoard?: Board | null
 }
 
 /**
  * A draggable task card.
  * 
  * Displays:
- * - Status dot and task ID
+ * - Status dot and task ID (display ID if board available, otherwise short ID)
  * - Title (truncated to 2 lines)
  * - Labels (if any)
  * - Priority indicator
@@ -21,7 +24,7 @@ interface TaskCardProps {
  * 
  * Clicking opens the task detail panel.
  */
-export function TaskCard({ task, isSelected = false, onClick, onSelect }: TaskCardProps) {
+export function TaskCard({ task, isSelected = false, onClick, onSelect, currentBoard }: TaskCardProps) {
   // Make this card draggable
   const { attributes, listeners, setNodeRef, isDragging: isCurrentlyDragging } = useDraggable({
     id: task.id,
@@ -87,7 +90,11 @@ export function TaskCard({ task, isSelected = false, onClick, onSelect }: TaskCa
             backgroundColor: `var(--status-${task.column.replace('_', '-')})`,
           }}
         />
-        <span className={styles.id}>{task.id.slice(0, 8)}</span>
+        <span className={styles.id}>
+          {currentBoard && task.seq
+            ? formatDisplayId(currentBoard.prefix, task.seq)
+            : task.id.slice(0, 8)}
+        </span>
       </div>
 
       {/* Title */}
