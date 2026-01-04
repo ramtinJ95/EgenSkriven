@@ -1,0 +1,9 @@
+{
+  "agent": {
+    "workflow": "strict",
+    "mode": "autonomous",
+    "overrideTodoWrite": true,
+    "requireSummary": false,
+    "structuredSections": false
+  }
+}
