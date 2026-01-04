@@ -11,12 +11,14 @@ import (
 
 func newUpdateCmd(app *pocketbase.PocketBase) *cobra.Command {
 	var (
-		title        string
-		description  string
-		taskType     string
-		priority     string
-		addLabels    []string
-		removeLabels []string
+		title           string
+		description     string
+		taskType        string
+		priority        string
+		addLabels       []string
+		removeLabels    []string
+		blockedBy       []string
+		removeBlockedBy []string
 	)
 
 	cmd := &cobra.Command{
@@ -30,6 +32,8 @@ Examples:
   egenskriven update abc123 --title "New title"
   egenskriven update abc123 --priority urgent
   egenskriven update abc123 --add-label critical --remove-label backlog
+  egenskriven update abc123 --blocked-by def456
+  egenskriven update abc123 --remove-blocked-by def456
   egenskriven update abc123 --description ""  # clears description`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -112,6 +116,30 @@ Examples:
 				task.Set("labels", newLabels)
 			}
 
+			// Update blocked_by
+			if len(blockedBy) > 0 || len(removeBlockedBy) > 0 {
+				oldBlockedBy := getTaskBlockedBy(task)
+				newBlockedBy := updateBlockedBy(task.Id, oldBlockedBy, blockedBy, removeBlockedBy)
+
+				// Validate that all blocking tasks exist
+				for _, blockingID := range newBlockedBy {
+					if blockingID == task.Id {
+						return out.Error(ExitValidation, "task cannot block itself", nil)
+					}
+					_, err := app.FindRecordById("tasks", blockingID)
+					if err != nil {
+						return out.Error(ExitNotFound,
+							fmt.Sprintf("blocking task not found: %s", blockingID), nil)
+					}
+				}
+
+				changes["blocked_by"] = map[string]any{
+					"from": oldBlockedBy,
+					"to":   newBlockedBy,
+				}
+				task.Set("blocked_by", newBlockedBy)
+			}
+
 			// Check if any changes were made
 			if len(changes) == 0 {
 				return out.Error(ExitValidation, "no changes specified", nil)
@@ -137,6 +165,8 @@ Examples:
 	cmd.Flags().StringVarP(&priority, "priority", "p", "", "New priority (low, medium, high, urgent)")
 	cmd.Flags().StringSliceVar(&addLabels, "add-label", nil, "Add label (repeatable)")
 	cmd.Flags().StringSliceVar(&removeLabels, "remove-label", nil, "Remove label (repeatable)")
+	cmd.Flags().StringSliceVar(&blockedBy, "blocked-by", nil, "Add blocking task ID (repeatable)")
+	cmd.Flags().StringSliceVar(&removeBlockedBy, "remove-blocked-by", nil, "Remove blocking task ID (repeatable)")
 
 	return cmd
 }
@@ -163,6 +193,61 @@ func updateLabels(current, add, remove []string) []string {
 	result := make([]string, 0, len(labelSet))
 	for l := range labelSet {
 		result = append(result, l)
+	}
+
+	return result
+}
+
+// getTaskBlockedBy extracts blocked_by IDs from a task record.
+func getTaskBlockedBy(task interface{ Get(string) any }) []string {
+	raw := task.Get("blocked_by")
+	if raw == nil {
+		return []string{}
+	}
+
+	// Handle []any type (common from JSON)
+	if ids, ok := raw.([]any); ok {
+		result := make([]string, 0, len(ids))
+		for _, id := range ids {
+			if s, ok := id.(string); ok {
+				result = append(result, s)
+			}
+		}
+		return result
+	}
+
+	// Handle []string type
+	if ids, ok := raw.([]string); ok {
+		return ids
+	}
+
+	return []string{}
+}
+
+// updateBlockedBy adds and removes blocking task IDs.
+func updateBlockedBy(taskID string, current, add, remove []string) []string {
+	// Create a set of current blocked_by
+	blockedSet := make(map[string]bool)
+	for _, id := range current {
+		blockedSet[id] = true
+	}
+
+	// Remove IDs
+	for _, id := range remove {
+		delete(blockedSet, id)
+	}
+
+	// Add IDs (but not self)
+	for _, id := range add {
+		if id != taskID {
+			blockedSet[id] = true
+		}
+	}
+
+	// Convert back to slice
+	result := make([]string, 0, len(blockedSet))
+	for id := range blockedSet {
+		result = append(result, id)
 	}
 
 	return result
