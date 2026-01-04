@@ -2,25 +2,22 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { Layout } from './Layout'
 
-// Mock the hooks used by Layout and Sidebar
-vi.mock('../hooks/useBoards', () => ({
-  useBoards: () => ({
-    boards: [
-      { id: 'board-1', name: 'Work', prefix: 'WRK', columns: [], color: '#3B82F6' },
-    ],
-    loading: false,
-    error: null,
-    createBoard: vi.fn(),
-    deleteBoard: vi.fn(),
-  }),
-}))
+// Mock boards data
+const mockBoards = [
+  { id: 'board-1', name: 'Work', prefix: 'WRK', columns: [], color: '#3B82F6', collectionId: 'boards', collectionName: 'boards' },
+]
 
+// Mock the hooks used by Layout and Sidebar
 vi.mock('../hooks/useCurrentBoard', () => ({
   CurrentBoardProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   useCurrentBoard: () => ({
-    currentBoard: { id: 'board-1', name: 'Work', prefix: 'WRK', columns: [] },
+    currentBoard: mockBoards[0],
     setCurrentBoard: vi.fn(),
     loading: false,
+    boards: mockBoards,
+    boardsError: null,
+    createBoard: vi.fn(),
+    deleteBoard: vi.fn(),
   }),
 }))
 

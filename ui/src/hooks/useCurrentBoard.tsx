@@ -8,6 +8,14 @@ interface CurrentBoardContextValue {
   currentBoard: Board | null
   setCurrentBoard: (board: Board) => void
   loading: boolean
+  /** All boards - exposed to avoid duplicate useBoards() subscriptions */
+  boards: Board[]
+  /** Error from loading boards */
+  boardsError: Error | null
+  /** Create a new board */
+  createBoard: (input: { name: string; prefix: string; color?: string; columns?: string[] }) => Promise<Board>
+  /** Delete a board */
+  deleteBoard: (id: string) => Promise<void>
 }
 
 const CurrentBoardContext = createContext<CurrentBoardContextValue | null>(null)
@@ -34,7 +42,7 @@ interface CurrentBoardProviderProps {
  * ```
  */
 export function CurrentBoardProvider({ children }: CurrentBoardProviderProps) {
-  const { boards, loading: boardsLoading } = useBoards()
+  const { boards, loading: boardsLoading, error: boardsError, createBoard, deleteBoard } = useBoards()
   const [currentBoard, setCurrentBoardState] = useState<Board | null>(null)
   const [initialized, setInitialized] = useState(false)
 
@@ -109,6 +117,10 @@ export function CurrentBoardProvider({ children }: CurrentBoardProviderProps) {
     currentBoard,
     setCurrentBoard,
     loading: boardsLoading || !initialized,
+    boards,
+    boardsError,
+    createBoard,
+    deleteBoard,
   }
 
   return (

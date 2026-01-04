@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useBoards } from '../hooks/useBoards'
 import { useCurrentBoard } from '../hooks/useCurrentBoard'
 import { BOARD_COLORS } from '../types/board'
 import styles from './Sidebar.module.css'
@@ -19,8 +18,7 @@ interface SidebarProps {
  * - Board color indicators
  */
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
-  const { boards, loading, error } = useBoards()
-  const { currentBoard, setCurrentBoard } = useCurrentBoard()
+  const { boards, loading, boardsError: error, createBoard, currentBoard, setCurrentBoard } = useCurrentBoard()
   const [showNewBoard, setShowNewBoard] = useState(false)
 
   if (collapsed) {
@@ -92,22 +90,26 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </nav>
 
       {showNewBoard && (
-        <NewBoardModal onClose={() => setShowNewBoard(false)} />
+        <NewBoardModal onClose={() => setShowNewBoard(false)} createBoard={createBoard} />
       )}
     </aside>
   )
 }
 
+interface NewBoardModalProps {
+  onClose: () => void
+  createBoard: (input: { name: string; prefix: string; color: string }) => Promise<unknown>
+}
+
 /**
  * Modal for creating a new board.
  */
-function NewBoardModal({ onClose }: { onClose: () => void }) {
+function NewBoardModal({ onClose, createBoard }: NewBoardModalProps) {
   const [name, setName] = useState('')
   const [prefix, setPrefix] = useState('')
   const [color, setColor] = useState(BOARD_COLORS[0])
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const { createBoard } = useBoards()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

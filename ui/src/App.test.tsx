@@ -45,32 +45,22 @@ vi.mock('./hooks/useTasks', () => ({
   }),
 }))
 
-// Mock useBoards hook
-vi.mock('./hooks/useBoards', () => ({
-  useBoards: () => ({
-    boards: [
-      { id: 'board-1', name: 'Work', prefix: 'WRK', columns: [], color: '#3B82F6' },
-    ],
-    loading: false,
-    error: null,
-    createBoard: vi.fn(),
-    deleteBoard: vi.fn(),
-  }),
-}))
+// Mock boards data
+const mockBoards = [
+  { id: 'board-1', name: 'Work', prefix: 'WRK', columns: ['backlog', 'todo', 'in_progress', 'review', 'done'], color: '#3B82F6', collectionId: 'boards', collectionName: 'boards' },
+]
 
-// Mock useCurrentBoard hook
+// Mock useCurrentBoard hook (now provides all board data)
 vi.mock('./hooks/useCurrentBoard', () => ({
   CurrentBoardProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   useCurrentBoard: () => ({
-    currentBoard: {
-      id: 'board-1',
-      name: 'Work',
-      prefix: 'WRK',
-      columns: ['backlog', 'todo', 'in_progress', 'review', 'done'],
-      color: '#3B82F6',
-    },
+    currentBoard: mockBoards[0],
     setCurrentBoard: vi.fn(),
     loading: false,
+    boards: mockBoards,
+    boardsError: null,
+    createBoard: vi.fn(),
+    deleteBoard: vi.fn(),
   }),
 }))
 

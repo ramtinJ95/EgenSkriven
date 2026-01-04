@@ -5,8 +5,8 @@ import type { ReactNode } from 'react'
 
 // Mock boards data
 const mockBoards = [
-  { id: 'board-1', name: 'Work', prefix: 'WRK', columns: [], color: '#3B82F6' },
-  { id: 'board-2', name: 'Personal', prefix: 'PER', columns: [], color: '#22C55E' },
+  { id: 'board-1', name: 'Work', prefix: 'WRK', columns: [], color: '#3B82F6', collectionId: 'boards', collectionName: 'boards' },
+  { id: 'board-2', name: 'Personal', prefix: 'PER', columns: [], color: '#22C55E', collectionId: 'boards', collectionName: 'boards' },
 ]
 
 // Mock useBoards hook
@@ -133,8 +133,8 @@ describe('useCurrentBoard', () => {
 
       // Simulate board update
       mockBoardsData = [
-        { id: 'board-1', name: 'Work Updated', prefix: 'WRK', columns: [], color: '#3B82F6' },
-        { id: 'board-2', name: 'Personal', prefix: 'PER', columns: [], color: '#22C55E' },
+        { id: 'board-1', name: 'Work Updated', prefix: 'WRK', columns: [], color: '#3B82F6', collectionId: 'boards', collectionName: 'boards' },
+        { id: 'board-2', name: 'Personal', prefix: 'PER', columns: [], color: '#22C55E', collectionId: 'boards', collectionName: 'boards' },
       ]
 
       rerender()
@@ -155,7 +155,7 @@ describe('useCurrentBoard', () => {
 
       // Simulate board deletion
       mockBoardsData = [
-        { id: 'board-2', name: 'Personal', prefix: 'PER', columns: [], color: '#22C55E' },
+        { id: 'board-2', name: 'Personal', prefix: 'PER', columns: [], color: '#22C55E', collectionId: 'boards', collectionName: 'boards' },
       ]
 
       rerender()

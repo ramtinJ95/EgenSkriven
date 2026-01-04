@@ -163,30 +163,44 @@ func GetNextSequence(app *pocketbase.PocketBase, boardID string) (int, error) {
 // the counter in the board record.
 //
 // This prevents race conditions where concurrent task creation could result in
-// duplicate sequence numbers. The board's next_seq field is atomically incremented.
+// duplicate sequence numbers. The board's next_seq field is atomically incremented
+// using a database-level UPDATE ... RETURNING statement.
 //
-// If next_seq is not set (legacy boards), it calculates from existing tasks.
+// If next_seq is not set (legacy boards), it initializes from existing tasks first.
 func GetAndIncrementSequence(app *pocketbase.PocketBase, boardID string) (int, error) {
-	// Find the board
+	// First, check if the board exists and if next_seq needs initialization
 	board, err := app.FindRecordById("boards", boardID)
 	if err != nil {
 		return 0, fmt.Errorf("board not found: %w", err)
 	}
 
-	// Get current next_seq value
-	nextSeq := board.GetInt("next_seq")
-
-	// If next_seq is not set (0), initialize it from existing tasks
-	if nextSeq == 0 {
-		nextSeq, err = calculateNextSeqFromTasks(app, boardID)
+	// If next_seq is 0 (legacy board), initialize it from existing tasks
+	if board.GetInt("next_seq") == 0 {
+		initialSeq, err := calculateNextSeqFromTasks(app, boardID)
 		if err != nil {
 			return 0, err
 		}
+		// Initialize next_seq - this is a one-time operation per legacy board
+		_, err = app.DB().NewQuery(
+			"UPDATE boards SET next_seq = {:seq} WHERE id = {:id} AND next_seq = 0",
+		).Bind(dbx.Params{
+			"id":  boardID,
+			"seq": initialSeq,
+		}).Execute()
+		if err != nil {
+			return 0, fmt.Errorf("failed to initialize sequence: %w", err)
+		}
 	}
 
-	// Atomically increment next_seq in the board
-	board.Set("next_seq", nextSeq+1)
-	if err := app.Save(board); err != nil {
+	// Atomically increment and return the previous value using database-level operation
+	var nextSeq int
+	err = app.DB().NewQuery(
+		"UPDATE boards SET next_seq = next_seq + 1 WHERE id = {:id} RETURNING next_seq - 1",
+	).Bind(dbx.Params{
+		"id": boardID,
+	}).Row(&nextSeq)
+
+	if err != nil {
 		return 0, fmt.Errorf("failed to increment sequence: %w", err)
 	}
 
@@ -240,14 +254,25 @@ func ParseDisplayID(displayID string) (prefix string, seq int, err error) {
 		return "", 0, fmt.Errorf("invalid display ID format: %s (prefix cannot be empty)", displayID)
 	}
 
-	_, err = fmt.Sscanf(parts[1], "%d", &seq)
-	if err != nil {
-		return "", 0, fmt.Errorf("invalid sequence number in display ID: %s", displayID)
+	// Check that sequence part contains only digits (reject negative numbers early)
+	seqStr := parts[1]
+	if seqStr == "" {
+		return "", 0, fmt.Errorf("invalid sequence number in display ID: %s (must be a positive integer)", displayID)
+	}
+	for _, c := range seqStr {
+		if c < '0' || c > '9' {
+			return "", 0, fmt.Errorf("invalid sequence number in display ID: %s (must be a positive integer)", displayID)
+		}
 	}
 
-	// Reject negative or zero sequence numbers
-	if seq <= 0 {
-		return "", 0, fmt.Errorf("invalid sequence number in display ID: %s (must be positive)", displayID)
+	_, err = fmt.Sscanf(seqStr, "%d", &seq)
+	if err != nil {
+		return "", 0, fmt.Errorf("invalid sequence number in display ID: %s (must be a positive integer)", displayID)
+	}
+
+	// Reject zero sequence numbers (negative already rejected above)
+	if seq == 0 {
+		return "", 0, fmt.Errorf("invalid sequence number in display ID: %s (must be a positive integer)", displayID)
 	}
 
 	return prefix, seq, nil
