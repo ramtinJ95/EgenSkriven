@@ -112,9 +112,6 @@ describe('ShortcutsHelp', () => {
       render(<ShortcutsHelp isOpen={true} onClose={mockOnClose} />)
 
       expect(screen.getByText('Command palette')).toBeInTheDocument()
-      expect(screen.getByText('Quick search')).toBeInTheDocument()
-      expect(screen.getByText('Toggle board/list view')).toBeInTheDocument()
-      expect(screen.getByText('Toggle sidebar')).toBeInTheDocument()
       expect(screen.getByText('Show shortcuts help')).toBeInTheDocument()
     })
 
@@ -124,7 +121,7 @@ describe('ShortcutsHelp', () => {
       expect(screen.getByText('Create new task')).toBeInTheDocument()
       expect(screen.getByText('Open selected task')).toBeInTheDocument()
       expect(screen.getByText('Peek preview')).toBeInTheDocument()
-      expect(screen.getByText('Edit title')).toBeInTheDocument()
+      expect(screen.getByText('Edit task (open detail)')).toBeInTheDocument()
       expect(screen.getByText('Delete task')).toBeInTheDocument()
     })
 
@@ -134,8 +131,6 @@ describe('ShortcutsHelp', () => {
       expect(screen.getByText('Set status')).toBeInTheDocument()
       expect(screen.getByText('Set priority')).toBeInTheDocument()
       expect(screen.getByText('Set type')).toBeInTheDocument()
-      expect(screen.getByText('Manage labels')).toBeInTheDocument()
-      expect(screen.getByText('Set due date')).toBeInTheDocument()
     })
 
     it('contains Navigation shortcuts', () => {

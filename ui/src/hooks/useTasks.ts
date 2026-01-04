@@ -61,8 +61,10 @@ export function useTasks(): UseTasksReturn {
     pb.collection('tasks').subscribe<Task>('*', (event) => {
       switch (event.action) {
         case 'create':
-          // Add new task to state
-          setTasks((prev) => [...prev, event.record])
+          // Add new task to state and sort by position
+          setTasks((prev) => 
+            [...prev, event.record].sort((a, b) => a.position - b.position)
+          )
           break
           
         case 'update':

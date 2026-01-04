@@ -20,9 +20,6 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     title: 'Global',
     shortcuts: [
       { combo: { key: 'k', meta: true }, description: 'Command palette' },
-      { combo: { key: '/' }, description: 'Quick search' },
-      { combo: { key: 'b', meta: true }, description: 'Toggle board/list view' },
-      { combo: { key: '\\', meta: true }, description: 'Toggle sidebar' },
       { combo: { key: '?' }, description: 'Show shortcuts help' },
     ],
   },
@@ -32,7 +29,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { combo: { key: 'c' }, description: 'Create new task' },
       { combo: { key: 'Enter' }, description: 'Open selected task' },
       { combo: { key: ' ' }, description: 'Peek preview' },
-      { combo: { key: 'e' }, description: 'Edit title' },
+      { combo: { key: 'e' }, description: 'Edit task (open detail)' },
       { combo: { key: 'Backspace' }, description: 'Delete task' },
     ],
   },
@@ -42,8 +39,6 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { combo: { key: 's' }, description: 'Set status' },
       { combo: { key: 'p' }, description: 'Set priority' },
       { combo: { key: 't' }, description: 'Set type' },
-      { combo: { key: 'l' }, description: 'Manage labels' },
-      { combo: { key: 'd' }, description: 'Set due date' },
     ],
   },
   {
