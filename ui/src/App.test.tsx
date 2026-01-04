@@ -45,6 +45,35 @@ vi.mock('./hooks/useTasks', () => ({
   }),
 }))
 
+// Mock useBoards hook
+vi.mock('./hooks/useBoards', () => ({
+  useBoards: () => ({
+    boards: [
+      { id: 'board-1', name: 'Work', prefix: 'WRK', columns: [], color: '#3B82F6' },
+    ],
+    loading: false,
+    error: null,
+    createBoard: vi.fn(),
+    deleteBoard: vi.fn(),
+  }),
+}))
+
+// Mock useCurrentBoard hook
+vi.mock('./hooks/useCurrentBoard', () => ({
+  CurrentBoardProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useCurrentBoard: () => ({
+    currentBoard: {
+      id: 'board-1',
+      name: 'Work',
+      prefix: 'WRK',
+      columns: ['backlog', 'todo', 'in_progress', 'review', 'done'],
+      color: '#3B82F6',
+    },
+    setCurrentBoard: vi.fn(),
+    loading: false,
+  }),
+}))
+
 // Helper to check if element has a class containing the given string (for CSS modules)
 const hasClassContaining = (element: Element | null, className: string): boolean => {
   if (!element) return false
