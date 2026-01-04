@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/ramtinj/egenskriven/internal/testutil"
+	"github.com/ramtinJ95/EgenSkriven/internal/testutil"
 )
 
 func TestResolveTask_ExactID(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ramtinj/egenskriven/internal/testutil"
+	"github.com/ramtinJ95/EgenSkriven/internal/testutil"
 )
 
 func TestGetNextPosition_EmptyColumn(t *testing.T) {

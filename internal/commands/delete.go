@@ -10,7 +10,7 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/spf13/cobra"
 
-	"github.com/ramtinj/egenskriven/internal/resolver"
+	"github.com/ramtinJ95/EgenSkriven/internal/resolver"
 )
 
 func newDeleteCmd(app *pocketbase.PocketBase) *cobra.Command {

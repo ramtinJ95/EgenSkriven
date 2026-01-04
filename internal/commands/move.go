@@ -7,7 +7,7 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/spf13/cobra"
 
-	"github.com/ramtinj/egenskriven/internal/resolver"
+	"github.com/ramtinJ95/EgenSkriven/internal/resolver"
 )
 
 func newMoveCmd(app *pocketbase.PocketBase) *cobra.Command {
