@@ -1,123 +1,421 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useRef } from 'react'
+import { SelectionProvider, useSelection } from './hooks/useSelection'
+import { useKeyboardShortcuts } from './hooks/useKeyboard'
+import { useTasks } from './hooks/useTasks'
 import { Layout } from './components/Layout'
 import { Board } from './components/Board'
-import { QuickCreate } from './components/QuickCreate'
 import { TaskDetail } from './components/TaskDetail'
-import { useTasks } from './hooks/useTasks'
+import { QuickCreate } from './components/QuickCreate'
+import { CommandPalette, type Command } from './components/CommandPalette'
+import {
+  PropertyPicker,
+  STATUS_OPTIONS,
+  PRIORITY_OPTIONS,
+  TYPE_OPTIONS,
+} from './components/PropertyPicker'
+import { ShortcutsHelp } from './components/ShortcutsHelp'
+import { PeekPreview } from './components/PeekPreview'
 import type { Task, Column } from './types/task'
 
 /**
- * Main application component.
- * 
- * Manages:
- * - Quick create modal (opened with 'C' key)
- * - Task detail panel (opened by clicking a task or pressing Enter)
- * - Selected task state (for keyboard navigation)
- * - Global keyboard shortcuts
+ * Inner app content that uses selection context.
+ * Separated from App to allow useSelection hook to work within SelectionProvider.
  */
-function App() {
-  const { tasks, createTask, updateTask } = useTasks()
+function AppContent() {
+  const { tasks, loading, createTask, updateTask, deleteTask } = useTasks()
+  const { selectedTaskId, selectTask, clearSelection } = useSelection()
+
+  // Modal states
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false)
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [isPeekOpen, setIsPeekOpen] = useState(false)
 
-  // Derive selectedTask from tasks array - automatically stays in sync with real-time updates
-  const selectedTask = useMemo(() => {
-    if (!selectedTaskId || !isDetailOpen) return null
-    return tasks.find((t) => t.id === selectedTaskId) ?? null
-  }, [tasks, selectedTaskId, isDetailOpen])
+  // Property picker states
+  const [statusPickerOpen, setStatusPickerOpen] = useState(false)
+  const [priorityPickerOpen, setPriorityPickerOpen] = useState(false)
+  const [typePickerOpen, setTypePickerOpen] = useState(false)
 
-  // Global keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts when typing in inputs
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement ||
-        e.target instanceof HTMLSelectElement
-      ) {
-        return
+  // Anchor element for property pickers (the selected task card)
+  const selectedCardRef = useRef<HTMLElement | null>(null)
+
+  // Get the currently selected task
+  const selectedTask = useMemo(
+    () => tasks.find((t) => t.id === selectedTaskId) || null,
+    [tasks, selectedTaskId]
+  )
+
+  // Get sorted task IDs for navigation
+  const sortedTaskIds = useMemo(() => tasks.map((t) => t.id), [tasks])
+
+  // Navigation helpers
+  const navigateToNextTask = useCallback(() => {
+    if (!selectedTaskId) {
+      if (sortedTaskIds.length > 0) {
+        selectTask(sortedTaskIds[0])
       }
-
-      // 'C' to open quick create (only if not already open)
-      if ((e.key === 'c' || e.key === 'C') && !isQuickCreateOpen) {
-        e.preventDefault()
-        setIsQuickCreateOpen(true)
-      }
-
-      // 'Enter' to open selected task detail
-      if (e.key === 'Enter' && selectedTaskId && !isDetailOpen) {
-        e.preventDefault()
-        setIsDetailOpen(true)
-      }
-
-      // 'Escape' to deselect task (when detail panel is closed)
-      if (e.key === 'Escape' && !isDetailOpen && selectedTaskId) {
-        e.preventDefault()
-        setSelectedTaskId(null)
-      }
+      return
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedTaskId, isDetailOpen, isQuickCreateOpen])
+    const currentIndex = sortedTaskIds.indexOf(selectedTaskId)
+    if (currentIndex < sortedTaskIds.length - 1) {
+      selectTask(sortedTaskIds[currentIndex + 1])
+    }
+  }, [selectedTaskId, sortedTaskIds, selectTask])
 
-  // Handle task creation
-  const handleCreate = useCallback(
+  const navigateToPrevTask = useCallback(() => {
+    if (!selectedTaskId) {
+      if (sortedTaskIds.length > 0) {
+        selectTask(sortedTaskIds[sortedTaskIds.length - 1])
+      }
+      return
+    }
+
+    const currentIndex = sortedTaskIds.indexOf(selectedTaskId)
+    if (currentIndex > 0) {
+      selectTask(sortedTaskIds[currentIndex - 1])
+    }
+  }, [selectedTaskId, sortedTaskIds, selectTask])
+
+  // Action handlers
+  const openTaskDetail = useCallback(() => {
+    if (selectedTaskId) {
+      setIsDetailOpen(true)
+      setIsPeekOpen(false)
+    }
+  }, [selectedTaskId])
+
+  const handleCreateTask = useCallback(
     async (title: string, column: Column) => {
-      await createTask(title, column)
+      const newTask = await createTask(title, column)
+      setIsQuickCreateOpen(false)
+      selectTask(newTask.id)
     },
-    [createTask]
+    [createTask, selectTask]
   )
 
-  // Handle task update
-  const handleUpdate = useCallback(
-    async (id: string, data: Partial<Task>) => {
-      await updateTask(id, data)
+  const handleDeleteTask = useCallback(async () => {
+    if (selectedTaskId && window.confirm('Delete this task?')) {
+      await deleteTask(selectedTaskId)
+      clearSelection()
+    }
+  }, [selectedTaskId, deleteTask, clearSelection])
+
+  const handleStatusChange = useCallback(
+    async (status: string) => {
+      if (selectedTaskId) {
+        await updateTask(selectedTaskId, { column: status as Column })
+      }
     },
-    [updateTask]
+    [selectedTaskId, updateTask]
   )
 
-  // Handle task click to open detail panel
-  const handleTaskClick = useCallback((task: Task) => {
-    setSelectedTaskId(task.id)
-    setIsDetailOpen(true)
-  }, [])
+  const handlePriorityChange = useCallback(
+    async (priority: string) => {
+      if (selectedTaskId) {
+        await updateTask(selectedTaskId, {
+          priority: priority as Task['priority'],
+        })
+      }
+    },
+    [selectedTaskId, updateTask]
+  )
 
-  // Handle task selection (without opening detail)
-  const handleTaskSelect = useCallback((task: Task) => {
-    setSelectedTaskId(task.id)
-  }, [])
+  const handleTypeChange = useCallback(
+    async (type: string) => {
+      if (selectedTaskId) {
+        await updateTask(selectedTaskId, { type: type as Task['type'] })
+      }
+    },
+    [selectedTaskId, updateTask]
+  )
 
-  // Handle closing detail panel
-  const handleCloseDetail = useCallback(() => {
-    setIsDetailOpen(false)
-    // Keep selectedTaskId so user can press Enter to reopen
-  }, [])
+  // Build command palette commands
+  const commands: Command[] = useMemo(
+    () => [
+      // Actions
+      {
+        id: 'create-task',
+        label: 'Create task',
+        shortcut: { key: 'c' },
+        section: 'actions',
+        icon: '+',
+        action: () => setIsQuickCreateOpen(true),
+      },
+      {
+        id: 'change-status',
+        label: 'Change status',
+        shortcut: { key: 's' },
+        section: 'actions',
+        icon: '●',
+        action: () => setStatusPickerOpen(true),
+        when: () => !!selectedTaskId,
+      },
+      {
+        id: 'set-priority',
+        label: 'Set priority',
+        shortcut: { key: 'p' },
+        section: 'actions',
+        icon: '!',
+        action: () => setPriorityPickerOpen(true),
+        when: () => !!selectedTaskId,
+      },
+      {
+        id: 'set-type',
+        label: 'Set type',
+        shortcut: { key: 't' },
+        section: 'actions',
+        icon: '◆',
+        action: () => setTypePickerOpen(true),
+        when: () => !!selectedTaskId,
+      },
+      {
+        id: 'delete-task',
+        label: 'Delete task',
+        shortcut: { key: 'Backspace' },
+        section: 'actions',
+        icon: '×',
+        action: handleDeleteTask,
+        when: () => !!selectedTaskId,
+      },
+      {
+        id: 'show-shortcuts',
+        label: 'Show keyboard shortcuts',
+        shortcut: { key: '?' },
+        section: 'actions',
+        icon: '?',
+        action: () => setIsShortcutsHelpOpen(true),
+      },
+
+      // Navigation - add recent tasks
+      ...tasks.slice(0, 5).map((task) => ({
+        id: `task-${task.id}`,
+        label: `${task.id.substring(0, 8)} ${task.title}`,
+        section: 'recent' as const,
+        action: () => {
+          selectTask(task.id)
+          setIsDetailOpen(true)
+        },
+      })),
+    ],
+    [tasks, selectedTaskId, handleDeleteTask, selectTask]
+  )
+
+  // Register keyboard shortcuts
+  useKeyboardShortcuts([
+    // Global shortcuts
+    {
+      combo: { key: 'k', meta: true },
+      handler: () => setIsCommandPaletteOpen(true),
+      description: 'Open command palette',
+    },
+    {
+      combo: { key: '?' },
+      handler: () => setIsShortcutsHelpOpen(true),
+      description: 'Show shortcuts help',
+    },
+    {
+      combo: { key: 'Escape' },
+      handler: () => {
+        if (isPeekOpen) {
+          setIsPeekOpen(false)
+        } else if (isDetailOpen) {
+          setIsDetailOpen(false)
+        } else if (selectedTaskId) {
+          clearSelection()
+        }
+      },
+      description: 'Close/deselect',
+      allowInInput: true,
+    },
+
+    // Task actions
+    {
+      combo: { key: 'c' },
+      handler: () => setIsQuickCreateOpen(true),
+      description: 'Create task',
+    },
+    {
+      combo: { key: 'Enter' },
+      handler: () => openTaskDetail(),
+      description: 'Open selected task',
+    },
+    {
+      combo: { key: ' ' },
+      handler: () => {
+        if (selectedTaskId) {
+          setIsPeekOpen((prev) => !prev)
+        }
+      },
+      description: 'Peek preview',
+    },
+    {
+      combo: { key: 'Backspace' },
+      handler: () => {
+        handleDeleteTask()
+      },
+      description: 'Delete task',
+    },
+
+    // Property shortcuts (only when task selected)
+    {
+      combo: { key: 's' },
+      handler: () => setStatusPickerOpen(true),
+      when: () => !!selectedTaskId,
+      description: 'Set status',
+    },
+    {
+      combo: { key: 'p' },
+      handler: () => setPriorityPickerOpen(true),
+      when: () => !!selectedTaskId,
+      description: 'Set priority',
+    },
+    {
+      combo: { key: 't' },
+      handler: () => setTypePickerOpen(true),
+      when: () => !!selectedTaskId,
+      description: 'Set type',
+    },
+
+    // Navigation
+    {
+      combo: { key: 'j' },
+      handler: () => navigateToNextTask(),
+      description: 'Next task',
+    },
+    {
+      combo: { key: 'ArrowDown' },
+      handler: () => navigateToNextTask(),
+      description: 'Next task',
+    },
+    {
+      combo: { key: 'k' },
+      handler: () => navigateToPrevTask(),
+      description: 'Previous task',
+    },
+    {
+      combo: { key: 'ArrowUp' },
+      handler: () => navigateToPrevTask(),
+      description: 'Previous task',
+    },
+  ])
+
+  if (loading) {
+    return (
+      <Layout>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%',
+          }}
+        >
+          Loading...
+        </div>
+      </Layout>
+    )
+  }
 
   return (
     <Layout>
-      <Board 
-        onTaskClick={handleTaskClick} 
+      <Board
+        onTaskClick={(task) => {
+          selectTask(task.id)
+          setIsDetailOpen(true)
+        }}
+        onTaskSelect={(task) => {
+          selectTask(task.id)
+          // Store reference to the task card element for anchor positioning
+          const element = document.querySelector(`[data-task-id="${task.id}"]`)
+          if (element instanceof HTMLElement) {
+            selectedCardRef.current = element
+          }
+        }}
         selectedTaskId={selectedTaskId}
-        onTaskSelect={handleTaskSelect}
+      />
+
+      {/* Task Detail Panel */}
+      <TaskDetail
+        task={isDetailOpen ? selectedTask : null}
+        onClose={() => setIsDetailOpen(false)}
+        onUpdate={async (id, data) => {
+          await updateTask(id, data)
+        }}
       />
 
       {/* Quick Create Modal */}
       <QuickCreate
         isOpen={isQuickCreateOpen}
         onClose={() => setIsQuickCreateOpen(false)}
-        onCreate={handleCreate}
+        onCreate={handleCreateTask}
       />
 
-      {/* Task Detail Panel */}
-      <TaskDetail
+      {/* Command Palette */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        commands={commands}
+      />
+
+      {/* Property Pickers */}
+      <PropertyPicker
+        isOpen={statusPickerOpen}
+        onClose={() => setStatusPickerOpen(false)}
+        onSelect={handleStatusChange}
+        options={STATUS_OPTIONS}
+        currentValue={selectedTask?.column}
+        title="Set Status"
+        anchorElement={selectedCardRef.current}
+      />
+
+      <PropertyPicker
+        isOpen={priorityPickerOpen}
+        onClose={() => setPriorityPickerOpen(false)}
+        onSelect={handlePriorityChange}
+        options={PRIORITY_OPTIONS}
+        currentValue={selectedTask?.priority}
+        title="Set Priority"
+        anchorElement={selectedCardRef.current}
+      />
+
+      <PropertyPicker
+        isOpen={typePickerOpen}
+        onClose={() => setTypePickerOpen(false)}
+        onSelect={handleTypeChange}
+        options={TYPE_OPTIONS}
+        currentValue={selectedTask?.type}
+        title="Set Type"
+        anchorElement={selectedCardRef.current}
+      />
+
+      {/* Shortcuts Help */}
+      <ShortcutsHelp
+        isOpen={isShortcutsHelpOpen}
+        onClose={() => setIsShortcutsHelpOpen(false)}
+      />
+
+      {/* Peek Preview */}
+      <PeekPreview
         task={selectedTask}
-        onClose={handleCloseDetail}
-        onUpdate={handleUpdate}
+        isOpen={isPeekOpen}
+        onClose={() => setIsPeekOpen(false)}
       />
     </Layout>
   )
 }
 
-export default App
+/**
+ * Main application component.
+ *
+ * Wraps AppContent in SelectionProvider to enable selection state management
+ * across all components.
+ */
+export default function App() {
+  return (
+    <SelectionProvider>
+      <AppContent />
+    </SelectionProvider>
+  )
+}
