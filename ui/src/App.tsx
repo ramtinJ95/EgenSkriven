@@ -15,7 +15,7 @@ import {
 } from './components/PropertyPicker'
 import { ShortcutsHelp } from './components/ShortcutsHelp'
 import { PeekPreview } from './components/PeekPreview'
-import type { Task, Column } from './types/task'
+import { COLUMNS, type Task, type Column } from './types/task'
 
 /**
  * Inner app content that uses selection context.
@@ -23,7 +23,16 @@ import type { Task, Column } from './types/task'
  */
 function AppContent() {
   const { tasks, loading, createTask, updateTask, deleteTask } = useTasks()
-  const { selectedTaskId, selectTask, clearSelection } = useSelection()
+  const { 
+    selectedTaskId, 
+    selectTask, 
+    clearSelection,
+    toggleMultiSelect,
+    selectRange,
+    selectAll,
+    setFocusedColumn,
+    focusedColumn,
+  } = useSelection()
 
   // Modal states
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
@@ -48,6 +57,21 @@ function AppContent() {
 
   // Get sorted task IDs for navigation
   const sortedTaskIds = useMemo(() => tasks.map((t) => t.id), [tasks])
+
+  // Get tasks grouped by column for column navigation
+  const tasksByColumn = useMemo(() => {
+    const grouped: Record<Column, Task[]> = {
+      backlog: [],
+      todo: [],
+      in_progress: [],
+      review: [],
+      done: [],
+    }
+    for (const task of tasks) {
+      grouped[task.column]?.push(task)
+    }
+    return grouped
+  }, [tasks])
 
   // Navigation helpers
   const navigateToNextTask = useCallback(() => {
@@ -77,6 +101,41 @@ function AppContent() {
       selectTask(sortedTaskIds[currentIndex - 1])
     }
   }, [selectedTaskId, sortedTaskIds, selectTask])
+
+  // Column navigation helpers
+  const navigateToNextColumn = useCallback(() => {
+    // Find current column
+    const currentColumn: Column = selectedTask?.column || (focusedColumn as Column) || COLUMNS[0]
+    const currentIndex = COLUMNS.indexOf(currentColumn)
+    
+    if (currentIndex < COLUMNS.length - 1) {
+      const nextColumn = COLUMNS[currentIndex + 1]
+      setFocusedColumn(nextColumn)
+      
+      // Select first task in next column if available
+      const tasksInColumn = tasksByColumn[nextColumn]
+      if (tasksInColumn.length > 0) {
+        selectTask(tasksInColumn[0].id)
+      }
+    }
+  }, [selectedTask, focusedColumn, tasksByColumn, setFocusedColumn, selectTask])
+
+  const navigateToPrevColumn = useCallback(() => {
+    // Find current column
+    const currentColumn: Column = selectedTask?.column || (focusedColumn as Column) || COLUMNS[0]
+    const currentIndex = COLUMNS.indexOf(currentColumn)
+    
+    if (currentIndex > 0) {
+      const prevColumn = COLUMNS[currentIndex - 1]
+      setFocusedColumn(prevColumn)
+      
+      // Select first task in previous column if available
+      const tasksInColumn = tasksByColumn[prevColumn]
+      if (tasksInColumn.length > 0) {
+        selectTask(tasksInColumn[0].id)
+      }
+    }
+  }, [selectedTask, focusedColumn, tasksByColumn, setFocusedColumn, selectTask])
 
   // Action handlers
   const openTaskDetail = useCallback(() => {
@@ -323,6 +382,60 @@ function AppContent() {
       combo: { key: 'ArrowUp' },
       handler: () => navigateToPrevTask(),
       description: 'Previous task',
+    },
+    {
+      combo: { key: 'h' },
+      handler: () => navigateToPrevColumn(),
+      description: 'Previous column',
+    },
+    {
+      combo: { key: 'l' },
+      handler: () => navigateToNextColumn(),
+      description: 'Next column',
+    },
+
+    // Selection shortcuts
+    {
+      combo: { key: 'x' },
+      handler: () => {
+        if (selectedTaskId) {
+          toggleMultiSelect(selectedTaskId)
+        }
+      },
+      when: () => !!selectedTaskId,
+      description: 'Toggle select task',
+    },
+    {
+      combo: { key: 'x', shift: true },
+      handler: () => {
+        // Range select from first multi-selected to current
+        if (selectedTaskId && sortedTaskIds.length > 0) {
+          const firstSelected = sortedTaskIds[0]
+          selectRange(firstSelected, selectedTaskId, sortedTaskIds)
+        }
+      },
+      when: () => !!selectedTaskId,
+      description: 'Select range',
+    },
+    {
+      combo: { key: 'a', meta: true },
+      handler: () => {
+        selectAll(sortedTaskIds)
+      },
+      description: 'Select all visible',
+    },
+
+    // Edit title shortcut
+    {
+      combo: { key: 'e' },
+      handler: () => {
+        if (selectedTaskId) {
+          setIsDetailOpen(true)
+          setIsPeekOpen(false)
+        }
+      },
+      when: () => !!selectedTaskId,
+      description: 'Edit title (open detail)',
     },
   ])
 
