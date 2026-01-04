@@ -39,7 +39,8 @@ type AgentConfig struct {
 
 // Config represents the project configuration.
 type Config struct {
-	Agent AgentConfig `json:"agent"`
+	Agent        AgentConfig `json:"agent"`
+	DefaultBoard string      `json:"default_board,omitempty"` // Default board prefix for CLI commands
 }
 
 // DefaultConfig returns configuration with default values.
