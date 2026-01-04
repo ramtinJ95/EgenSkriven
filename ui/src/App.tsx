@@ -218,13 +218,38 @@ function AppContent() {
     {
       combo: { key: 'Escape' },
       handler: () => {
+        // Handle Escape in priority order
+        // Return false if nothing was done, allowing event to propagate
         if (isPeekOpen) {
           setIsPeekOpen(false)
+          return true
         } else if (isDetailOpen) {
           setIsDetailOpen(false)
+          return true
+        } else if (isQuickCreateOpen) {
+          setIsQuickCreateOpen(false)
+          return true
+        } else if (isCommandPaletteOpen) {
+          setIsCommandPaletteOpen(false)
+          return true
+        } else if (isShortcutsHelpOpen) {
+          setIsShortcutsHelpOpen(false)
+          return true
+        } else if (statusPickerOpen) {
+          setStatusPickerOpen(false)
+          return true
+        } else if (priorityPickerOpen) {
+          setPriorityPickerOpen(false)
+          return true
+        } else if (typePickerOpen) {
+          setTypePickerOpen(false)
+          return true
         } else if (selectedTaskId) {
           clearSelection()
+          return true
         }
+        // Nothing was closed, allow event to propagate
+        return false
       },
       description: 'Close/deselect',
       allowInInput: true,
