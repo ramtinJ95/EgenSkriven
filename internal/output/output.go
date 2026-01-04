@@ -107,6 +107,66 @@ func (f *Formatter) TasksWithFields(tasks []*core.Record, fields []string) {
 	})
 }
 
+// TasksWithBoards outputs a list of tasks with board-prefixed display IDs.
+// Human mode: Grouped by column with display IDs
+// JSON mode: Array with count and display_id field
+func (f *Formatter) TasksWithBoards(tasks []*core.Record, boardsMap map[string]*core.Record) {
+	if f.JSON {
+		f.writeJSON(map[string]any{
+			"tasks": tasksToMapsWithBoards(tasks, boardsMap),
+			"count": len(tasks),
+		})
+		return
+	}
+
+	// Group tasks by column
+	grouped := groupByColumn(tasks)
+	columns := []string{"backlog", "todo", "in_progress", "review", "done"}
+
+	for _, col := range columns {
+		colTasks := grouped[col]
+		fmt.Printf("\n%s\n", strings.ToUpper(col))
+
+		if len(colTasks) == 0 {
+			fmt.Println("  (empty)")
+			continue
+		}
+
+		for _, task := range colTasks {
+			f.printTaskLineWithBoard(task, boardsMap)
+		}
+	}
+	fmt.Println()
+}
+
+// TasksWithFieldsAndBoards outputs tasks with only specified fields and board info (JSON only).
+// If not in JSON mode, falls back to TasksWithBoards.
+func (f *Formatter) TasksWithFieldsAndBoards(tasks []*core.Record, fields []string, boardsMap map[string]*core.Record) {
+	if !f.JSON {
+		f.TasksWithBoards(tasks, boardsMap)
+		return
+	}
+
+	// Build filtered task list
+	result := make([]map[string]any, len(tasks))
+	for i, task := range tasks {
+		fullMap := taskToMapWithBoard(task, boardsMap)
+		filtered := make(map[string]any)
+		for _, field := range fields {
+			field = strings.TrimSpace(field)
+			if val, ok := fullMap[field]; ok {
+				filtered[field] = val
+			}
+		}
+		result[i] = filtered
+	}
+
+	f.writeJSON(map[string]any{
+		"tasks": result,
+		"count": len(tasks),
+	})
+}
+
 // TaskDetail outputs detailed information about a task.
 func (f *Formatter) TaskDetail(task *core.Record) {
 	if f.JSON {
@@ -277,6 +337,33 @@ func (f *Formatter) printTaskLine(task *core.Record) {
 	)
 }
 
+func (f *Formatter) printTaskLineWithBoard(task *core.Record, boardsMap map[string]*core.Record) {
+	priority := task.GetString("priority")
+	priorityIndicator := ""
+	switch priority {
+	case "urgent":
+		priorityIndicator = "!!!"
+	case "high":
+		priorityIndicator = "!!"
+	case "medium":
+		priorityIndicator = "!"
+	}
+
+	displayID := getDisplayID(task, boardsMap)
+
+	fmt.Printf("  [%s] %s (%s%s)\n",
+		displayID,
+		task.GetString("title"),
+		task.GetString("type"),
+		func() string {
+			if priorityIndicator != "" {
+				return ", " + priorityIndicator + priority
+			}
+			return ""
+		}(),
+	)
+}
+
 func taskToMap(task *core.Record) map[string]any {
 	return map[string]any{
 		"id":               task.Id,
@@ -301,6 +388,43 @@ func tasksToMaps(tasks []*core.Record) []map[string]any {
 		result[i] = taskToMap(task)
 	}
 	return result
+}
+
+func tasksToMapsWithBoards(tasks []*core.Record, boardsMap map[string]*core.Record) []map[string]any {
+	result := make([]map[string]any, len(tasks))
+	for i, task := range tasks {
+		result[i] = taskToMapWithBoard(task, boardsMap)
+	}
+	return result
+}
+
+func taskToMapWithBoard(task *core.Record, boardsMap map[string]*core.Record) map[string]any {
+	result := taskToMap(task)
+	result["display_id"] = getDisplayID(task, boardsMap)
+
+	// Add board and seq if present
+	if boardID := task.GetString("board"); boardID != "" {
+		result["board"] = boardID
+		result["seq"] = task.GetInt("seq")
+	}
+
+	return result
+}
+
+// getDisplayID returns the board-prefixed display ID (e.g., "WRK-123") or short ID as fallback
+func getDisplayID(task *core.Record, boardsMap map[string]*core.Record) string {
+	boardID := task.GetString("board")
+	seq := task.GetInt("seq")
+
+	if boardID != "" && seq > 0 {
+		if boardRecord, ok := boardsMap[boardID]; ok {
+			prefix := boardRecord.GetString("prefix")
+			return fmt.Sprintf("%s-%d", prefix, seq)
+		}
+	}
+
+	// Fallback to short ID
+	return ShortID(task.Id)
 }
 
 func groupByColumn(tasks []*core.Record) map[string][]*core.Record {

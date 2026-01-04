@@ -8,6 +8,9 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/spf13/cobra"
+
+	"github.com/ramtinJ95/EgenSkriven/internal/board"
+	"github.com/ramtinJ95/EgenSkriven/internal/config"
 )
 
 func newListCmd(app *pocketbase.PocketBase) *cobra.Command {
@@ -26,6 +29,8 @@ func newListCmd(app *pocketbase.PocketBase) *cobra.Command {
 		labels     []string
 		limit      int
 		sort       string
+		boardRef   string
+		allBoards  bool
 	)
 
 	cmd := &cobra.Command{
@@ -62,6 +67,38 @@ Examples:
 			if isBlocked && notBlocked {
 				return out.Error(ExitValidation,
 					"--is-blocked and --not-blocked are mutually exclusive", nil)
+			}
+
+			// Board filter (unless --all-boards is set)
+			var boardsMap map[string]*core.Record
+			if !allBoards {
+				// Determine which board to filter by
+				boardRefToUse := boardRef
+				if boardRefToUse == "" {
+					// Check config for default board
+					cfg, _ := config.LoadProjectConfig()
+					if cfg != nil && cfg.DefaultBoard != "" {
+						boardRefToUse = cfg.DefaultBoard
+					}
+				}
+
+				if boardRefToUse != "" {
+					boardRecord, err := board.GetByNameOrPrefix(app, boardRefToUse)
+					if err != nil {
+						return out.Error(ExitValidation, fmt.Sprintf("invalid board: %v", err), nil)
+					}
+					filters = append(filters, dbx.NewExp(
+						"board = {:board}",
+						dbx.Params{"board": boardRecord.Id},
+					))
+				}
+			}
+
+			// Load boards for display ID mapping
+			allBoardRecords, _ := board.GetAll(app)
+			boardsMap = make(map[string]*core.Record)
+			for _, b := range allBoardRecords {
+				boardsMap[b.Id] = b
 			}
 
 			// Ready filter: unblocked tasks in todo/backlog
@@ -233,9 +270,9 @@ Examples:
 
 			// Handle field selection for JSON output
 			if jsonOutput && fields != "" {
-				out.TasksWithFields(tasks, strings.Split(fields, ","))
+				out.TasksWithFieldsAndBoards(tasks, strings.Split(fields, ","), boardsMap)
 			} else {
-				out.Tasks(tasks)
+				out.TasksWithBoards(tasks, boardsMap)
 			}
 
 			return nil
@@ -271,6 +308,10 @@ Examples:
 		"Maximum number of results (0 = no limit)")
 	cmd.Flags().StringVar(&sort, "sort", "",
 		"Sort order (e.g., '-priority,position')")
+	cmd.Flags().StringVarP(&boardRef, "board", "b", "",
+		"Filter by board (name or prefix)")
+	cmd.Flags().BoolVar(&allBoards, "all-boards", false,
+		"Show tasks from all boards")
 
 	return cmd
 }
