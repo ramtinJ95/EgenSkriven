@@ -18,6 +18,10 @@ func newListCmd(app *pocketbase.PocketBase) *cobra.Command {
 		search     string
 		createdBy  string
 		agentName  string
+		ready      bool
+		isBlocked  bool
+		notBlocked bool
+		fields     string
 	)
 
 	cmd := &cobra.Command{
@@ -31,7 +35,9 @@ Examples:
   egenskriven list
   egenskriven list --column todo
   egenskriven list --type bug --priority urgent
-  egenskriven list --json`,
+  egenskriven list --ready
+  egenskriven list --is-blocked
+  egenskriven list --json --fields id,title,column`,
 		Aliases: []string{"ls"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := getFormatter()
@@ -43,6 +49,12 @@ Examples:
 
 			// Build filter expressions
 			var filters []dbx.Expression
+
+			// Ready filter: unblocked tasks in todo/backlog
+			if ready {
+				columns = []string{"todo", "backlog"}
+				notBlocked = true
+			}
 
 			// Column filter
 			if len(columns) > 0 {
@@ -101,6 +113,22 @@ Examples:
 				))
 			}
 
+			// Is blocked filter
+			if isBlocked {
+				filters = append(filters, dbx.NewExp(
+					"json_array_length(blocked_by) > 0",
+				))
+			}
+
+			// Not blocked filter
+			if notBlocked {
+				filters = append(filters, dbx.Or(
+					dbx.NewExp("blocked_by IS NULL"),
+					dbx.NewExp("blocked_by = '[]'"),
+					dbx.NewExp("json_array_length(blocked_by) = 0"),
+				))
+			}
+
 			// Execute query
 			var tasks []*core.Record
 			var err error
@@ -119,7 +147,13 @@ Examples:
 			// Sort by position within each column
 			sortTasksByPosition(tasks)
 
-			out.Tasks(tasks)
+			// Handle field selection for JSON output
+			if jsonOutput && fields != "" {
+				out.TasksWithFields(tasks, strings.Split(fields, ","))
+			} else {
+				out.Tasks(tasks)
+			}
+
 			return nil
 		},
 	}
@@ -137,6 +171,14 @@ Examples:
 		"Filter by creator (user, agent, cli)")
 	cmd.Flags().StringVar(&agentName, "agent", "",
 		"Filter by agent name")
+	cmd.Flags().BoolVar(&ready, "ready", false,
+		"Show unblocked tasks in todo/backlog (agent-friendly)")
+	cmd.Flags().BoolVar(&isBlocked, "is-blocked", false,
+		"Show only tasks blocked by others")
+	cmd.Flags().BoolVar(&notBlocked, "not-blocked", false,
+		"Show only tasks not blocked by others")
+	cmd.Flags().StringVar(&fields, "fields", "",
+		"Comma-separated fields to include in JSON output")
 
 	return cmd
 }
