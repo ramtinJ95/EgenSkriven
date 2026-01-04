@@ -132,6 +132,66 @@ func TestGetTaskBlockedBy_Nil(t *testing.T) {
 	assert.Len(t, result, 0)
 }
 
+func TestHasCircularDependency_NoCircle(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	setupTasksCollection(t, app)
+
+	// Create tasks: A -> B (A is blocked by B)
+	taskB := createTestTaskWithBlockedBy(t, app, "Task B", []string{})
+	taskA := createTestTaskWithBlockedBy(t, app, "Task A", []string{taskB.Id})
+
+	// Re-fetch to get stored format
+	taskA, _ = app.FindRecordById("tasks", taskA.Id)
+
+	// Check if adding B blocked by A would create a cycle (it would)
+	result := hasCircularDependency(app, taskA.Id, taskA)
+
+	// taskA is blocked by taskB. If we check taskA's chain, we won't find taskA itself.
+	// This tests the base case - no cycle in taskA's existing chain
+	assert.False(t, result)
+}
+
+func TestHasCircularDependency_DirectCircle(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	setupTasksCollection(t, app)
+
+	// Create tasks: A -> B (A is blocked by B)
+	taskB := createTestTaskWithBlockedBy(t, app, "Task B", []string{})
+	taskA := createTestTaskWithBlockedBy(t, app, "Task A", []string{taskB.Id})
+
+	// Re-fetch to get stored format
+	taskB, _ = app.FindRecordById("tasks", taskB.Id)
+
+	// Check if adding B blocked by A would create a cycle
+	// B's blocked_by is empty, so we check if A is in B's chain (it's not)
+	// But if we were to add A to B's blocked_by, then B->A->B would be a cycle
+	// We need to check: does taskA's blocked_by chain contain B?
+	taskA, _ = app.FindRecordById("tasks", taskA.Id)
+	result := hasCircularDependency(app, taskB.Id, taskA)
+
+	// taskA is blocked by taskB, so taskA's chain contains taskB
+	assert.True(t, result)
+}
+
+func TestHasCircularDependency_IndirectCircle(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	setupTasksCollection(t, app)
+
+	// Create tasks: A -> B -> C (A blocked by B, B blocked by C)
+	taskC := createTestTaskWithBlockedBy(t, app, "Task C", []string{})
+	taskB := createTestTaskWithBlockedBy(t, app, "Task B", []string{taskC.Id})
+	taskA := createTestTaskWithBlockedBy(t, app, "Task A", []string{taskB.Id})
+
+	// Re-fetch to get stored format
+	taskA, _ = app.FindRecordById("tasks", taskA.Id)
+
+	// Check if adding C blocked by A would create a cycle (A -> B -> C -> A)
+	result := hasCircularDependency(app, taskC.Id, taskA)
+
+	// taskA's chain: taskB -> taskC, so taskC is in the chain
+	assert.True(t, result)
+}
+
 // Helper function
 func createTestTaskWithBlockedBy(t *testing.T, app *pocketbase.PocketBase, title string, blockedBy []string) *core.Record {
 	t.Helper()
