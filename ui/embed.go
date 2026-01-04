@@ -1,28 +1,20 @@
 package ui
 
 import (
+	"embed"
 	"io/fs"
 )
 
-// DistFS will hold the embedded React build output.
-// For now, it's a placeholder that will be populated in Phase 2.
+// DistFS holds the embedded React build output.
 //
-// In Phase 2, this will be replaced with:
+// During development (when dist/ doesn't exist), this will cause a build error.
+// Run `cd ui && npm run build` first to create the dist/ directory.
 //
-//	//go:embed all:dist
-//	var distDir embed.FS
-//	var DistFS, _ = fs.Sub(distDir, "dist")
-//
-// The placeholder below allows the project to compile before
-// the React UI exists.
+// The "all:" prefix includes files starting with "." or "_" which Vite may create.
 
-// emptyFS is a filesystem that always returns "not found"
-type emptyFS struct{}
+//go:embed all:dist
+var distDir embed.FS
 
-func (emptyFS) Open(name string) (fs.File, error) {
-	return nil, fs.ErrNotExist
-}
-
-// DistFS is the filesystem containing UI assets.
-// Currently empty - will be populated in Phase 2.
-var DistFS fs.FS = emptyFS{}
+// DistFS is the filesystem containing the built React application.
+// It's a sub-filesystem rooted at "dist" for cleaner path handling.
+var DistFS, _ = fs.Sub(distDir, "dist")
