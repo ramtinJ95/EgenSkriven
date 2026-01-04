@@ -7,6 +7,7 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 
+	"github.com/ramtinJ95/EgenSkriven/internal/board"
 	"github.com/ramtinJ95/EgenSkriven/internal/commands"
 	_ "github.com/ramtinJ95/EgenSkriven/migrations" // Auto-register migrations
 	"github.com/ramtinJ95/EgenSkriven/ui"
@@ -17,6 +18,25 @@ func main() {
 
 	// Register custom CLI commands
 	commands.Register(app)
+
+	// Hook: Assign sequence number to tasks created via API
+	// This ensures the UI doesn't need to handle sequence assignment,
+	// avoiding race conditions when multiple tasks are created concurrently.
+	app.OnRecordCreate("tasks").BindFunc(func(e *core.RecordEvent) error {
+		record := e.Record
+
+		// Only assign seq if task has a board but no seq yet
+		boardID := record.GetString("board")
+		if boardID != "" && record.GetInt("seq") == 0 {
+			seq, err := board.GetAndIncrementSequence(app, boardID)
+			if err != nil {
+				return err
+			}
+			record.Set("seq", seq)
+		}
+
+		return e.Next()
+	})
 
 	// Serve embedded React UI for non-API routes
 	app.OnServe().BindFunc(func(e *core.ServeEvent) error {

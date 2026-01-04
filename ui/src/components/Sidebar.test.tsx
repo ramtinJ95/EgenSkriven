@@ -11,6 +11,7 @@ const mockBoards = [
 
 // Mock state
 let mockBoardsLoading = false
+let mockBoardsError: Error | null = null
 let mockCurrentBoard = mockBoards[0]
 const mockSetCurrentBoard = vi.fn()
 const mockCreateBoard = vi.fn()
@@ -20,7 +21,7 @@ vi.mock('../hooks/useBoards', () => ({
   useBoards: () => ({
     boards: mockBoards,
     loading: mockBoardsLoading,
-    error: null,
+    error: mockBoardsError,
     createBoard: mockCreateBoard,
     deleteBoard: vi.fn(),
   }),
@@ -41,6 +42,7 @@ describe('Sidebar', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockBoardsLoading = false
+    mockBoardsError = null
     mockCurrentBoard = mockBoards[0]
   })
 
@@ -100,6 +102,14 @@ describe('Sidebar', () => {
       mockBoardsLoading = true
       render(<Sidebar collapsed={false} onToggle={mockOnToggle} />)
       expect(screen.getByText('Loading...')).toBeInTheDocument()
+    })
+  })
+
+  describe('error state', () => {
+    it('shows error message when board fetch fails', () => {
+      mockBoardsError = new Error('Network error')
+      render(<Sidebar collapsed={false} onToggle={mockOnToggle} />)
+      expect(screen.getByText('Failed to load boards')).toBeInTheDocument()
     })
   })
 

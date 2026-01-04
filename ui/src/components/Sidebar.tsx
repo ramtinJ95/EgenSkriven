@@ -19,7 +19,7 @@ interface SidebarProps {
  * - Board color indicators
  */
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
-  const { boards, loading } = useBoards()
+  const { boards, loading, error } = useBoards()
   const { currentBoard, setCurrentBoard } = useCurrentBoard()
   const [showNewBoard, setShowNewBoard] = useState(false)
 
@@ -56,6 +56,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
           {loading ? (
             <div className={styles.loading}>Loading...</div>
+          ) : error ? (
+            <div className={styles.error}>Failed to load boards</div>
           ) : boards.length === 0 ? (
             <div className={styles.empty}>No boards yet</div>
           ) : (

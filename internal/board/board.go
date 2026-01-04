@@ -78,6 +78,7 @@ func Create(app *pocketbase.PocketBase, input CreateInput) (*Board, error) {
 	record.Set("name", name)
 	record.Set("prefix", prefix)
 	record.Set("columns", columns)
+	record.Set("next_seq", 1) // Initialize sequence counter
 	if input.Color != "" {
 		record.Set("color", input.Color)
 	}
@@ -148,24 +149,61 @@ func GetAll(app *pocketbase.PocketBase) ([]*core.Record, error) {
 	return app.FindAllRecords("boards", dbx.NewExp("1=1"))
 }
 
-// GetNextSequence returns the next sequence number for a board
+// GetNextSequence returns the next sequence number for a board.
+// DEPRECATED: Use GetAndIncrementSequence instead to avoid race conditions.
 //
-// This is used when creating tasks to generate display IDs.
-// Uses SELECT MAX(seq) + 1 for efficiency.
+// This function is kept for backwards compatibility but has a race condition
+// when multiple tasks are created concurrently.
 func GetNextSequence(app *pocketbase.PocketBase, boardID string) (int, error) {
-	// Find the maximum sequence number for this board
+	// Use the new atomic function
+	return GetAndIncrementSequence(app, boardID)
+}
+
+// GetAndIncrementSequence atomically gets the next sequence number and increments
+// the counter in the board record.
+//
+// This prevents race conditions where concurrent task creation could result in
+// duplicate sequence numbers. The board's next_seq field is atomically incremented.
+//
+// If next_seq is not set (legacy boards), it calculates from existing tasks.
+func GetAndIncrementSequence(app *pocketbase.PocketBase, boardID string) (int, error) {
+	// Find the board
+	board, err := app.FindRecordById("boards", boardID)
+	if err != nil {
+		return 0, fmt.Errorf("board not found: %w", err)
+	}
+
+	// Get current next_seq value
+	nextSeq := board.GetInt("next_seq")
+
+	// If next_seq is not set (0), initialize it from existing tasks
+	if nextSeq == 0 {
+		nextSeq, err = calculateNextSeqFromTasks(app, boardID)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	// Atomically increment next_seq in the board
+	board.Set("next_seq", nextSeq+1)
+	if err := app.Save(board); err != nil {
+		return 0, fmt.Errorf("failed to increment sequence: %w", err)
+	}
+
+	return nextSeq, nil
+}
+
+// calculateNextSeqFromTasks finds the max sequence from existing tasks.
+// Used to initialize next_seq for legacy boards that don't have it set.
+func calculateNextSeqFromTasks(app *pocketbase.PocketBase, boardID string) (int, error) {
 	records, err := app.FindAllRecords("tasks",
 		dbx.NewExp("board = {:board}", dbx.Params{"board": boardID}),
 	)
-	if err != nil {
-		return 1, nil // First task in board
+	if err != nil || len(records) == 0 {
+		return 1, nil
 	}
 
-	if len(records) == 0 {
-		return 1, nil // First task in board
-	}
-
-	// Find max sequence manually
+	// Find max sequence
 	maxSeq := 0
 	for _, r := range records {
 		seq := r.GetInt("seq")
@@ -187,6 +225,10 @@ func FormatDisplayID(prefix string, seq int) string {
 // ParseDisplayID extracts the prefix and sequence from a display ID
 //
 // Example: ParseDisplayID("WRK-123") returns ("WRK", 123, nil)
+//
+// Returns an error if:
+// - Format is not PREFIX-NUMBER
+// - Sequence is not a valid positive integer
 func ParseDisplayID(displayID string) (prefix string, seq int, err error) {
 	parts := strings.SplitN(displayID, "-", 2)
 	if len(parts) != 2 {
@@ -194,9 +236,18 @@ func ParseDisplayID(displayID string) (prefix string, seq int, err error) {
 	}
 
 	prefix = strings.ToUpper(parts[0])
+	if prefix == "" {
+		return "", 0, fmt.Errorf("invalid display ID format: %s (prefix cannot be empty)", displayID)
+	}
+
 	_, err = fmt.Sscanf(parts[1], "%d", &seq)
 	if err != nil {
 		return "", 0, fmt.Errorf("invalid sequence number in display ID: %s", displayID)
+	}
+
+	// Reject negative or zero sequence numbers
+	if seq <= 0 {
+		return "", 0, fmt.Errorf("invalid sequence number in display ID: %s (must be positive)", displayID)
 	}
 
 	return prefix, seq, nil

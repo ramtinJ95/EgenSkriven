@@ -150,11 +150,17 @@
   color: var(--text-primary);
 }
 
-/* Loading & Empty States */
+/* Loading, Empty & Error States */
 .loading,
 .empty {
   padding: var(--space-2);
   color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.error {
+  padding: var(--space-2);
+  color: #ef4444;
   font-size: var(--text-sm);
 }
 

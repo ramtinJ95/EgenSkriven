@@ -256,11 +256,15 @@ func TestGetNextSequence_WithExistingTasks(t *testing.T) {
 
 	b, _ := Create(app, CreateInput{Name: "Work", Prefix: "WRK"})
 
-	// Create tasks with sequences 1, 2, 3
+	// Call GetNextSequence 3 times to simulate creating 3 tasks
+	// This increments the counter each time
 	for i := 1; i <= 3; i++ {
-		createTestTask(t, app, "Task", b.ID, i)
+		seq, err := GetNextSequence(app, b.ID)
+		require.NoError(t, err)
+		assert.Equal(t, i, seq) // Should get 1, 2, 3
 	}
 
+	// Next call should return 4
 	seq, err := GetNextSequence(app, b.ID)
 	require.NoError(t, err)
 	assert.Equal(t, 4, seq)
@@ -274,15 +278,63 @@ func TestGetNextSequence_IsolatedPerBoard(t *testing.T) {
 	b1, _ := Create(app, CreateInput{Name: "Work", Prefix: "WRK"})
 	b2, _ := Create(app, CreateInput{Name: "Personal", Prefix: "PER"})
 
-	// Create 5 tasks in board 1
+	// Call GetNextSequence 5 times on board 1
 	for i := 1; i <= 5; i++ {
-		createTestTask(t, app, "Task", b1.ID, i)
+		_, err := GetNextSequence(app, b1.ID)
+		require.NoError(t, err)
 	}
 
-	// Board 2 should still start at 1
+	// Board 2 should still start at 1 (counters are isolated per board)
 	seq, err := GetNextSequence(app, b2.ID)
 	require.NoError(t, err)
 	assert.Equal(t, 1, seq)
+}
+
+// Test GetAndIncrementSequence function (atomic sequence generation)
+
+func TestGetAndIncrementSequence_IncrementsNextSeq(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	setupBoardsCollection(t, app)
+	setupTasksCollection(t, app)
+
+	b, _ := Create(app, CreateInput{Name: "Work", Prefix: "WRK"})
+
+	// First call should return 1 and increment to 2
+	seq1, err := GetAndIncrementSequence(app, b.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 1, seq1)
+
+	// Second call should return 2 and increment to 3
+	seq2, err := GetAndIncrementSequence(app, b.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 2, seq2)
+
+	// Third call should return 3
+	seq3, err := GetAndIncrementSequence(app, b.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 3, seq3)
+}
+
+func TestGetAndIncrementSequence_BoardNotFound(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	setupBoardsCollection(t, app)
+
+	_, err := GetAndIncrementSequence(app, "nonexistent")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "board not found")
+}
+
+func TestCreate_InitializesNextSeq(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	setupBoardsCollection(t, app)
+
+	b, err := Create(app, CreateInput{Name: "Work", Prefix: "WRK"})
+	require.NoError(t, err)
+
+	// Check that next_seq is initialized to 1
+	record, err := app.FindRecordById("boards", b.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 1, record.GetInt("next_seq"))
 }
 
 // Test FormatDisplayID function
@@ -342,6 +394,9 @@ func TestParseDisplayID_Invalid(t *testing.T) {
 		{"empty", ""},
 		{"just dash", "-"},
 		{"only prefix", "WRK"},
+		{"negative sequence", "WRK--5"},
+		{"zero sequence", "WRK-0"},
+		{"empty prefix", "-123"},
 	}
 
 	for _, tc := range tests {
@@ -505,6 +560,9 @@ func setupBoardsCollection(t *testing.T, app *pocketbase.PocketBase) {
 	collection.Fields.Add(&core.TextField{
 		Name: "color",
 		Max:  7,
+	})
+	collection.Fields.Add(&core.NumberField{
+		Name: "next_seq",
 	})
 
 	collection.Indexes = []string{

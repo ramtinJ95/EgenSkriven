@@ -112,6 +112,8 @@ export function useTasks(boardId?: string): UseTasksReturn {
   }, [boardId])
 
   // Create a new task
+  // Note: The backend assigns the sequence number atomically to avoid race conditions.
+  // The UI only needs to provide the board ID; seq is assigned server-side.
   const createTask = useCallback(
     async (title: string, column: Column = 'backlog'): Promise<Task> => {
       // Get next position in column
@@ -121,19 +123,6 @@ export function useTasks(boardId?: string): UseTasksReturn {
         0
       )
       const position = maxPosition + 1000
-
-      // Get next sequence number for this board
-      let seq = 1
-      if (boardId) {
-        const boardTasks = await pb.collection('tasks').getFullList<Task>({
-          filter: `board = "${boardId}"`,
-          sort: '-seq',
-          // Only need the first one to get max seq
-        })
-        if (boardTasks.length > 0 && boardTasks[0].seq) {
-          seq = boardTasks[0].seq + 1
-        }
-      }
 
       const taskData: Record<string, unknown> = {
         title,
@@ -145,10 +134,10 @@ export function useTasks(boardId?: string): UseTasksReturn {
         created_by: 'user',
       }
 
-      // Add board and seq if boardId is provided
+      // Add board if boardId is provided
+      // Note: seq is assigned by the backend via PocketBase hooks
       if (boardId) {
         taskData.board = boardId
-        taskData.seq = seq
       }
 
       const task = await pb.collection('tasks').create<Task>(taskData)
