@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/pocketbase/pocketbase"
@@ -219,6 +220,19 @@ func getTaskBlockedBy(task interface{ Get(string) any }) []string {
 	// Handle []string type
 	if ids, ok := raw.([]string); ok {
 		return ids
+	}
+
+	// Handle types.JSONRaw (from database)
+	// Try to unmarshal as JSON array of strings
+	if jsonRaw, ok := raw.(interface{ String() string }); ok {
+		var ids []string
+		jsonStr := jsonRaw.String()
+		if jsonStr == "" || jsonStr == "null" {
+			return []string{}
+		}
+		if err := json.Unmarshal([]byte(jsonStr), &ids); err == nil {
+			return ids
+		}
 	}
 
 	return []string{}
