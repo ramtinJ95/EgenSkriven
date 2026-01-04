@@ -211,6 +211,12 @@ func (f *Formatter) AmbiguousError(ref string, matches []*core.Record) error {
 	return nil // unreachable in production, but satisfies return type for tests
 }
 
+// WriteJSON outputs any value as formatted JSON.
+// This is exported for use by commands that need custom JSON output.
+func (f *Formatter) WriteJSON(v any) {
+	f.writeJSON(v)
+}
+
 // --- Helper functions ---
 
 func (f *Formatter) writeJSON(v any) {
