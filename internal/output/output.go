@@ -44,7 +44,7 @@ func (f *Formatter) Task(task *core.Record, action string) {
 		return
 	}
 
-	fmt.Printf("%s task: %s [%s]\n", action, task.GetString("title"), shortID(task.Id))
+	fmt.Printf("%s task: %s [%s]\n", action, task.GetString("title"), ShortID(task.Id))
 }
 
 // Tasks outputs a list of tasks.
@@ -205,7 +205,7 @@ func (f *Formatter) AmbiguousError(ref string, matches []*core.Record) error {
 
 	fmt.Fprintf(os.Stderr, "Error: Ambiguous task reference: '%s' matches multiple tasks:\n", ref)
 	for _, task := range matches {
-		fmt.Fprintf(os.Stderr, "  [%s] %s\n", shortID(task.Id), task.GetString("title"))
+		fmt.Fprintf(os.Stderr, "  [%s] %s\n", ShortID(task.Id), task.GetString("title"))
 	}
 	exitFunc(4)
 	return nil // unreachable in production, but satisfies return type for tests
@@ -238,7 +238,7 @@ func (f *Formatter) printTaskLine(task *core.Record) {
 	}
 
 	fmt.Printf("  [%s] %s (%s%s)\n",
-		shortID(task.Id),
+		ShortID(task.Id),
 		task.GetString("title"),
 		task.GetString("type"),
 		func() string {
@@ -295,7 +295,9 @@ func getBlockedBy(task *core.Record) []string {
 	return task.GetStringSlice("blocked_by")
 }
 
-func shortID(id string) string {
+// ShortID returns the first 8 characters of an ID for display.
+// Safe to call with IDs shorter than 8 characters.
+func ShortID(id string) string {
 	if len(id) > 8 {
 		return id[:8]
 	}

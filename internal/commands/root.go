@@ -96,13 +96,9 @@ func isValidPriority(p string) bool {
 	return false
 }
 
-// shortID returns the first 8 characters of an ID for display.
-// Safe to call with IDs shorter than 8 characters.
+// shortID is a convenience wrapper around output.ShortID.
 func shortID(id string) string {
-	if len(id) > 8 {
-		return id[:8]
-	}
-	return id
+	return output.ShortID(id)
 }
 
 // escapeLikePattern escapes SQL LIKE special characters (% and _)
