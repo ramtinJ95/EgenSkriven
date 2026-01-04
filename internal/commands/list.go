@@ -182,6 +182,13 @@ Examples:
 
 			// Apply custom sort if specified
 			if sort != "" {
+				// Valid sortable fields
+				validSortFields := map[string]bool{
+					"id": true, "title": true, "type": true, "priority": true,
+					"column": true, "position": true, "created": true, "updated": true,
+					"created_by": true,
+				}
+
 				// Parse sort string (e.g., "-priority,position")
 				sortFields := strings.Split(sort, ",")
 				for _, field := range sortFields {
@@ -189,8 +196,18 @@ Examples:
 					if field == "" {
 						continue
 					}
+					fieldName := field
 					if strings.HasPrefix(field, "-") {
-						query = query.OrderBy(field[1:] + " DESC")
+						fieldName = field[1:]
+					}
+					if !validSortFields[fieldName] {
+						return out.ErrorWithSuggestion(ExitValidation,
+							fmt.Sprintf("invalid sort field '%s'", fieldName),
+							fmt.Sprintf("Valid sort fields: id, title, type, priority, column, position, created, updated, created_by"),
+							nil)
+					}
+					if strings.HasPrefix(field, "-") {
+						query = query.OrderBy(fieldName + " DESC")
 					} else {
 						query = query.OrderBy(field + " ASC")
 					}
