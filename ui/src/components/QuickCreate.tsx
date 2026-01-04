@@ -60,6 +60,9 @@ export function QuickCreate({ isOpen, onClose, onCreate }: QuickCreateProps) {
     try {
       await onCreate(title.trim(), column)
       onClose()
+    } catch (err) {
+      console.error('Failed to create task:', err)
+      // Keep modal open so user can retry
     } finally {
       setIsCreating(false)
     }

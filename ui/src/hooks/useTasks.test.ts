@@ -7,7 +7,7 @@ vi.mock('../lib/pb', () => ({
   pb: {
     collection: vi.fn(() => ({
       getFullList: vi.fn().mockResolvedValue([]),
-      subscribe: vi.fn(),
+      subscribe: vi.fn().mockReturnValue(Promise.resolve()),
       unsubscribe: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),

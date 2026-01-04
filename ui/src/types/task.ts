@@ -36,6 +36,7 @@ export interface Task extends RecordModel {
   position: number
   labels?: string[]
   blocked_by?: string[]       // Array of task IDs that block this task
+  due_date?: string           // Optional due date
   created_by: CreatedBy
   created_by_agent?: string   // Agent identifier (e.g., "claude", "opencode")
   history?: HistoryEntry[]    // Activity tracking array
