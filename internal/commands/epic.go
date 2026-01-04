@@ -50,7 +50,9 @@ func newEpicListCmd(app *pocketbase.PocketBase) *cobra.Command {
 			// Find all epics
 			records, err := app.FindAllRecords("epics")
 			if err != nil {
-				return out.Error(ExitGeneralError, fmt.Sprintf("failed to list epics: %v", err), nil)
+				return out.ErrorWithSuggestion(ExitGeneralError,
+					fmt.Sprintf("failed to list epics: %v", err),
+					"Run 'egenskriven serve' first to initialize the database", nil)
 			}
 
 			// Output
@@ -137,7 +139,9 @@ Color must be a valid hex code (e.g., #3B82F6).`,
 			// Find epics collection
 			collection, err := app.FindCollectionByNameOrId("epics")
 			if err != nil {
-				return out.Error(ExitGeneralError, "epics collection not found - run migrations first", nil)
+				return out.ErrorWithSuggestion(ExitGeneralError,
+					"epics collection not found",
+					"Run 'egenskriven serve' first to initialize the database", nil)
 			}
 
 			// Create record
@@ -209,7 +213,8 @@ You can reference an epic by:
 			// Resolve epic reference
 			record, err := resolveEpic(app, ref)
 			if err != nil {
-				return out.Error(ExitNotFound, err.Error(), nil)
+				return out.ErrorWithSuggestion(ExitNotFound, err.Error(),
+					"Use 'egenskriven epic list' to see available epics", nil)
 			}
 
 			// Get linked tasks
@@ -306,7 +311,8 @@ Use --force to skip the confirmation prompt.`,
 			// Resolve epic
 			record, err := resolveEpic(app, ref)
 			if err != nil {
-				return out.Error(ExitNotFound, err.Error(), nil)
+				return out.ErrorWithSuggestion(ExitNotFound, err.Error(),
+					"Use 'egenskriven epic list' to see available epics", nil)
 			}
 
 			// Count linked tasks
