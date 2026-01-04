@@ -16,15 +16,18 @@ interface UseTasksReturn {
  * Hook for managing tasks with real-time updates.
  * 
  * Features:
- * - Fetches all tasks on mount
+ * - Fetches tasks on mount (optionally filtered by board)
  * - Subscribes to real-time create/update/delete events
  * - Provides CRUD operations
  * - Automatically updates local state on changes
  * 
+ * @param boardId - Optional board ID to filter tasks. If not provided, fetches all tasks.
+ * 
  * @example
  * ```tsx
  * function Board() {
- *   const { tasks, loading, moveTask } = useTasks()
+ *   const { currentBoard } = useCurrentBoard()
+ *   const { tasks, loading, moveTask } = useTasks(currentBoard?.id)
  *   
  *   if (loading) return <div>Loading...</div>
  *   
@@ -32,18 +35,26 @@ interface UseTasksReturn {
  * }
  * ```
  */
-export function useTasks(): UseTasksReturn {
+export function useTasks(boardId?: string): UseTasksReturn {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  // Fetch all tasks on mount
+  // Fetch tasks on mount or when boardId changes
   useEffect(() => {
     const fetchTasks = async () => {
+      setLoading(true)
       try {
-        const records = await pb.collection('tasks').getFullList<Task>({
+        const options: { sort: string; filter?: string } = {
           sort: 'position',
-        })
+        }
+        
+        // Filter by board if boardId is provided
+        if (boardId) {
+          options.filter = `board = "${boardId}"`
+        }
+        
+        const records = await pb.collection('tasks').getFullList<Task>(options)
         setTasks(records)
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Failed to fetch tasks'))
@@ -53,25 +64,36 @@ export function useTasks(): UseTasksReturn {
     }
 
     fetchTasks()
-  }, [])
+  }, [boardId])
 
   // Subscribe to real-time updates
   useEffect(() => {
     // Subscribe to all task changes
     pb.collection('tasks').subscribe<Task>('*', (event) => {
+      // Filter events by board if boardId is provided
+      const taskBoardId = event.record.board
+      const matchesBoard = !boardId || taskBoardId === boardId
+
       switch (event.action) {
         case 'create':
-          // Add new task to state and sort by position
-          setTasks((prev) => 
-            [...prev, event.record].sort((a, b) => a.position - b.position)
-          )
+          // Only add if task belongs to the current board (or no board filter)
+          if (matchesBoard) {
+            setTasks((prev) => 
+              [...prev, event.record].sort((a, b) => a.position - b.position)
+            )
+          }
           break
           
         case 'update':
-          // Replace updated task in state
-          setTasks((prev) =>
-            prev.map((t) => (t.id === event.record.id ? event.record : t))
-          )
+          // If task was moved to a different board, remove it from this view
+          if (boardId && taskBoardId !== boardId) {
+            setTasks((prev) => prev.filter((t) => t.id !== event.record.id))
+          } else {
+            // Replace updated task in state
+            setTasks((prev) =>
+              prev.map((t) => (t.id === event.record.id ? event.record : t))
+            )
+          }
           break
           
         case 'delete':
@@ -87,7 +109,7 @@ export function useTasks(): UseTasksReturn {
     return () => {
       pb.collection('tasks').unsubscribe('*')
     }
-  }, [])
+  }, [boardId])
 
   // Create a new task
   const createTask = useCallback(
@@ -100,7 +122,20 @@ export function useTasks(): UseTasksReturn {
       )
       const position = maxPosition + 1000
 
-      const task = await pb.collection('tasks').create<Task>({
+      // Get next sequence number for this board
+      let seq = 1
+      if (boardId) {
+        const boardTasks = await pb.collection('tasks').getFullList<Task>({
+          filter: `board = "${boardId}"`,
+          sort: '-seq',
+          // Only need the first one to get max seq
+        })
+        if (boardTasks.length > 0 && boardTasks[0].seq) {
+          seq = boardTasks[0].seq + 1
+        }
+      }
+
+      const taskData: Record<string, unknown> = {
         title,
         column,
         position,
@@ -108,11 +143,19 @@ export function useTasks(): UseTasksReturn {
         priority: 'medium',
         labels: [],
         created_by: 'user',
-      })
+      }
+
+      // Add board and seq if boardId is provided
+      if (boardId) {
+        taskData.board = boardId
+        taskData.seq = seq
+      }
+
+      const task = await pb.collection('tasks').create<Task>(taskData)
 
       return task
     },
-    [tasks]
+    [tasks, boardId]
   )
 
   // Update a task
