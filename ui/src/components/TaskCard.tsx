@@ -72,6 +72,7 @@ export function TaskCard({ task, isSelected = false, onClick, onSelect }: TaskCa
       {...attributes}
       style={style}
       className={`${styles.card} ${isSelected ? styles.selected : ''}`}
+      data-task-id={task.id}
       onClick={handleClick}
       onFocus={handleFocus}
       tabIndex={0}
