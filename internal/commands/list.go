@@ -23,6 +23,9 @@ func newListCmd(app *pocketbase.PocketBase) *cobra.Command {
 		notBlocked bool
 		fields     string
 		epicFilter string
+		labels     []string
+		limit      int
+		sort       string
 	)
 
 	cmd := &cobra.Command{
@@ -39,7 +42,10 @@ Examples:
   egenskriven list --ready
   egenskriven list --is-blocked
   egenskriven list --json --fields id,title,column
-  egenskriven list --epic "Q1 Launch"`,
+  egenskriven list --epic "Q1 Launch"
+  egenskriven list --label frontend --label ui
+  egenskriven list --limit 10
+  egenskriven list --sort "-priority,position"`,
 		Aliases: []string{"ls"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := getFormatter()
@@ -149,23 +155,64 @@ Examples:
 				))
 			}
 
-			// Execute query
+			// Label filter
+			if len(labels) > 0 {
+				for _, label := range labels {
+					filters = append(filters, dbx.NewExp(
+						"labels LIKE {:label}",
+						dbx.Params{"label": "%" + label + "%"},
+					))
+				}
+			}
+
+			// Execute query using RecordQuery for limit/sort support
 			var tasks []*core.Record
-			var err error
+
+			collection, err := app.FindCollectionByNameOrId("tasks")
+			if err != nil {
+				return out.Error(ExitGeneralError, "tasks collection not found", nil)
+			}
+
+			query := app.RecordQuery(collection)
 
 			if len(filters) > 0 {
 				combined := dbx.And(filters...)
-				tasks, err = app.FindAllRecords("tasks", combined)
-			} else {
-				tasks, err = app.FindAllRecords("tasks")
+				query = query.AndWhere(combined)
 			}
 
+			// Apply custom sort if specified
+			if sort != "" {
+				// Parse sort string (e.g., "-priority,position")
+				sortFields := strings.Split(sort, ",")
+				for _, field := range sortFields {
+					field = strings.TrimSpace(field)
+					if field == "" {
+						continue
+					}
+					if strings.HasPrefix(field, "-") {
+						query = query.OrderBy(field[1:] + " DESC")
+					} else {
+						query = query.OrderBy(field + " ASC")
+					}
+				}
+			} else {
+				query = query.OrderBy("column ASC", "position ASC")
+			}
+
+			// Apply limit
+			if limit > 0 {
+				query = query.Limit(int64(limit))
+			}
+
+			err = query.All(&tasks)
 			if err != nil {
 				return out.Error(ExitGeneralError, fmt.Sprintf("failed to list tasks: %v", err), nil)
 			}
 
-			// Sort by position within each column
-			sortTasksByPosition(tasks)
+			// Sort by position within each column (only if no custom sort)
+			if sort == "" {
+				sortTasksByPosition(tasks)
+			}
 
 			// Handle field selection for JSON output
 			if jsonOutput && fields != "" {
@@ -201,6 +248,12 @@ Examples:
 		"Comma-separated fields to include in JSON output")
 	cmd.Flags().StringVarP(&epicFilter, "epic", "e", "",
 		"Filter by epic (ID or title)")
+	cmd.Flags().StringSliceVarP(&labels, "label", "l", nil,
+		"Filter by label (repeatable)")
+	cmd.Flags().IntVar(&limit, "limit", 0,
+		"Maximum number of results (0 = no limit)")
+	cmd.Flags().StringVar(&sort, "sort", "",
+		"Sort order (e.g., '-priority,position')")
 
 	return cmd
 }
