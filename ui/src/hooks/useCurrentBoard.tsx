@@ -40,10 +40,17 @@ export function CurrentBoardProvider({ children }: CurrentBoardProviderProps) {
 
   // Initialize current board from localStorage or first board
   useEffect(() => {
-    if (boardsLoading || boards.length === 0) return
+    if (boardsLoading) return
 
     // Already initialized
     if (initialized) return
+
+    // Handle case where there are no boards
+    if (boards.length === 0) {
+      setCurrentBoardState(null)
+      setInitialized(true)
+      return
+    }
 
     const savedBoardId = localStorage.getItem(STORAGE_KEY)
     
@@ -55,10 +62,13 @@ export function CurrentBoardProvider({ children }: CurrentBoardProviderProps) {
         setInitialized(true)
         return
       }
+      // Saved board not found - clear stale localStorage
+      localStorage.removeItem(STORAGE_KEY)
     }
 
     // Default to first board
     setCurrentBoardState(boards[0])
+    localStorage.setItem(STORAGE_KEY, boards[0].id)
     setInitialized(true)
   }, [boards, boardsLoading, initialized])
 
@@ -72,15 +82,21 @@ export function CurrentBoardProvider({ children }: CurrentBoardProviderProps) {
     }
   }, [boards, currentBoard])
 
-  // Handle board deletion - switch to another board
+  // Handle board deletion - switch to another board or set to null
   useEffect(() => {
-    if (!currentBoard || boards.length === 0) return
+    if (!currentBoard) return
 
     const stillExists = boards.some((b) => b.id === currentBoard.id)
     if (!stillExists) {
-      // Current board was deleted, switch to first available
-      setCurrentBoardState(boards[0])
-      localStorage.setItem(STORAGE_KEY, boards[0].id)
+      if (boards.length > 0) {
+        // Current board was deleted, switch to first available
+        setCurrentBoardState(boards[0])
+        localStorage.setItem(STORAGE_KEY, boards[0].id)
+      } else {
+        // All boards deleted, set to null
+        setCurrentBoardState(null)
+        localStorage.removeItem(STORAGE_KEY)
+      }
     }
   }, [boards, currentBoard])
 

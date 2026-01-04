@@ -164,5 +164,35 @@ describe('useCurrentBoard', () => {
         expect(result.current.currentBoard?.id).toBe('board-2')
       })
     })
+
+    it('sets currentBoard to null when all boards are deleted', async () => {
+      const { result, rerender } = renderHook(() => useCurrentBoard(), { wrapper })
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false)
+      })
+
+      expect(result.current.currentBoard?.id).toBe('board-1')
+
+      // Simulate all boards deleted
+      mockBoardsData = []
+
+      rerender()
+
+      await waitFor(() => {
+        expect(result.current.currentBoard).toBeNull()
+      })
+    })
+
+    it('clears localStorage when saved board not found', async () => {
+      localStorage.setItem('egenskriven-current-board', 'deleted-board')
+
+      renderHook(() => useCurrentBoard(), { wrapper })
+
+      await waitFor(() => {
+        // Should have cleared the stale localStorage entry
+        expect(localStorage.getItem('egenskriven-current-board')).toBe('board-1')
+      })
+    })
   })
 })

@@ -46,6 +46,14 @@ func init() {
 			Max:  7, // #RRGGBB format
 		})
 
+		// NextSeq: Counter for generating unique task sequence numbers
+		// Atomically incremented when creating tasks to avoid race conditions
+		// Starts at 1, so first task gets seq=1
+		collection.Fields.Add(&core.NumberField{
+			Name: "next_seq",
+			Min:  floatPtr(1),
+		})
+
 		// Add unique index on prefix
 		collection.Indexes = []string{
 			"CREATE UNIQUE INDEX idx_boards_prefix ON boards(prefix)",
