@@ -22,6 +22,7 @@ func newListCmd(app *pocketbase.PocketBase) *cobra.Command {
 		isBlocked  bool
 		notBlocked bool
 		fields     string
+		epicFilter string
 	)
 
 	cmd := &cobra.Command{
@@ -37,7 +38,8 @@ Examples:
   egenskriven list --type bug --priority urgent
   egenskriven list --ready
   egenskriven list --is-blocked
-  egenskriven list --json --fields id,title,column`,
+  egenskriven list --json --fields id,title,column
+  egenskriven list --epic "Q1 Launch"`,
 		Aliases: []string{"ls"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := getFormatter()
@@ -135,6 +137,18 @@ Examples:
 				))
 			}
 
+			// Epic filter
+			if epicFilter != "" {
+				epicRecord, err := resolveEpic(app, epicFilter)
+				if err != nil {
+					return out.Error(ExitValidation, fmt.Sprintf("invalid epic filter: %v", err), nil)
+				}
+				filters = append(filters, dbx.NewExp(
+					"epic = {:epic}",
+					dbx.Params{"epic": epicRecord.Id},
+				))
+			}
+
 			// Execute query
 			var tasks []*core.Record
 			var err error
@@ -185,6 +199,8 @@ Examples:
 		"Show only tasks not blocked by others")
 	cmd.Flags().StringVar(&fields, "fields", "",
 		"Comma-separated fields to include in JSON output")
+	cmd.Flags().StringVarP(&epicFilter, "epic", "e", "",
+		"Filter by epic (ID or title)")
 
 	return cmd
 }
