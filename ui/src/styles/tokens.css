@@ -1,0 +1,175 @@
+/* =============================================================================
+   EgenSkriven Design Tokens
+   
+   Based on ui-design.md specifications.
+   Dark mode is the default; light mode overrides in a separate file.
+   ============================================================================= */
+
+:root {
+  /* -------------------------------------------------------------------------
+     Colors: Backgrounds
+     ------------------------------------------------------------------------- */
+  --bg-app: #0D0D0D;
+  --bg-sidebar: #141414;
+  --bg-card: #1A1A1A;
+  --bg-card-hover: #252525;
+  --bg-card-selected: #2E2E2E;
+  --bg-input: #1F1F1F;
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+
+  /* -------------------------------------------------------------------------
+     Colors: Text
+     ------------------------------------------------------------------------- */
+  --text-primary: #F5F5F5;
+  --text-secondary: #A0A0A0;
+  --text-muted: #666666;
+  --text-disabled: #444444;
+
+  /* -------------------------------------------------------------------------
+     Colors: Borders
+     ------------------------------------------------------------------------- */
+  --border-subtle: #2A2A2A;
+  --border-default: #333333;
+  --border-focus: var(--accent);
+
+  /* -------------------------------------------------------------------------
+     Colors: Accent (Blue default, can be customized)
+     ------------------------------------------------------------------------- */
+  --accent: #5E6AD2;
+  --accent-hover: #6E7BE2;
+  --accent-muted: rgba(94, 106, 210, 0.2);
+
+  /* -------------------------------------------------------------------------
+     Colors: Status (Column/task status)
+     ------------------------------------------------------------------------- */
+  --status-backlog: #6B7280;
+  --status-todo: #E5E5E5;
+  --status-in-progress: #F59E0B;
+  --status-review: #A855F7;
+  --status-done: #22C55E;
+  --status-canceled: #6B7280;
+
+  /* -------------------------------------------------------------------------
+     Colors: Priority
+     ------------------------------------------------------------------------- */
+  --priority-urgent: #EF4444;
+  --priority-high: #F97316;
+  --priority-medium: #EAB308;
+  --priority-low: #6B7280;
+  --priority-none: #444444;
+
+  /* -------------------------------------------------------------------------
+     Colors: Task Type
+     ------------------------------------------------------------------------- */
+  --type-bug: #EF4444;
+  --type-feature: #A855F7;
+  --type-chore: #6B7280;
+
+  /* -------------------------------------------------------------------------
+     Typography
+     ------------------------------------------------------------------------- */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+
+  /* Font sizes */
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 13px;
+  --text-lg: 14px;
+  --text-xl: 16px;
+  --text-2xl: 20px;
+  --text-3xl: 24px;
+
+  /* Font weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+
+  /* Line heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  /* -------------------------------------------------------------------------
+     Spacing
+     ------------------------------------------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* -------------------------------------------------------------------------
+     Border Radius
+     ------------------------------------------------------------------------- */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* -------------------------------------------------------------------------
+     Shadows
+     ------------------------------------------------------------------------- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  --shadow-drag: 0 12px 24px rgba(0, 0, 0, 0.6);
+
+  /* -------------------------------------------------------------------------
+     Animations
+     ------------------------------------------------------------------------- */
+  --duration-fast: 100ms;
+  --duration-normal: 150ms;
+  --duration-slow: 200ms;
+
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+
+  /* -------------------------------------------------------------------------
+     Layout
+     ------------------------------------------------------------------------- */
+  --sidebar-width: 240px;
+  --column-width: 280px;
+  --column-gap: 16px;
+  --detail-panel-width: 400px;
+}
+
+/* =============================================================================
+   Base Styles
+   ============================================================================= */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  background-color: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Remove default focus for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
