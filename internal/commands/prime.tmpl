@@ -1,0 +1,121 @@
+<EXTREMELY_IMPORTANT>
+# EgenSkriven Task Tracker for Agents
+
+This project uses **EgenSkriven**, a local-first kanban board for task tracking.
+{{if .OverrideTodoWrite}}
+**Always use egenskriven instead of TodoWrite to manage your work and tasks.**
+**Always use egenskriven instead of writing todo lists.**
+{{end}}
+
+All commands support `--json` for machine-readable output.
+
+## Agent Mode: {{.AgentMode}}
+
+{{if eq .AgentMode "autonomous"}}
+You have full autonomy to create, update, and complete tasks directly.
+Always identify yourself when making changes: use `--agent <your-name>` flag.
+The human will review your actions asynchronously via the activity history.
+{{else if eq .AgentMode "collaborative"}}
+You can execute minor updates (status, priority, labels) directly.
+For major actions (completing tasks, deleting), explain your intent and let the human confirm.
+Example: "I believe task [id] is complete. Run `egenskriven move [id] done` to confirm."
+{{else}}
+You are in supervised/read-only mode. You can query tasks and make suggestions.
+Output CLI commands for the human to execute. Do not run commands that modify tasks.
+{{end}}
+
+## Workflow Mode: {{.WorkflowMode}}
+
+{{if eq .WorkflowMode "strict"}}
+### BEFORE starting any task:
+1. Check for existing task: `egenskriven list --json --search "keyword"`
+2. Create if needed: `egenskriven add "Title" --type <type> --column todo --agent {{.AgentName}} --json`
+3. Start work: `egenskriven move <id> in_progress`
+
+### DURING work:
+- Keep task description updated with progress
+{{if .StructuredSections}}
+- Use structured sections in description:
+  - `## Approach` - How you plan to implement
+  - `## Open Questions` - Uncertainties to resolve
+  - `## Checklist` - Steps with checkboxes
+{{end}}
+- Identify blocking relationships for parallel work
+
+### AFTER completing:
+{{if .RequireSummary}}
+- Add `## Summary of Changes` section describing what was done
+{{end}}
+- Mark complete: `egenskriven move <id> done`
+- Reference task ID in commits: "feat: implement X [task-id]"
+{{else if eq .WorkflowMode "light"}}
+### Workflow
+- Create task for substantial work: `egenskriven add "Title" --type <type> --agent {{.AgentName}} --json`
+- Update status when done: `egenskriven move <id> done`
+- Reference task ID in commits when relevant
+{{else}}
+### Workflow
+- Use egenskriven for task tracking as needed
+- All commands support `--json` for structured output
+{{end}}
+
+## Quick Reference
+
+```bash
+# Find ready tasks (unblocked, in todo/backlog)
+egenskriven list --json --ready
+
+# Show task details
+egenskriven show <id> --json
+
+# Create task (always include --agent to identify yourself)
+egenskriven add "Title" --type bug --priority urgent --agent {{.AgentName}} --json
+
+# Move task to different column
+egenskriven move <id> in_progress
+egenskriven move <id> done
+
+# Update task
+egenskriven update <id> --priority high --blocked-by <other-id>
+
+# Get work suggestions
+egenskriven suggest --json
+
+# Get project context
+egenskriven context --json
+
+# List all tasks
+egenskriven list --json
+
+# Filter tasks
+egenskriven list --json --column todo --type bug
+egenskriven list --json --is-blocked
+egenskriven list --json --not-blocked
+```
+
+## Task Types
+- `bug`: Something broken that needs fixing
+- `feature`: New functionality
+- `chore`: Maintenance, refactoring, docs
+
+## Priorities
+- `urgent`: Do immediately
+- `high`: Do before normal work
+- `medium`: Standard priority
+- `low`: Can be delayed
+
+## Columns
+- `backlog`: Not yet planned
+- `todo`: Ready to start
+- `in_progress`: Currently working
+- `review`: Awaiting review
+- `done`: Completed
+
+## Blocking Relationships
+
+Use `--blocked-by` to track dependencies:
+- `egenskriven update <id> --blocked-by <other-id>` - Mark as blocked
+- `egenskriven list --not-blocked` - Find parallelizable work
+- `egenskriven list --is-blocked` - See what's waiting
+- `egenskriven list --ready` - Unblocked tasks in todo/backlog
+</EXTREMELY_IMPORTANT>
