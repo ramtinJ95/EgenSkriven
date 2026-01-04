@@ -370,8 +370,21 @@ func resolveEpic(app *pocketbase.PocketBase, ref string) (*core.Record, error) {
 	records, err := app.FindAllRecords("epics",
 		dbx.NewExp("id LIKE {:prefix}", dbx.Params{"prefix": ref + "%"}),
 	)
-	if err == nil && len(records) == 1 {
-		return records[0], nil
+	if err == nil {
+		switch len(records) {
+		case 1:
+			return records[0], nil
+		case 0:
+			// No ID prefix matches, continue to title search
+		default:
+			// Multiple ID prefix matches - ambiguous
+			var matches []string
+			for _, r := range records {
+				matches = append(matches, fmt.Sprintf("[%s] %s", shortID(r.Id), r.GetString("title")))
+			}
+			return nil, fmt.Errorf("ambiguous epic ID prefix '%s' matches multiple epics:\n  %s",
+				ref, strings.Join(matches, "\n  "))
+		}
 	}
 
 	// Try title match (case-insensitive)
