@@ -122,15 +122,22 @@ Examples:
 				oldBlockedBy := getTaskBlockedBy(task)
 				newBlockedBy := updateBlockedBy(task.Id, oldBlockedBy, blockedBy, removeBlockedBy)
 
-				// Validate that all blocking tasks exist
+				// Validate that all blocking tasks exist and check for cycles
 				for _, blockingID := range newBlockedBy {
 					if blockingID == task.Id {
 						return out.Error(ExitValidation, "task cannot block itself", nil)
 					}
-					_, err := app.FindRecordById("tasks", blockingID)
+					blockingTask, err := app.FindRecordById("tasks", blockingID)
 					if err != nil {
 						return out.Error(ExitNotFound,
 							fmt.Sprintf("blocking task not found: %s", blockingID), nil)
+					}
+
+					// Check for circular dependency
+					if hasCircularDependency(app, task.Id, blockingTask) {
+						return out.Error(ExitValidation,
+							fmt.Sprintf("circular dependency detected: %s is already blocked by %s (directly or indirectly)",
+								shortID(blockingID), shortID(task.Id)), nil)
 					}
 				}
 
@@ -236,6 +243,47 @@ func getTaskBlockedBy(task interface{ Get(string) any }) []string {
 	}
 
 	return []string{}
+}
+
+// hasCircularDependency checks if adding a blocking relationship would create a cycle.
+// It checks if targetID appears in the blocked_by chain of blockingTask.
+func hasCircularDependency(app *pocketbase.PocketBase, targetID string, blockingTask interface {
+	Get(string) any
+	GetString(string) string
+}) bool {
+	// Use BFS to traverse the blocked_by chain
+	visited := make(map[string]bool)
+	queue := []string{}
+
+	// Start with the blocking task's blocked_by list
+	blockedBy := getTaskBlockedBy(blockingTask)
+	queue = append(queue, blockedBy...)
+
+	for len(queue) > 0 {
+		currentID := queue[0]
+		queue = queue[1:]
+
+		if visited[currentID] {
+			continue
+		}
+		visited[currentID] = true
+
+		// If we find the target task in the chain, there's a cycle
+		if currentID == targetID {
+			return true
+		}
+
+		// Get the blocked_by list of the current task
+		currentTask, err := app.FindRecordById("tasks", currentID)
+		if err != nil {
+			continue // Task not found, skip
+		}
+
+		blockedBy := getTaskBlockedBy(currentTask)
+		queue = append(queue, blockedBy...)
+	}
+
+	return false
 }
 
 // updateBlockedBy adds and removes blocking task IDs.
