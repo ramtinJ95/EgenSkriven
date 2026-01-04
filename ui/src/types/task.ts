@@ -40,6 +40,8 @@ export interface Task extends RecordModel {
   created_by: CreatedBy
   created_by_agent?: string   // Agent identifier (e.g., "claude", "opencode")
   history?: HistoryEntry[]    // Activity tracking array
+  board?: string              // Board ID (relation to boards collection)
+  seq?: number                // Per-board sequence number for display IDs
 }
 
 // All possible columns in display order
