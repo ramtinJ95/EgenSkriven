@@ -50,6 +50,12 @@ Examples:
 			// Build filter expressions
 			var filters []dbx.Expression
 
+			// Validate mutually exclusive flags
+			if isBlocked && notBlocked {
+				return out.Error(ExitValidation,
+					"--is-blocked and --not-blocked are mutually exclusive", nil)
+			}
+
 			// Ready filter: unblocked tasks in todo/backlog
 			if ready {
 				columns = []string{"todo", "backlog"}
