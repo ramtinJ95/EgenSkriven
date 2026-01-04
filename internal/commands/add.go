@@ -19,6 +19,7 @@ func newAddCmd(app *pocketbase.PocketBase) *cobra.Command {
 		customID  string
 		createdBy string
 		agentName string
+		epic      string
 	)
 
 	cmd := &cobra.Command{
@@ -33,7 +34,8 @@ Examples:
   egenskriven add "Implement dark mode"
   egenskriven add "Fix login crash" --type bug --priority urgent
   egenskriven add "Setup CI" --id ci-setup-001
-  egenskriven add "Refactor auth" --agent claude`,
+  egenskriven add "Refactor auth" --agent claude
+  egenskriven add "Add login" --epic "Auth Refactor"`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := getFormatter()
@@ -98,6 +100,16 @@ Examples:
 				record.Id = customID
 			}
 
+			// Resolve epic if provided
+			var epicID string
+			if epic != "" {
+				epicRecord, err := resolveEpic(app, epic)
+				if err != nil {
+					return out.Error(ExitValidation, fmt.Sprintf("invalid epic: %v", err), nil)
+				}
+				epicID = epicRecord.Id
+			}
+
 			// Set task fields
 			record.Set("title", title)
 			record.Set("type", taskType)
@@ -109,6 +121,9 @@ Examples:
 			record.Set("created_by", createdBy)
 			if agentName != "" {
 				record.Set("created_by_agent", agentName)
+			}
+			if epicID != "" {
+				record.Set("epic", epicID)
 			}
 
 			// Initialize history
@@ -149,6 +164,8 @@ Examples:
 		"Creator type (user, agent, cli)")
 	cmd.Flags().StringVar(&agentName, "agent", "",
 		"Agent identifier (implies --created-by agent)")
+	cmd.Flags().StringVarP(&epic, "epic", "e", "",
+		"Link task to epic (ID or title)")
 
 	return cmd
 }
