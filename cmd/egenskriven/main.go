@@ -5,8 +5,8 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 
-	"github.com/ramtinj/egenskriven/internal/commands"
-	_ "github.com/ramtinj/egenskriven/migrations" // Auto-register migrations
+	"github.com/ramtinJ95/EgenSkriven/internal/commands"
+	_ "github.com/ramtinJ95/EgenSkriven/migrations" // Auto-register migrations
 )
 
 func main() {

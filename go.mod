@@ -1,4 +1,4 @@
-module github.com/ramtinj/egenskriven
+module github.com/ramtinJ95/EgenSkriven
 
 go 1.25.5
 

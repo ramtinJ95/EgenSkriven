@@ -5,7 +5,7 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 
-	"github.com/ramtinj/egenskriven/internal/output"
+	"github.com/ramtinJ95/EgenSkriven/internal/output"
 )
 
 var (
