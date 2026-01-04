@@ -1,14 +1,32 @@
 import { useDroppable } from '@dnd-kit/core'
 import { TaskCard } from './TaskCard'
-import { COLUMN_NAMES, type Column as ColumnType, type Task } from '../types/task'
+import { COLUMN_NAMES, type Task } from '../types/task'
+import type { Board } from '../types/board'
 import styles from './Column.module.css'
 
 interface ColumnProps {
-  column: ColumnType
+  column: string
   tasks: Task[]
   onTaskClick?: (task: Task) => void
   onTaskSelect?: (task: Task) => void
   selectedTaskId?: string | null
+  currentBoard?: Board | null
+}
+
+/**
+ * Format column name for display.
+ * Uses predefined names if available, otherwise formats the key.
+ */
+function getColumnDisplayName(column: string): string {
+  // Check if we have a predefined name
+  if (column in COLUMN_NAMES) {
+    return COLUMN_NAMES[column as keyof typeof COLUMN_NAMES]
+  }
+  // Format custom column name: replace underscores with spaces, title case
+  return column
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 /**
@@ -17,7 +35,7 @@ interface ColumnProps {
  * Acts as a droppable target for drag-and-drop.
  * Displays column header with name and count.
  */
-export function Column({ column, tasks, onTaskClick, onTaskSelect, selectedTaskId }: ColumnProps) {
+export function Column({ column, tasks, onTaskClick, onTaskSelect, selectedTaskId, currentBoard }: ColumnProps) {
   // Make this column a droppable target
   const { setNodeRef, isOver } = useDroppable({
     id: `column-${column}`,
@@ -37,7 +55,7 @@ export function Column({ column, tasks, onTaskClick, onTaskSelect, selectedTaskI
             className={styles.statusDot}
             style={{ backgroundColor: `var(--status-${column.replace('_', '-')})` }}
           />
-          <span className={styles.name}>{COLUMN_NAMES[column]}</span>
+          <span className={styles.name}>{getColumnDisplayName(column)}</span>
           <span className={styles.count}>{tasks.length}</span>
         </div>
       </div>
@@ -50,6 +68,7 @@ export function Column({ column, tasks, onTaskClick, onTaskSelect, selectedTaskI
             onClick={onTaskClick}
             onSelect={onTaskSelect}
             isSelected={selectedTaskId === task.id}
+            currentBoard={currentBoard}
           />
         ))}
       </div>

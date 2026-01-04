@@ -11,7 +11,9 @@ import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import { Column } from './Column'
 import { TaskCard } from './TaskCard'
 import { useTasks } from '../hooks/useTasks'
-import { COLUMNS, type Task, type Column as ColumnType } from '../types/task'
+import { useCurrentBoard } from '../hooks/useCurrentBoard'
+import { type Task, type Column as ColumnType } from '../types/task'
+import { DEFAULT_COLUMNS } from '../types/board'
 import styles from './Board.module.css'
 
 interface BoardProps {
@@ -25,14 +27,27 @@ interface BoardProps {
  * 
  * Features:
  * - Displays tasks grouped by column
+ * - Filters tasks by current board
+ * - Supports board-specific custom columns
  * - Drag tasks between columns
  * - Real-time updates from CLI changes
  * - Click task to open detail panel
  * - Selected task state for keyboard navigation
  */
 export function Board({ onTaskClick, onTaskSelect, selectedTaskId }: BoardProps) {
-  const { tasks, loading, error, moveTask } = useTasks()
+  const { currentBoard, loading: boardLoading } = useCurrentBoard()
+  const { tasks, loading: tasksLoading, error, moveTask } = useTasks(currentBoard?.id)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
+
+  // Get columns from board or use defaults
+  const columns = useMemo(() => {
+    if (currentBoard?.columns && currentBoard.columns.length > 0) {
+      return currentBoard.columns as ColumnType[]
+    }
+    return DEFAULT_COLUMNS as ColumnType[]
+  }, [currentBoard])
+
+  const loading = boardLoading || tasksLoading
 
   // Configure drag sensors
   // PointerSensor requires a small movement before dragging starts
@@ -47,13 +62,12 @@ export function Board({ onTaskClick, onTaskSelect, selectedTaskId }: BoardProps)
 
   // Group tasks by column
   const tasksByColumn = useMemo(() => {
-    const grouped: Record<ColumnType, Task[]> = {
-      backlog: [],
-      todo: [],
-      in_progress: [],
-      review: [],
-      done: [],
-    }
+    const grouped: Record<string, Task[]> = {}
+
+    // Initialize all columns with empty arrays
+    columns.forEach((col) => {
+      grouped[col] = []
+    })
 
     tasks.forEach((task) => {
       if (grouped[task.column]) {
@@ -63,11 +77,11 @@ export function Board({ onTaskClick, onTaskSelect, selectedTaskId }: BoardProps)
 
     // Sort each column by position
     Object.keys(grouped).forEach((col) => {
-      grouped[col as ColumnType].sort((a, b) => a.position - b.position)
+      grouped[col].sort((a, b) => a.position - b.position)
     })
 
     return grouped
-  }, [tasks])
+  }, [tasks, columns])
 
   // Handle drag start - store the dragged task for overlay
   const handleDragStart = (event: DragStartEvent) => {
@@ -126,6 +140,15 @@ export function Board({ onTaskClick, onTaskSelect, selectedTaskId }: BoardProps)
     )
   }
 
+  if (!currentBoard) {
+    return (
+      <div className={styles.empty}>
+        <span>No board selected</span>
+        <p>Create a board using the sidebar to get started.</p>
+      </div>
+    )
+  }
+
   return (
     <DndContext
       sensors={sensors}
@@ -134,14 +157,15 @@ export function Board({ onTaskClick, onTaskSelect, selectedTaskId }: BoardProps)
       onDragEnd={handleDragEnd}
     >
       <div className={styles.board}>
-        {COLUMNS.map((column) => (
+        {columns.map((column) => (
           <Column
             key={column}
             column={column}
-            tasks={tasksByColumn[column]}
+            tasks={tasksByColumn[column] || []}
             onTaskClick={onTaskClick}
             onTaskSelect={onTaskSelect}
             selectedTaskId={selectedTaskId}
+            currentBoard={currentBoard}
           />
         ))}
       </div>
@@ -150,7 +174,7 @@ export function Board({ onTaskClick, onTaskSelect, selectedTaskId }: BoardProps)
       <DragOverlay dropAnimation={null}>
         {activeTask ? (
           <div style={{ width: 'var(--column-width)' }}>
-            <TaskCard task={activeTask} />
+            <TaskCard task={activeTask} currentBoard={currentBoard} />
           </div>
         ) : null}
       </DragOverlay>
