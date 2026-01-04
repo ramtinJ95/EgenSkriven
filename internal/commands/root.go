@@ -43,6 +43,9 @@ func Register(app *pocketbase.PocketBase) {
 	// Phase 3 commands
 	app.RootCmd.AddCommand(newEpicCmd(app))
 	app.RootCmd.AddCommand(newVersionCmd())
+
+	// Phase 5 commands
+	app.RootCmd.AddCommand(newBoardCmd(app))
 }
 
 // getFormatter creates a new output formatter with current flag values.
