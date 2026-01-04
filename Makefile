@@ -12,6 +12,16 @@
 
 .PHONY: dev build run clean test test-coverage tidy help build-ui dev-ui test-ui clean-ui dev-all
 
+# Version info (can be overridden: make build VERSION=1.0.0)
+VERSION ?= dev
+BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+
+# Linker flags for embedding version info
+LDFLAGS := -X github.com/ramtinJ95/EgenSkriven/internal/commands.Version=$(VERSION)
+LDFLAGS += -X github.com/ramtinJ95/EgenSkriven/internal/commands.BuildDate=$(BUILD_DATE)
+LDFLAGS += -X github.com/ramtinJ95/EgenSkriven/internal/commands.GitCommit=$(GIT_COMMIT)
+
 # Default target: show help
 help:
 	@echo "Available commands:"
@@ -42,7 +52,7 @@ dev:
 # This is important for cross-platform compatibility
 build: build-ui
 	@echo "Building Go binary with embedded UI..."
-	CGO_ENABLED=0 go build -o egenskriven ./cmd/egenskriven
+	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o egenskriven ./cmd/egenskriven
 	@echo "Built: ./egenskriven ($$(du -h egenskriven | cut -f1))"
 
 # Build and run the application
