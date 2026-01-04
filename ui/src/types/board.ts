@@ -9,6 +9,8 @@ export interface Board extends RecordModel {
   prefix: string
   columns: string[]
   color?: string
+  /** Internal sequence counter for task IDs - not typically used by UI */
+  next_seq?: number
 }
 
 // Default columns for new boards
