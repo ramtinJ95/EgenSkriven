@@ -191,6 +191,33 @@ func (f *Formatter) Error(code int, message string, data any) error {
 	return nil // unreachable in production, but satisfies return type for tests
 }
 
+// ErrorWithSuggestion outputs an error with a helpful suggestion and exits.
+// This function does not return in normal operation - it calls os.Exit().
+func (f *Formatter) ErrorWithSuggestion(code int, message, suggestion string, data any) error {
+	if f.JSON {
+		errObj := map[string]any{
+			"error": map[string]any{
+				"code":    code,
+				"message": message,
+			},
+		}
+		if suggestion != "" {
+			errObj["error"].(map[string]any)["suggestion"] = suggestion
+		}
+		if data != nil {
+			errObj["error"].(map[string]any)["data"] = data
+		}
+		json.NewEncoder(os.Stderr).Encode(errObj)
+	} else {
+		fmt.Fprintf(os.Stderr, "Error: %s\n", message)
+		if suggestion != "" {
+			fmt.Fprintf(os.Stderr, "\nSuggestion: %s\n", suggestion)
+		}
+	}
+	exitFunc(code)
+	return nil // unreachable in production, but satisfies return type for tests
+}
+
 // AmbiguousError outputs an error for ambiguous task references and exits.
 // This function does not return in normal operation - it calls os.Exit(4).
 func (f *Formatter) AmbiguousError(ref string, matches []*core.Record) error {
