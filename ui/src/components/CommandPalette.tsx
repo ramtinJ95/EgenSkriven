@@ -7,7 +7,7 @@ export interface Command {
   id: string
   label: string
   shortcut?: KeyCombo
-  section: 'actions' | 'navigation' | 'recent'
+  section: 'actions' | 'navigation' | 'recent' | 'boards'
   icon?: string
   action: () => void
   // Optional: only show when condition is true
@@ -108,6 +108,7 @@ export function CommandPalette({
     const groups: Record<string, Command[]> = {
       actions: [],
       navigation: [],
+      boards: [],
       recent: [],
     }
 
@@ -272,6 +273,35 @@ export function CommandPalette({
                         onMouseEnter={() => setSelectedIndex(index)}
                       >
                         <span className={styles.icon}>{cmd.icon || '→'}</span>
+                        <span className={styles.label}>{cmd.label}</span>
+                        {cmd.shortcut && (
+                          <span className={styles.shortcut}>
+                            {formatKeyCombo(cmd.shortcut)}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Boards section */}
+              {groupedCommands.boards.length > 0 && (
+                <div className={styles.section}>
+                  <div className={styles.sectionTitle}>SWITCH BOARD</div>
+                  {groupedCommands.boards.map((cmd) => {
+                    const index = getFlatIndex()
+                    return (
+                      <button
+                        key={cmd.id}
+                        data-index={index}
+                        className={`${styles.item} ${
+                          index === selectedIndex ? styles.selected : ''
+                        }`}
+                        onClick={() => executeCommand(cmd)}
+                        onMouseEnter={() => setSelectedIndex(index)}
+                      >
+                        <span className={styles.icon}>{cmd.icon || '◉'}</span>
                         <span className={styles.label}>{cmd.label}</span>
                         {cmd.shortcut && (
                           <span className={styles.shortcut}>

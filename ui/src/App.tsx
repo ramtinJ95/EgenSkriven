@@ -3,6 +3,8 @@ import { SelectionProvider } from './hooks/SelectionProvider'
 import { useSelection } from './hooks/useSelection'
 import { useKeyboardShortcuts } from './hooks/useKeyboard'
 import { useTasks } from './hooks/useTasks'
+import { useBoards } from './hooks/useBoards'
+import { useCurrentBoard } from './hooks/useCurrentBoard'
 import { Layout } from './components/Layout'
 import { Board } from './components/Board'
 import { TaskDetail } from './components/TaskDetail'
@@ -23,7 +25,9 @@ import { COLUMNS, type Task, type Column } from './types/task'
  * Separated from App to allow useSelection hook to work within SelectionProvider.
  */
 function AppContent() {
-  const { tasks, loading, createTask, updateTask, deleteTask } = useTasks()
+  const { boards } = useBoards()
+  const { currentBoard, setCurrentBoard } = useCurrentBoard()
+  const { tasks, loading, createTask, updateTask, deleteTask } = useTasks(currentBoard?.id)
   const { 
     selectedTaskId, 
     selectTask, 
@@ -249,6 +253,18 @@ function AppContent() {
         action: () => setIsShortcutsHelpOpen(true),
       },
 
+      // Board switching commands
+      ...boards.map((board) => ({
+        id: `board-${board.id}`,
+        label: `${board.name} (${board.prefix})`,
+        section: 'boards' as const,
+        icon: currentBoard?.id === board.id ? '●' : '○',
+        action: () => {
+          setCurrentBoard(board)
+          clearSelection()
+        },
+      })),
+
       // Navigation - add recent tasks
       ...tasks.slice(0, 5).map((task) => ({
         id: `task-${task.id}`,
@@ -260,7 +276,7 @@ function AppContent() {
         },
       })),
     ],
-    [tasks, selectedTaskId, handleDeleteTask, selectTask]
+    [tasks, selectedTaskId, handleDeleteTask, selectTask, boards, currentBoard, setCurrentBoard, clearSelection]
   )
 
   // Register keyboard shortcuts
