@@ -249,3 +249,55 @@ func TestTaskInput_JSONUnmarshal_EmptyLabels(t *testing.T) {
 	assert.NotNil(t, ti.Labels)
 	assert.Empty(t, ti.Labels)
 }
+
+func TestIsValidCustomID(t *testing.T) {
+	tests := []struct {
+		id    string
+		valid bool
+	}{
+		// Valid IDs (exactly 15 lowercase alphanumeric chars)
+		{"abc123def456789", true},
+		{"aaaaaaaaaaaaaaa", true},
+		{"123456789012345", true},
+		{"a1b2c3d4e5f6g7h", true},
+
+		// Invalid: wrong length
+		{"short", false},
+		{"", false},
+		{"abc123def4567890", false}, // 16 chars
+		{"abc123def45678", false},   // 14 chars
+
+		// Invalid: wrong characters
+		{"ABC123def456789", false}, // uppercase
+		{"abc-123-def-456", false}, // hyphens
+		{"abc_123_def_456", false}, // underscores
+		{"abc 123 def 456", false}, // spaces
+		{"abc123def45678!", false}, // special char
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			result := isValidCustomID(tt.id)
+			assert.Equal(t, tt.valid, result, "isValidCustomID(%q)", tt.id)
+		})
+	}
+}
+
+func TestFormatCustomIDError(t *testing.T) {
+	tests := []struct {
+		id       string
+		contains string
+	}{
+		{"short", "must be exactly 15 characters (got 5)"},
+		{"abc123def4567890", "must be exactly 15 characters (got 16)"},
+		{"ABC123def456789", "must contain only lowercase letters"},
+		{"abc-123-def-456", "must contain only lowercase letters"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			result := formatCustomIDError(tt.id)
+			assert.Contains(t, result, tt.contains)
+		})
+	}
+}

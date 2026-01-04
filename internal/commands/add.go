@@ -128,6 +128,10 @@ Examples:
 
 			// Set custom ID if provided
 			if customID != "" {
+				// Validate custom ID format
+				if !isValidCustomID(customID) {
+					return out.Error(ExitValidation, formatCustomIDError(customID), nil)
+				}
 				// Check if task with this ID already exists (idempotency)
 				existing, err := app.FindRecordById("tasks", customID)
 				if err == nil {
@@ -197,7 +201,7 @@ Examples:
 	cmd.Flags().StringSliceVarP(&labels, "label", "l", nil,
 		"Labels (repeatable)")
 	cmd.Flags().StringVar(&customID, "id", "",
-		"Custom ID for idempotency")
+		"Custom ID for idempotency (must be exactly 15 lowercase alphanumeric chars)")
 	cmd.Flags().StringVar(&createdBy, "created-by", "",
 		"Creator type (user, agent, cli)")
 	cmd.Flags().StringVar(&agentName, "agent", "",
@@ -314,6 +318,12 @@ func addBatch(app *pocketbase.PocketBase, out *output.Formatter, useStdin bool, 
 		record := core.NewRecord(collection)
 
 		if input.ID != "" {
+			// Validate custom ID format
+			if !isValidCustomID(input.ID) {
+				errors = append(errors, fmt.Sprintf("task %d (%s): %s",
+					i+1, input.Title, formatCustomIDError(input.ID)))
+				continue
+			}
 			// Check idempotency
 			existing, err := app.FindRecordById("tasks", input.ID)
 			if err == nil {
@@ -421,4 +431,26 @@ func defaultString(value, defaultVal string) string {
 		return defaultVal
 	}
 	return value
+}
+
+// isValidCustomID validates a custom task ID.
+// PocketBase requires IDs to be exactly 15 alphanumeric characters.
+func isValidCustomID(id string) bool {
+	if len(id) != 15 {
+		return false
+	}
+	for _, c := range id {
+		if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
+			return false
+		}
+	}
+	return true
+}
+
+// formatCustomIDError returns a helpful error message for invalid custom IDs
+func formatCustomIDError(id string) string {
+	if len(id) != 15 {
+		return fmt.Sprintf("invalid id '%s': must be exactly 15 characters (got %d)", id, len(id))
+	}
+	return fmt.Sprintf("invalid id '%s': must contain only lowercase letters (a-z) and digits (0-9)", id)
 }
