@@ -79,6 +79,34 @@ func (f *Formatter) Tasks(tasks []*core.Record) {
 	fmt.Println()
 }
 
+// TasksWithFields outputs tasks with only specified fields (JSON only).
+// If not in JSON mode, falls back to regular task output.
+func (f *Formatter) TasksWithFields(tasks []*core.Record, fields []string) {
+	if !f.JSON {
+		f.Tasks(tasks)
+		return
+	}
+
+	// Build filtered task list
+	result := make([]map[string]any, len(tasks))
+	for i, task := range tasks {
+		fullMap := taskToMap(task)
+		filtered := make(map[string]any)
+		for _, field := range fields {
+			field = strings.TrimSpace(field)
+			if val, ok := fullMap[field]; ok {
+				filtered[field] = val
+			}
+		}
+		result[i] = filtered
+	}
+
+	f.writeJSON(map[string]any{
+		"tasks": result,
+		"count": len(tasks),
+	})
+}
+
 // TaskDetail outputs detailed information about a task.
 func (f *Formatter) TaskDetail(task *core.Record) {
 	if f.JSON {
