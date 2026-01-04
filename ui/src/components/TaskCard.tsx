@@ -23,18 +23,13 @@ interface TaskCardProps {
  */
 export function TaskCard({ task, isSelected = false, onClick, onSelect }: TaskCardProps) {
   // Make this card draggable
-  const { attributes, listeners, setNodeRef, transform, isDragging: isCurrentlyDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging: isCurrentlyDragging } = useDraggable({
     id: task.id,
   })
 
-  // Apply transform during drag - only use translate (no scale)
-  // Add high z-index when dragging so card appears above columns
-  const style: React.CSSProperties | undefined = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        zIndex: 1000,
-        position: 'relative',
-      }
+  // When dragging, hide this card (the DragOverlay shows the visual)
+  const style: React.CSSProperties | undefined = isCurrentlyDragging
+    ? { opacity: 0.3 }
     : undefined
 
   // Priority indicator
