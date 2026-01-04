@@ -289,6 +289,28 @@ func addBatch(app *pocketbase.PocketBase, out *output.Formatter, useStdin bool, 
 			continue
 		}
 
+		// Validate type, priority, column with defaults
+		taskType := defaultString(input.Type, "feature")
+		if !isValidType(taskType) {
+			errors = append(errors, fmt.Sprintf("task %d (%s): invalid type '%s', must be one of: %v",
+				i+1, input.Title, taskType, ValidTypes))
+			continue
+		}
+
+		priority := defaultString(input.Priority, "medium")
+		if !isValidPriority(priority) {
+			errors = append(errors, fmt.Sprintf("task %d (%s): invalid priority '%s', must be one of: %v",
+				i+1, input.Title, priority, ValidPriorities))
+			continue
+		}
+
+		column := defaultString(input.Column, "backlog")
+		if !isValidColumn(column) {
+			errors = append(errors, fmt.Sprintf("task %d (%s): invalid column '%s', must be one of: %v",
+				i+1, input.Title, column, ValidColumns))
+			continue
+		}
+
 		record := core.NewRecord(collection)
 
 		if input.ID != "" {
@@ -301,12 +323,12 @@ func addBatch(app *pocketbase.PocketBase, out *output.Formatter, useStdin bool, 
 			record.Id = input.ID
 		}
 
-		// Set fields with defaults
+		// Set fields with validated values
 		record.Set("title", input.Title)
-		record.Set("type", defaultString(input.Type, "feature"))
-		record.Set("priority", defaultString(input.Priority, "medium"))
-		record.Set("column", defaultString(input.Column, "backlog"))
-		record.Set("position", GetNextPosition(app, defaultString(input.Column, "backlog")))
+		record.Set("type", taskType)
+		record.Set("priority", priority)
+		record.Set("column", column)
+		record.Set("position", GetNextPosition(app, column))
 		record.Set("labels", input.Labels)
 		record.Set("blocked_by", []string{})
 
