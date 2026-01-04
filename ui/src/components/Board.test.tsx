@@ -50,7 +50,7 @@ const defaultMockData = {
     },
   ],
   loading: false,
-  error: null,
+  error: null as Error | null,
   moveTask: vi.fn(),
   createTask: vi.fn(),
   updateTask: vi.fn(),

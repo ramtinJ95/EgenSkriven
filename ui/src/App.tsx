@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Layout } from './components/Layout'
 import { Board } from './components/Board'
 import { QuickCreate } from './components/QuickCreate'
@@ -18,8 +18,14 @@ import type { Task, Column } from './types/task'
 function App() {
   const { tasks, createTask, updateTask } = useTasks()
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false)
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [isDetailOpen, setIsDetailOpen] = useState(false)
+
+  // Derive selectedTask from tasks array - automatically stays in sync with real-time updates
+  const selectedTask = useMemo(() => {
+    if (!selectedTaskId || !isDetailOpen) return null
+    return tasks.find((t) => t.id === selectedTaskId) ?? null
+  }, [tasks, selectedTaskId, isDetailOpen])
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -40,16 +46,13 @@ function App() {
       }
 
       // 'Enter' to open selected task detail
-      if (e.key === 'Enter' && selectedTaskId && !selectedTask) {
+      if (e.key === 'Enter' && selectedTaskId && !isDetailOpen) {
         e.preventDefault()
-        const task = tasks.find((t) => t.id === selectedTaskId)
-        if (task) {
-          setSelectedTask(task)
-        }
+        setIsDetailOpen(true)
       }
 
       // 'Escape' to deselect task (when detail panel is closed)
-      if (e.key === 'Escape' && !selectedTask && selectedTaskId) {
+      if (e.key === 'Escape' && !isDetailOpen && selectedTaskId) {
         e.preventDefault()
         setSelectedTaskId(null)
       }
@@ -57,17 +60,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedTaskId, selectedTask, tasks, isQuickCreateOpen])
-
-  // Keep selectedTask in sync with real-time updates
-  useEffect(() => {
-    if (selectedTask && selectedTaskId) {
-      const updatedTask = tasks.find((t) => t.id === selectedTaskId)
-      if (updatedTask && updatedTask.updated !== selectedTask.updated) {
-        setSelectedTask(updatedTask)
-      }
-    }
-  }, [tasks, selectedTaskId, selectedTask])
+  }, [selectedTaskId, isDetailOpen, isQuickCreateOpen])
 
   // Handle task creation
   const handleCreate = useCallback(
@@ -88,7 +81,7 @@ function App() {
   // Handle task click to open detail panel
   const handleTaskClick = useCallback((task: Task) => {
     setSelectedTaskId(task.id)
-    setSelectedTask(task)
+    setIsDetailOpen(true)
   }, [])
 
   // Handle task selection (without opening detail)
@@ -98,7 +91,7 @@ function App() {
 
   // Handle closing detail panel
   const handleCloseDetail = useCallback(() => {
-    setSelectedTask(null)
+    setIsDetailOpen(false)
     // Keep selectedTaskId so user can press Enter to reopen
   }, [])
 

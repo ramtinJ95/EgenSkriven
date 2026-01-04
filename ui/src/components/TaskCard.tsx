@@ -1,11 +1,9 @@
 import { useDraggable } from '@dnd-kit/core'
-import { CSS } from '@dnd-kit/utilities'
 import type { Task } from '../types/task'
 import styles from './TaskCard.module.css'
 
 interface TaskCardProps {
   task: Task
-  isDragging?: boolean
   isSelected?: boolean
   onClick?: (task: Task) => void
   onSelect?: (task: Task) => void
@@ -23,16 +21,19 @@ interface TaskCardProps {
  * 
  * Clicking opens the task detail panel.
  */
-export function TaskCard({ task, isDragging = false, isSelected = false, onClick, onSelect }: TaskCardProps) {
+export function TaskCard({ task, isSelected = false, onClick, onSelect }: TaskCardProps) {
   // Make this card draggable
   const { attributes, listeners, setNodeRef, transform, isDragging: isCurrentlyDragging } = useDraggable({
     id: task.id,
   })
 
-  // Apply transform during drag
-  const style = transform
+  // Apply transform during drag - only use translate (no scale)
+  // Add high z-index when dragging so card appears above columns
+  const style: React.CSSProperties | undefined = transform
     ? {
-        transform: CSS.Transform.toString(transform),
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        zIndex: 1000,
+        position: 'relative',
       }
     : undefined
 
@@ -75,7 +76,7 @@ export function TaskCard({ task, isDragging = false, isSelected = false, onClick
       {...listeners}
       {...attributes}
       style={style}
-      className={`${styles.card} ${isDragging ? styles.dragging : ''} ${isSelected ? styles.selected : ''}`}
+      className={`${styles.card} ${isSelected ? styles.selected : ''}`}
       onClick={handleClick}
       onFocus={handleFocus}
       tabIndex={0}
