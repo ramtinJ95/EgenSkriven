@@ -305,7 +305,6 @@ describe('PropertyPicker', () => {
     )
 
     // The third option (option3) should be selected
-    const options = document.querySelectorAll('[class*="option"]')
     const selectedOption = document.querySelector('[class*="option"][class*="selected"]')
     expect(selectedOption).toBeInTheDocument()
     // The selected option should contain "Third Option"
