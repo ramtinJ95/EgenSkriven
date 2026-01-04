@@ -42,11 +42,17 @@ Examples:
 			// Load existing config or create new
 			cfg := config.DefaultConfig()
 
-			// Override with flags if provided
+			// Override with flags if provided, validating values
 			if workflow != "" {
+				if err := config.ValidateWorkflow(workflow); err != nil {
+					return out.Error(ExitValidation, err.Error(), nil)
+				}
 				cfg.Agent.Workflow = workflow
 			}
 			if mode != "" {
+				if err := config.ValidateMode(mode); err != nil {
+					return out.Error(ExitValidation, err.Error(), nil)
+				}
 				cfg.Agent.Mode = mode
 			}
 

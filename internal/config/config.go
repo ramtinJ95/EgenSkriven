@@ -2,9 +2,16 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 )
+
+// ValidWorkflows is the list of valid workflow values.
+var ValidWorkflows = []string{"strict", "light", "minimal"}
+
+// ValidModes is the list of valid agent mode values.
+var ValidModes = []string{"autonomous", "collaborative", "supervised"}
 
 // AgentConfig defines agent-specific behavior settings.
 type AgentConfig struct {
@@ -81,15 +88,35 @@ func LoadProjectConfigFrom(dir string) (*Config, error) {
 	return cfg, nil
 }
 
-// validateConfig ensures config values are valid.
+// ValidateWorkflow checks if a workflow value is valid.
+// Returns an error if invalid.
+func ValidateWorkflow(workflow string) error {
+	for _, valid := range ValidWorkflows {
+		if workflow == valid {
+			return nil
+		}
+	}
+	return fmt.Errorf("invalid workflow '%s', must be one of: %v", workflow, ValidWorkflows)
+}
+
+// ValidatMode checks if an agent mode value is valid.
+// Returns an error if invalid.
+func ValidateMode(mode string) error {
+	for _, valid := range ValidModes {
+		if mode == valid {
+			return nil
+		}
+	}
+	return fmt.Errorf("invalid mode '%s', must be one of: %v", mode, ValidModes)
+}
+
+// validateConfig ensures config values are valid, normalizing invalid values to defaults.
 func validateConfig(cfg *Config) error {
-	validWorkflows := map[string]bool{"strict": true, "light": true, "minimal": true}
-	if !validWorkflows[cfg.Agent.Workflow] {
+	if err := ValidateWorkflow(cfg.Agent.Workflow); err != nil {
 		cfg.Agent.Workflow = "light" // Default to light if invalid
 	}
 
-	validModes := map[string]bool{"autonomous": true, "collaborative": true, "supervised": true}
-	if !validModes[cfg.Agent.Mode] {
+	if err := ValidateMode(cfg.Agent.Mode); err != nil {
 		cfg.Agent.Mode = "autonomous" // Default to autonomous if invalid
 	}
 
