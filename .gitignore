@@ -8,6 +8,7 @@
 # Data directory contains SQLite database, uploaded files, and logs
 # This is user data, not source code
 pb_data/
+pb_data_*/
 
 # -----------------------------------------------------------------------------
 # Build outputs

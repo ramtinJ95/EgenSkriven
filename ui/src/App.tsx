@@ -1,5 +1,6 @@
-import { useState, useCallback, useMemo, useRef } from 'react'
-import { SelectionProvider, useSelection } from './hooks/useSelection'
+import { useState, useCallback, useMemo } from 'react'
+import { SelectionProvider } from './hooks/SelectionProvider'
+import { useSelection } from './hooks/useSelection'
 import { useKeyboardShortcuts } from './hooks/useKeyboard'
 import { useTasks } from './hooks/useTasks'
 import { Layout } from './components/Layout'
@@ -47,7 +48,8 @@ function AppContent() {
   const [typePickerOpen, setTypePickerOpen] = useState(false)
 
   // Anchor element for property pickers (the selected task card)
-  const selectedCardRef = useRef<HTMLElement | null>(null)
+  // Using state instead of ref to avoid accessing ref.current during render
+  const [anchorElement, setAnchorElement] = useState<HTMLElement | null>(null)
 
   // Get the currently selected task
   const selectedTask = useMemo(
@@ -468,7 +470,7 @@ function AppContent() {
           // Store reference to the task card element for anchor positioning
           const element = document.querySelector(`[data-task-id="${task.id}"]`)
           if (element instanceof HTMLElement) {
-            selectedCardRef.current = element
+            setAnchorElement(element)
           }
         }}
         selectedTaskId={selectedTaskId}
@@ -505,7 +507,7 @@ function AppContent() {
         options={STATUS_OPTIONS}
         currentValue={selectedTask?.column}
         title="Set Status"
-        anchorElement={selectedCardRef.current}
+        anchorElement={anchorElement}
       />
 
       <PropertyPicker
@@ -515,7 +517,7 @@ function AppContent() {
         options={PRIORITY_OPTIONS}
         currentValue={selectedTask?.priority}
         title="Set Priority"
-        anchorElement={selectedCardRef.current}
+        anchorElement={anchorElement}
       />
 
       <PropertyPicker
@@ -525,7 +527,7 @@ function AppContent() {
         options={TYPE_OPTIONS}
         currentValue={selectedTask?.type}
         title="Set Type"
-        anchorElement={selectedCardRef.current}
+        anchorElement={anchorElement}
       />
 
       {/* Shortcuts Help */}
