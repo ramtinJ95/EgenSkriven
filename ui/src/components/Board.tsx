@@ -1,16 +1,13 @@
 import { useMemo } from 'react'
 import {
   DndContext,
-  DragOverlay,
   closestCenter,
   PointerSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
-import { useState } from 'react'
+import type { DragEndEvent } from '@dnd-kit/core'
 import { Column } from './Column'
-import { TaskCard } from './TaskCard'
 import { useTasks } from '../hooks/useTasks'
 import { COLUMNS, type Task, type Column as ColumnType } from '../types/task'
 import styles from './Board.module.css'
@@ -33,7 +30,6 @@ interface BoardProps {
  */
 export function Board({ onTaskClick, onTaskSelect, selectedTaskId }: BoardProps) {
   const { tasks, loading, error, moveTask } = useTasks()
-  const [activeTask, setActiveTask] = useState<Task | null>(null)
 
   // Configure drag sensors
   // PointerSensor requires a small movement before dragging starts
@@ -70,18 +66,8 @@ export function Board({ onTaskClick, onTaskSelect, selectedTaskId }: BoardProps)
     return grouped
   }, [tasks])
 
-  // Handle drag start - store the dragged task for overlay
-  const handleDragStart = (event: DragStartEvent) => {
-    const task = tasks.find((t) => t.id === event.active.id)
-    if (task) {
-      setActiveTask(task)
-    }
-  }
-
   // Handle drag end - move task to new column
   const handleDragEnd = async (event: DragEndEvent) => {
-    setActiveTask(null)
-    
     const { active, over } = event
     if (!over) return
 
@@ -132,7 +118,6 @@ export function Board({ onTaskClick, onTaskSelect, selectedTaskId }: BoardProps)
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
       <div className={styles.board}>
@@ -147,11 +132,6 @@ export function Board({ onTaskClick, onTaskSelect, selectedTaskId }: BoardProps)
           />
         ))}
       </div>
-
-      {/* Drag overlay shows the card being dragged */}
-      <DragOverlay>
-        {activeTask ? <TaskCard task={activeTask} isDragging /> : null}
-      </DragOverlay>
     </DndContext>
   )
 }
