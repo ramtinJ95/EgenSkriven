@@ -65,6 +65,21 @@ vi.mock('../hooks/useTasks', () => ({
   useTasks: () => mockUseTasks,
 }))
 
+// Mock the useCurrentBoard hook
+vi.mock('../hooks/useCurrentBoard', () => ({
+  useCurrentBoard: () => ({
+    currentBoard: {
+      id: 'board-1',
+      name: 'Work',
+      prefix: 'WRK',
+      columns: ['backlog', 'todo', 'in_progress', 'review', 'done'],
+      color: '#3B82F6',
+    },
+    setCurrentBoard: vi.fn(),
+    loading: false,
+  }),
+}))
+
 describe('Board', () => {
   beforeEach(() => {
     // Reset mock to default before each test
