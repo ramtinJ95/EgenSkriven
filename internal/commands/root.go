@@ -33,6 +33,9 @@ func Register(app *pocketbase.PocketBase) {
 	app.RootCmd.AddCommand(newMoveCmd(app))
 	app.RootCmd.AddCommand(newUpdateCmd(app))
 	app.RootCmd.AddCommand(newDeleteCmd(app))
+
+	// Phase 1.5 commands
+	app.RootCmd.AddCommand(newInitCmd(app))
 }
 
 // getFormatter creates a new output formatter with current flag values.
