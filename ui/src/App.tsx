@@ -33,8 +33,8 @@ function App() {
         return
       }
 
-      // 'C' to open quick create
-      if (e.key === 'c' || e.key === 'C') {
+      // 'C' to open quick create (only if not already open)
+      if ((e.key === 'c' || e.key === 'C') && !isQuickCreateOpen) {
         e.preventDefault()
         setIsQuickCreateOpen(true)
       }
@@ -57,7 +57,17 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedTaskId, selectedTask, tasks])
+  }, [selectedTaskId, selectedTask, tasks, isQuickCreateOpen])
+
+  // Keep selectedTask in sync with real-time updates
+  useEffect(() => {
+    if (selectedTask && selectedTaskId) {
+      const updatedTask = tasks.find((t) => t.id === selectedTaskId)
+      if (updatedTask && updatedTask.updated !== selectedTask.updated) {
+        setSelectedTask(updatedTask)
+      }
+    }
+  }, [tasks, selectedTaskId, selectedTask])
 
   // Handle task creation
   const handleCreate = useCallback(

@@ -77,6 +77,8 @@ export function useTasks(): UseTasksReturn {
           setTasks((prev) => prev.filter((t) => t.id !== event.record.id))
           break
       }
+    }).catch((err) => {
+      console.error('Failed to subscribe to task updates:', err)
     })
 
     // Cleanup subscription on unmount

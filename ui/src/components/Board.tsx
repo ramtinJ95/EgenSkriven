@@ -105,7 +105,11 @@ export function Board({ onTaskClick, onTaskSelect, selectedTaskId }: BoardProps)
     const newPosition = maxPosition + 1000
 
     // Move task to new column
-    await moveTask(taskId, targetColumn, newPosition)
+    try {
+      await moveTask(taskId, targetColumn, newPosition)
+    } catch (err) {
+      console.error('Failed to move task:', err)
+    }
   }
 
   if (loading) {
