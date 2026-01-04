@@ -7,6 +7,8 @@ import (
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
+
+	"github.com/ramtinJ95/EgenSkriven/internal/board"
 )
 
 // escapeLikePattern escapes SQL LIKE special characters (% and _)
@@ -38,17 +40,34 @@ func (r *Resolution) IsNotFound() bool {
 
 // ResolveTask attempts to find a task by reference.
 // Resolution order:
-// 1. Exact ID match
-// 2. ID prefix match (must be unique)
-// 3. Title substring match (case-insensitive, must be unique)
+// 1. Display ID match (e.g., "WRK-123")
+// 2. Exact ID match
+// 3. ID prefix match (must be unique)
+// 4. Title substring match (case-insensitive, must be unique)
 func ResolveTask(app *pocketbase.PocketBase, ref string) (*Resolution, error) {
-	// 1. Try exact ID match
+	// 1. Try display ID format (PREFIX-NUMBER)
+	if prefix, seq, err := board.ParseDisplayID(ref); err == nil {
+		// Find board by prefix
+		boardRecord, err := board.GetByNameOrPrefix(app, prefix)
+		if err == nil {
+			// Find task by board + sequence
+			tasks, err := app.FindAllRecords("tasks",
+				dbx.NewExp("board = {:board} AND seq = {:seq}",
+					dbx.Params{"board": boardRecord.Id, "seq": seq}),
+			)
+			if err == nil && len(tasks) == 1 {
+				return &Resolution{Task: tasks[0]}, nil
+			}
+		}
+	}
+
+	// 2. Try exact ID match
 	task, err := app.FindRecordById("tasks", ref)
 	if err == nil {
 		return &Resolution{Task: task}, nil
 	}
 
-	// 2. Try ID prefix match
+	// 3. Try ID prefix match
 	tasks, err := app.FindAllRecords("tasks",
 		dbx.NewExp("id LIKE {:prefix} ESCAPE '\\'", dbx.Params{"prefix": escapeLikePattern(ref) + "%"}),
 	)
@@ -64,7 +83,7 @@ func ResolveTask(app *pocketbase.PocketBase, ref string) (*Resolution, error) {
 		return &Resolution{Matches: tasks}, nil
 	}
 
-	// 3. Try title match (case-insensitive substring)
+	// 4. Try title match (case-insensitive substring)
 	tasks, err = app.FindAllRecords("tasks",
 		dbx.NewExp("LOWER(title) LIKE {:title} ESCAPE '\\'",
 			dbx.Params{"title": "%" + escapeLikePattern(strings.ToLower(ref)) + "%"}),
