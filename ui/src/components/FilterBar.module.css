@@ -1,0 +1,158 @@
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border-subtle);
+  min-height: 40px;
+  flex-wrap: wrap;
+}
+
+.filterButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.filterButton:hover {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.filterCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  background-color: var(--accent);
+  border-radius: 9px;
+}
+
+.pillsContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.pillWrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.connector {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.pillField {
+  color: var(--text-secondary);
+}
+
+.pillOperator {
+  color: var(--text-muted);
+}
+
+.pillValue {
+  color: var(--text-primary);
+  font-weight: var(--font-medium);
+}
+
+.pillRemove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: var(--space-1);
+  font-size: var(--text-base);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.pillRemove:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-card-hover);
+}
+
+.matchModeToggle {
+  display: flex;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.matchModeButton {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.matchModeButton:hover {
+  background-color: var(--bg-card);
+  color: var(--text-secondary);
+}
+
+.matchModeButton.active {
+  background-color: var(--accent-muted);
+  color: var(--accent);
+}
+
+.clearButton {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-default);
+}
+
+.clearButton:hover {
+  color: var(--text-primary);
+}
+
+.stats {
+  margin-left: auto;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
