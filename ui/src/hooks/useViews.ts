@@ -94,9 +94,18 @@ export function useViews(boardId: string | null): UseViewsReturn {
       if (event.action === 'create') {
         setViews((prev) => [...prev, parseView(event.record)])
       } else if (event.action === 'update') {
-        setViews((prev) =>
-          prev.map((v) => (v.id === event.record.id ? parseView(event.record) : v))
-        )
+        setViews((prev) => {
+          const existingIndex = prev.findIndex((v) => v.id === event.record.id)
+          if (existingIndex >= 0) {
+            // View exists - replace it
+            const updated = [...prev]
+            updated[existingIndex] = parseView(event.record)
+            return updated
+          } else {
+            // View somehow appeared - add it
+            return [...prev, parseView(event.record)]
+          }
+        })
       } else if (event.action === 'delete') {
         setViews((prev) => prev.filter((v) => v.id !== event.record.id))
       }
