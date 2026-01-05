@@ -9,11 +9,16 @@ import {
 } from '@dnd-kit/core'
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import { Column } from './Column'
+import { VirtualizedColumn } from './VirtualizedColumn'
 import { TaskCard } from './TaskCard'
+import { BoardSkeleton } from './Skeleton'
 import { useCurrentBoard } from '../contexts'
 import { type Task, type Column as ColumnType } from '../types/task'
 import { DEFAULT_COLUMNS } from '../types/board'
 import styles from './Board.module.css'
+
+// Threshold for using virtualized columns
+const VIRTUALIZATION_THRESHOLD = 50
 
 interface BoardProps {
   tasks: Task[] // Filtered tasks passed from parent
@@ -122,11 +127,7 @@ export function Board({ tasks, onTaskClick, onTaskSelect, selectedTaskId, moveTa
   }
 
   if (loading) {
-    return (
-      <div className={styles.loading}>
-        <span>Loading tasks...</span>
-      </div>
-    )
+    return <BoardSkeleton />
   }
 
   if (!currentBoard) {
@@ -146,17 +147,36 @@ export function Board({ tasks, onTaskClick, onTaskSelect, selectedTaskId, moveTa
       onDragEnd={handleDragEnd}
     >
       <div className={styles.board}>
-        {columns.map((column) => (
-          <Column
-            key={column}
-            column={column}
-            tasks={tasksByColumn[column] || []}
-            onTaskClick={onTaskClick}
-            onTaskSelect={onTaskSelect}
-            selectedTaskId={selectedTaskId}
-            currentBoard={currentBoard}
-          />
-        ))}
+        {columns.map((column) => {
+          const columnTasks = tasksByColumn[column] || []
+          
+          // Use VirtualizedColumn for columns with many tasks
+          if (columnTasks.length > VIRTUALIZATION_THRESHOLD) {
+            return (
+              <VirtualizedColumn
+                key={column}
+                column={column}
+                tasks={columnTasks}
+                onTaskClick={onTaskClick}
+                onTaskSelect={onTaskSelect}
+                selectedTaskId={selectedTaskId}
+                currentBoard={currentBoard}
+              />
+            )
+          }
+          
+          return (
+            <Column
+              key={column}
+              column={column}
+              tasks={columnTasks}
+              onTaskClick={onTaskClick}
+              onTaskSelect={onTaskSelect}
+              selectedTaskId={selectedTaskId}
+              currentBoard={currentBoard}
+            />
+          )
+        })}
       </div>
 
       {/* Drag overlay - renders dragged card in a portal above everything */}
