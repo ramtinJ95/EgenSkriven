@@ -2,6 +2,14 @@ import { useEffect, useState, useCallback } from 'react'
 import { pb } from '../lib/pb'
 import type { Task, Column } from '../types/task'
 
+// Debug logging - enabled via VITE_DEBUG_REALTIME=true
+const DEBUG_REALTIME = import.meta.env.VITE_DEBUG_REALTIME === 'true'
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_REALTIME) {
+    console.log('[useTasks]', ...args)
+  }
+}
+
 interface UseTasksReturn {
   tasks: Task[]
   loading: boolean
@@ -68,45 +76,78 @@ export function useTasks(boardId?: string): UseTasksReturn {
 
   // Subscribe to real-time updates
   useEffect(() => {
-    // Subscribe to all task changes
-    pb.collection('tasks').subscribe<Task>('*', (event) => {
-      // Filter events by board if boardId is provided
-      const taskBoardId = event.record.board
-      const matchesBoard = !boardId || taskBoardId === boardId
+    debugLog('Setting up subscription for board:', boardId)
+    
+    let isSubscribed = false
 
-      switch (event.action) {
-        case 'create':
-          // Only add if task belongs to the current board (or no board filter)
-          if (matchesBoard) {
-            setTasks((prev) => 
-              [...prev, event.record].sort((a, b) => a.position - b.position)
-            )
-          }
-          break
-          
-        case 'update':
-          // If task was moved to a different board, remove it from this view
-          if (boardId && taskBoardId !== boardId) {
+    // Subscribe to all task changes
+    pb.collection('tasks')
+      .subscribe<Task>('*', (event) => {
+        debugLog('========== EVENT RECEIVED ==========')
+        debugLog('Action:', event.action)
+        debugLog('Record ID:', event.record.id)
+        debugLog('Record Title:', event.record.title)
+        debugLog('Record Board:', event.record.board)
+        debugLog('Current Board Filter:', boardId)
+
+        // Filter events by board if boardId is provided
+        const taskBoardId = event.record.board
+        const matchesBoard = !boardId || taskBoardId === boardId
+        debugLog('Matches Board:', matchesBoard)
+
+        switch (event.action) {
+          case 'create':
+            // Only add if task belongs to the current board (or no board filter)
+            if (matchesBoard) {
+              debugLog('Adding new task to state')
+              setTasks((prev) => {
+                const newTasks = [...prev, event.record].sort((a, b) => a.position - b.position)
+                debugLog('New task count:', newTasks.length)
+                return newTasks
+              })
+            } else {
+              debugLog('Ignoring create - different board')
+            }
+            break
+
+          case 'update':
+            // If task was moved to a different board, remove it from this view
+            if (boardId && taskBoardId !== boardId) {
+              debugLog('Removing task - moved to different board')
+              setTasks((prev) => prev.filter((t) => t.id !== event.record.id))
+            } else {
+              debugLog('Updating task in state')
+              setTasks((prev) => {
+                const exists = prev.some((t) => t.id === event.record.id)
+                debugLog('Task exists in state:', exists)
+                // Replace updated task in state
+                return prev.map((t) => (t.id === event.record.id ? event.record : t))
+              })
+            }
+            break
+
+          case 'delete':
+            debugLog('Removing deleted task')
+            // Remove deleted task from state
             setTasks((prev) => prev.filter((t) => t.id !== event.record.id))
-          } else {
-            // Replace updated task in state
-            setTasks((prev) =>
-              prev.map((t) => (t.id === event.record.id ? event.record : t))
-            )
-          }
-          break
-          
-        case 'delete':
-          // Remove deleted task from state
-          setTasks((prev) => prev.filter((t) => t.id !== event.record.id))
-          break
-      }
-    }).catch((err) => {
-      console.error('Failed to subscribe to task updates:', err)
-    })
+            break
+
+          default:
+            debugLog('Unknown action:', event.action)
+        }
+        debugLog('=====================================')
+      })
+      .then(() => {
+        isSubscribed = true
+        debugLog('Subscription established successfully')
+      })
+      .catch((err) => {
+        console.error('[useTasks] Subscription FAILED:', err)
+      })
 
     // Cleanup subscription on unmount
     return () => {
+      debugLog('Cleaning up subscription, was subscribed:', isSubscribed)
       pb.collection('tasks').unsubscribe('*')
     }
   }, [boardId])
