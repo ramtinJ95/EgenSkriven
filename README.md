@@ -46,14 +46,17 @@ A local-first kanban task manager with CLI and web UI. Built with agentic workfl
 
 ### Web UI
 - **Kanban board** - Drag and drop tasks between columns
+- **List view** - Toggle between board and table view with `Ctrl+B`
 - **Command palette** - Quick actions with `Cmd+K` and fuzzy search
 - **Keyboard-driven** - Full keyboard navigation (j/k/h/l, shortcuts)
 - **Task detail panel** - View and edit task properties
 - **Quick create** - Press `C` to create tasks instantly
 - **Peek preview** - Press `Space` for quick task preview
 - **Property pickers** - Keyboard shortcuts for status (S), priority (P), type (T)
+- **Filter builder** - Advanced filtering with `F` key, supports multiple conditions
+- **Saved views** - Save filter configurations as reusable views with favorites
 - **Shortcuts help** - Press `?` to see all keyboard shortcuts
-- **Sidebar** - Board navigation and creation
+- **Sidebar** - Board navigation, saved views, and board creation
 
 ## Quick Start
 
@@ -158,6 +161,8 @@ This creates a single `./egenskriven` binary with the UI embedded.
 
 - `--json`, `-j` - Output in JSON format (machine-readable)
 - `--quiet`, `-q` - Suppress non-essential output
+- `--verbose`, `-v` - Show detailed output including connection method
+- `--direct` - Skip HTTP API, use direct database access (faster, works offline)
 
 ### Task Reference
 
@@ -270,6 +275,8 @@ The web UI provides a full-featured kanban board with:
 | `Space` | Peek preview |
 | `E` | Edit task (open detail) |
 | `Backspace` | Delete task |
+| `F` | Open filter builder |
+| `Ctrl+B` | Toggle board/list view |
 | `?` | Show shortcuts help |
 | `Esc` | Close modal/deselect |
 
@@ -295,7 +302,29 @@ The web UI provides a full-featured kanban board with:
 | `Shift+X` | Select range |
 | `Cmd+A` | Select all visible |
 
-## Filtering Tasks
+### Saved Views
+
+Save commonly used filter configurations as reusable views:
+
+1. **Create a view**: Apply filters using the filter builder (`F`), then click "+ Save" in the sidebar
+2. **Name the view**: Enter a descriptive name for your filter configuration
+3. **Access views**: Saved views appear in the sidebar under "Views"
+4. **Favorite views**: Star important views to pin them to the "Favorites" section
+5. **Delete views**: Click the `×` button on any saved view to remove it
+
+Views are board-specific and persist across sessions.
+
+### Filter Builder (Web UI)
+
+Press `F` to open the filter builder with support for:
+
+- **Multiple conditions**: Add multiple filters that combine with AND logic
+- **Filter types**: Status, Priority, Type, Labels, Due Date, Epic, Title
+- **Operators**: is, is not, is any of, is set, is not set
+- **Active filter pills**: Visual indicators showing active filters with quick remove
+- **Clear all**: Remove all filters with one click
+
+## Filtering Tasks (CLI)
 
 The `list` command supports powerful filtering:
 
@@ -421,6 +450,46 @@ Organize tasks across multiple boards:
 ```
 
 Task IDs include board prefix (e.g., `WRK-123`, `PER-456`).
+
+## Hybrid Mode (Online/Offline)
+
+EgenSkriven supports a hybrid mode that allows the CLI to work both when the server is running and when it's offline:
+
+### How It Works
+
+1. **Default behavior**: CLI commands first try to connect to the HTTP API (server)
+2. **Automatic fallback**: If the server is unavailable, CLI automatically uses direct database access
+3. **Seamless experience**: Same commands work in both modes with identical output
+
+### Usage
+
+```bash
+# Uses HTTP API if server is running, falls back to direct DB if not
+./egenskriven list
+
+# Force direct database access (faster, no real-time updates to UI)
+./egenskriven list --direct
+
+# Useful for offline work or when server is down
+./egenskriven add "Offline task" --direct
+./egenskriven move abc123 done --direct
+```
+
+### When to Use `--direct`
+
+- **Offline work**: When you don't have the server running
+- **Performance**: Direct DB access is slightly faster (no HTTP overhead)
+- **Scripting**: When you don't need real-time UI updates
+- **CI/CD**: In automated pipelines where server may not be available
+
+### Trade-offs
+
+| Mode | Real-time UI Updates | Speed | Requires Server |
+|------|---------------------|-------|-----------------|
+| HTTP API (default) | Yes | Normal | Yes (with fallback) |
+| Direct (`--direct`) | No | Faster | No |
+
+> **Note**: Changes made via `--direct` mode are persisted to the database and will be visible in the UI when you refresh or restart the server.
 
 ## Blocking Dependencies
 
