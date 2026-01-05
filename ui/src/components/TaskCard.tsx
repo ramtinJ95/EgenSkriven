@@ -126,7 +126,7 @@ function TaskCardComponent({ task, isSelected = false, onClick, onSelect, curren
         </div>
       )}
 
-      {/* Footer: Priority + Due Date + Type */}
+      {/* Footer: Priority + Due Date + Type + Description indicator */}
       <div className={styles.footer}>
         {priority && (
           <span className={styles.priority} title={priority.label} style={{ color: priority.color }}>
@@ -141,6 +141,11 @@ function TaskCardComponent({ task, isSelected = false, onClick, onSelect, curren
             })}
           </span>
         )}
+        {task.description && (
+          <span className={styles.descriptionIndicator} title="Has description">
+            <DescriptionIcon />
+          </span>
+        )}
         <span
           className={styles.type}
           style={{ color: `var(--type-${task.type})` }}
@@ -149,6 +154,26 @@ function TaskCardComponent({ task, isSelected = false, onClick, onSelect, curren
         </span>
       </div>
     </div>
+  )
+}
+
+// Small icon to indicate task has a description
+function DescriptionIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M2 4h12M2 8h8M2 12h10"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
   )
 }
 

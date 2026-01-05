@@ -5,7 +5,7 @@ import styles from './QuickCreate.module.css'
 interface QuickCreateProps {
   isOpen: boolean
   onClose: () => void
-  onCreate: (title: string, column: Column) => Promise<void>
+  onCreate: (title: string, column: Column, description?: string) => Promise<void>
 }
 
 /**
@@ -14,10 +14,14 @@ interface QuickCreateProps {
  * Features:
  * - Auto-focus on title input
  * - Column selector (defaults to "backlog")
+ * - Optional description field (expandable)
  * - Enter to create, Esc to cancel
+ * - Supports Markdown in description
  */
 export function QuickCreate({ isOpen, onClose, onCreate }: QuickCreateProps) {
   const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [showDescription, setShowDescription] = useState(false)
   const [column, setColumn] = useState<Column>('backlog')
   const [isCreating, setIsCreating] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -33,6 +37,8 @@ export function QuickCreate({ isOpen, onClose, onCreate }: QuickCreateProps) {
   useEffect(() => {
     if (!isOpen) {
       setTitle('')
+      setDescription('')
+      setShowDescription(false)
       setColumn('backlog')
     }
   }, [isOpen])
@@ -58,7 +64,7 @@ export function QuickCreate({ isOpen, onClose, onCreate }: QuickCreateProps) {
 
     setIsCreating(true)
     try {
-      await onCreate(title.trim(), column)
+      await onCreate(title.trim(), column, description.trim() || undefined)
       onClose()
     } catch (err) {
       console.error('Failed to create task:', err)
@@ -87,6 +93,33 @@ export function QuickCreate({ isOpen, onClose, onCreate }: QuickCreateProps) {
               disabled={isCreating}
             />
           </div>
+
+          {/* Description field - expandable */}
+          {!showDescription ? (
+            <button
+              type="button"
+              className={styles.addDescriptionButton}
+              onClick={() => setShowDescription(true)}
+              disabled={isCreating}
+            >
+              + Add description
+            </button>
+          ) : (
+            <div className={styles.field}>
+              <label className={styles.label}>
+                Description
+                <span className={styles.labelHint}> (supports Markdown)</span>
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Add a more detailed description..."
+                className={styles.textarea}
+                disabled={isCreating}
+                rows={4}
+              />
+            </div>
+          )}
 
           <div className={styles.field}>
             <label className={styles.label}>Column</label>

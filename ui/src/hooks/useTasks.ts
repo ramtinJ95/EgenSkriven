@@ -14,7 +14,7 @@ interface UseTasksReturn {
   tasks: Task[]
   loading: boolean
   error: Error | null
-  createTask: (title: string, column?: Column) => Promise<Task>
+  createTask: (title: string, column?: Column, description?: string) => Promise<Task>
   updateTask: (id: string, data: Partial<Task>) => Promise<Task>
   deleteTask: (id: string) => Promise<void>
   moveTask: (id: string, column: Column, position: number) => Promise<Task>
@@ -165,7 +165,7 @@ export function useTasks(boardId?: string): UseTasksReturn {
   // Note: The backend assigns the sequence number atomically to avoid race conditions.
   // The UI only needs to provide the board ID; seq is assigned server-side.
   const createTask = useCallback(
-    async (title: string, column: Column = 'backlog'): Promise<Task> => {
+    async (title: string, column: Column = 'backlog', description?: string): Promise<Task> => {
       // Get next position in column
       const columnTasks = tasks.filter((t) => t.column === column)
       const maxPosition = columnTasks.reduce(
@@ -182,6 +182,11 @@ export function useTasks(boardId?: string): UseTasksReturn {
         priority: 'medium',
         labels: [],
         created_by: 'user',
+      }
+
+      // Add description if provided
+      if (description?.trim()) {
+        taskData.description = description.trim()
       }
 
       // Add board if boardId is provided
