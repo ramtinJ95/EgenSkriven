@@ -221,6 +221,96 @@
   font-size: var(--text-xs);
 }
 
+/* Custom Theme Import */
+.hiddenInput {
+  display: none;
+}
+
+.importButton {
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  cursor: pointer;
+  transition: background 100ms ease, border-color 100ms ease;
+}
+
+.importButton:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent);
+}
+
+.errorMessage {
+  color: var(--priority-urgent);
+  font-size: var(--text-sm);
+  padding: var(--space-2);
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-3);
+}
+
+.customThemesList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.customThemeItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-input);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.customThemeInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.customThemeSwatch {
+  width: 32px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 3px;
+}
+
+.customThemeAccent {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.customThemeName {
+  font-size: var(--text-base);
+  color: var(--text-primary);
+}
+
+.removeButton {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+  line-height: 1;
+  border-radius: var(--radius-sm);
+  transition: color 100ms ease;
+}
+
+.removeButton:hover {
+  color: var(--priority-urgent);
+}
+
 /* Animations */
 @keyframes fadeIn {
   from { opacity: 0; }
