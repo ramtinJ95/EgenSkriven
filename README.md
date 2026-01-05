@@ -6,11 +6,53 @@ A local-first kanban task manager with CLI and web UI. Built with agentic workfl
 
 ## Features
 
+### Core
 - **Single binary** - Go backend with embedded React UI, no external dependencies
-- **Real-time sync** - CLI changes appear instantly in the web UI
-- **Agent-native** - First-class support for AI agents (Claude, GPT, etc.) with configurable workflows
+- **Real-time sync** - CLI changes appear instantly in the web UI via subscriptions
 - **Local-first** - All data stored locally in SQLite via PocketBase
-- **Blocking dependencies** - Track task dependencies with circular detection
+
+### CLI
+- **Full task management** - Add, list, show, move, update, delete tasks
+- **Batch operations** - Create multiple tasks from JSON via stdin or file
+- **Advanced filtering** - Filter by column, type, priority, labels, search, and more
+- **Flexible task references** - Reference tasks by ID, ID prefix, or title substring
+
+### Multi-Board Support
+- **Multiple boards** - Create and manage separate boards for different projects
+- **Board-prefixed IDs** - Tasks get board-specific IDs (e.g., WRK-123, PER-456)
+- **Default board** - Set a default board for CLI commands
+- **Board switcher** - Quick switch between boards in UI sidebar
+
+### Agent Integration (AI-Native)
+- **First-class AI agent support** - Designed for Claude, GPT, OpenCode, Cursor, etc.
+- **Prime command** - Generate context-aware instructions for agents
+- **Configurable workflows** - Strict, light, or minimal enforcement modes
+- **Agent modes** - Autonomous, collaborative, or supervised agent behavior
+- **Suggest command** - AI-friendly task prioritization
+- **Context command** - Project state summary for agents
+- **Override TodoWrite** - Replace built-in agent task systems
+
+### Task Dependencies
+- **Blocking relationships** - Track task dependencies with `--blocked-by`
+- **Circular detection** - Prevents invalid dependency chains
+- **Ready filter** - Find unblocked tasks ready to work on (`--ready`)
+- **Blocking filters** - `--is-blocked` and `--not-blocked` filters
+
+### Epics
+- **Epic management** - Group related tasks into epics
+- **Epic CRUD** - Create, list, show, delete epics via CLI
+- **Task linking** - Link tasks to epics with `--epic` flag
+
+### Web UI
+- **Kanban board** - Drag and drop tasks between columns
+- **Command palette** - Quick actions with `Cmd+K` and fuzzy search
+- **Keyboard-driven** - Full keyboard navigation (j/k/h/l, shortcuts)
+- **Task detail panel** - View and edit task properties
+- **Quick create** - Press `C` to create tasks instantly
+- **Peek preview** - Press `Space` for quick task preview
+- **Property pickers** - Keyboard shortcuts for status (S), priority (P), type (T)
+- **Shortcuts help** - Press `?` to see all keyboard shortcuts
+- **Sidebar** - Board navigation and creation
 
 ## Quick Start
 
@@ -74,11 +116,33 @@ This creates a single `./egenskriven` binary with the UI embedded.
 | Command | Description |
 |---------|-------------|
 | `add <title>` | Create a new task |
+| `add --stdin` | Batch create from JSON stdin |
+| `add --file <path>` | Batch create from JSON file |
 | `list` | List and filter tasks |
 | `show <ref>` | Show task details |
 | `move <ref> <column>` | Move task to column |
 | `update <ref>` | Update task properties |
 | `delete <ref>` | Delete a task |
+| `version` | Show version info |
+
+### Board Management
+
+| Command | Description |
+|---------|-------------|
+| `board list` | List all boards |
+| `board add <name> --prefix <PREFIX>` | Create a new board |
+| `board show <ref>` | Show board details |
+| `board use <ref>` | Set default board |
+| `board delete <ref>` | Delete a board |
+
+### Epic Management
+
+| Command | Description |
+|---------|-------------|
+| `epic list` | List all epics |
+| `epic add <title>` | Create a new epic |
+| `epic show <ref>` | Show epic details |
+| `epic delete <ref>` | Delete an epic |
 
 ### Agent Integration
 
@@ -183,20 +247,179 @@ This injects task tracking instructions into Claude's context.
 
 ## Web UI
 
-The web UI provides a kanban board with:
+The web UI provides a full-featured kanban board with:
 
-- **Drag and drop** - Move tasks between columns
-- **Real-time updates** - Changes from CLI appear instantly
-- **Task details** - Click to view/edit task
-- **Quick create** - Press `C` to create new task
+- **Kanban board** - Tasks organized in columns (Backlog, Todo, In Progress, Review, Done)
+- **Drag and drop** - Move tasks between columns with visual feedback
+- **Real-time updates** - Changes from CLI appear instantly via subscriptions
+- **Task details** - Click or press Enter to view/edit task properties
+- **Quick create** - Press `C` to create new task with defaults
+- **Peek preview** - Press `Space` on selected task for quick preview
+- **Command palette** - Press `Cmd+K` for quick actions and search
+- **Sidebar** - Board switcher with color indicators
+- **Property pickers** - Quick property changes via keyboard
 
 ### Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
-| `C` | Open quick create modal |
+| `Cmd+K` | Open command palette |
+| `C` | Create new task |
 | `Enter` | Open selected task detail |
+| `Space` | Peek preview |
+| `E` | Edit task (open detail) |
+| `Backspace` | Delete task |
+| `?` | Show shortcuts help |
 | `Esc` | Close modal/deselect |
+
+**Navigation:**
+| Key | Action |
+|-----|--------|
+| `J` / `↓` | Next task |
+| `K` / `↑` | Previous task |
+| `H` / `←` | Previous column |
+| `L` / `→` | Next column |
+
+**Properties (when task selected):**
+| Key | Action |
+|-----|--------|
+| `S` | Change status/column |
+| `P` | Change priority |
+| `T` | Change type |
+
+**Selection:**
+| Key | Action |
+|-----|--------|
+| `X` | Toggle select |
+| `Shift+X` | Select range |
+| `Cmd+A` | Select all visible |
+
+## Filtering Tasks
+
+The `list` command supports powerful filtering:
+
+```bash
+# Basic filters
+./egenskriven list --column todo
+./egenskriven list --type bug --priority urgent
+./egenskriven list --label frontend --label ui
+
+# Search by title
+./egenskriven list --search "login"
+
+# Agent/creator filters
+./egenskriven list --created-by agent
+./egenskriven list --agent claude
+
+# Blocking filters
+./egenskriven list --is-blocked      # Show blocked tasks
+./egenskriven list --not-blocked     # Show unblocked tasks
+./egenskriven list --ready           # Unblocked in todo/backlog
+
+# Epic filter
+./egenskriven list --epic "Q1 Launch"
+
+# Board filter
+./egenskriven list --board work
+./egenskriven list --all-boards
+
+# Sorting and limiting
+./egenskriven list --sort "-priority,position"
+./egenskriven list --limit 10
+
+# JSON with selective fields
+./egenskriven list --json --fields id,title,column
+```
+
+## Epics
+
+Group related tasks into epics:
+
+```bash
+# Create an epic
+./egenskriven epic add "Q1 Launch" --color "#3B82F6"
+
+# List epics
+./egenskriven epic list
+
+# Link task to epic
+./egenskriven add "Implement auth" --epic "Q1 Launch"
+
+# Filter tasks by epic
+./egenskriven list --epic "Q1 Launch"
+
+# Show epic details
+./egenskriven epic show "Q1 Launch"
+
+# Delete epic
+./egenskriven epic delete "Q1 Launch"
+```
+
+## Batch Operations
+
+Create multiple tasks at once for agent workflows:
+
+```bash
+# From stdin (JSON lines)
+echo '{"title":"Task 1"}
+{"title":"Task 2","priority":"high"}' | ./egenskriven add --stdin
+
+# From stdin (JSON array)
+echo '[{"title":"Task 1"},{"title":"Task 2"}]' | ./egenskriven add --stdin
+
+# From file
+./egenskriven add --file tasks.json
+
+# With agent tracking
+echo '{"title":"Fix bug"}' | ./egenskriven add --stdin --agent claude
+```
+
+**JSON task format:**
+```json
+{
+  "id": "optional15chars",
+  "title": "Task title",
+  "description": "Optional description",
+  "type": "bug|feature|chore",
+  "priority": "low|medium|high|urgent",
+  "column": "backlog|todo|in_progress|review|done",
+  "labels": ["label1", "label2"],
+  "epic": "Epic title or ID"
+}
+```
+
+## Multi-Board Support
+
+Organize tasks across multiple boards:
+
+```bash
+# Create boards
+./egenskriven board add "Work" --prefix WRK
+./egenskriven board add "Personal" --prefix PER --color "#22C55E"
+
+# List boards
+./egenskriven board list
+
+# Set default board
+./egenskriven board use work
+
+# Create task in specific board
+./egenskriven add "Fix bug" --board work
+
+# List tasks from specific board
+./egenskriven list --board work
+
+# List tasks from all boards
+./egenskriven list --all-boards
+
+# Show board details
+./egenskriven board show work
+
+# Delete board (with confirmation)
+./egenskriven board delete work --force
+```
+
+Task IDs include board prefix (e.g., `WRK-123`, `PER-456`).
 
 ## Blocking Dependencies
 
@@ -265,15 +488,18 @@ make clean    # Remove build artifacts
 .
 ├── cmd/egenskriven/     # Main entry point
 ├── internal/
+│   ├── board/           # Board management logic
 │   ├── commands/        # CLI commands (add, list, move, etc.)
 │   ├── config/          # Configuration management
 │   ├── output/          # Output formatting (human/JSON)
-│   └── resolver/        # Task reference resolution
+│   ├── resolver/        # Task reference resolution
+│   └── testutil/        # Test utilities
 ├── migrations/          # Database migrations
 ├── ui/                  # React frontend
 │   ├── src/
-│   │   ├── components/  # React components
-│   │   ├── hooks/       # Custom hooks
+│   │   ├── components/  # React components (Board, TaskCard, CommandPalette, etc.)
+│   │   ├── hooks/       # Custom hooks (useTasks, useKeyboard, useSelection, etc.)
+│   │   ├── types/       # TypeScript types
 │   │   └── lib/         # PocketBase client
 │   └── ...
 └── docs/                # Documentation
@@ -285,6 +511,7 @@ Project configuration is stored in `.egenskriven/config.json`:
 
 ```json
 {
+  "defaultBoard": "WRK",
   "agent": {
     "workflow": "strict",
     "mode": "autonomous",
