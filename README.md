@@ -49,7 +49,7 @@ A local-first kanban task manager with CLI and web UI. Built with agentic workfl
 - **List view** - Toggle between board and table view with `Ctrl+B`
 - **Command palette** - Quick actions with `Cmd+K` and fuzzy search
 - **Keyboard-driven** - Full keyboard navigation (j/k/h/l, shortcuts)
-- **Task detail panel** - View and edit task properties
+- **Task detail panel** - View and edit task properties with Markdown description support
 - **Quick create** - Press `C` to create tasks instantly
 - **Peek preview** - Press `Space` for quick task preview
 - **Property pickers** - Keyboard shortcuts for status (S), priority (P), type (T)
@@ -57,6 +57,13 @@ A local-first kanban task manager with CLI and web UI. Built with agentic workfl
 - **Saved views** - Save filter configurations as reusable views with favorites
 - **Shortcuts help** - Press `?` to see all keyboard shortcuts
 - **Sidebar** - Board navigation, saved views, and board creation
+
+### Theming
+- **Multiple built-in themes** - Dark, Light, Gruvbox Dark, Catppuccin Mocha, Nord, Tokyo Night
+- **Custom themes** - Import your own JSON theme files with full color customization
+- **System mode** - Follow OS dark/light preference with configurable theme per mode
+- **Accent colors** - 8 preset accent colors or use theme's default
+- **Real-time preview** - Theme changes apply instantly
 
 ## Quick Start
 
@@ -277,6 +284,7 @@ The web UI provides a full-featured kanban board with:
 | `Backspace` | Delete task |
 | `F` | Open filter builder |
 | `Ctrl+B` | Toggle board/list view |
+| `Ctrl+,` | Open settings |
 | `?` | Show shortcuts help |
 | `Esc` | Close modal/deselect |
 
@@ -313,6 +321,98 @@ Save commonly used filter configurations as reusable views:
 5. **Delete views**: Click the `×` button on any saved view to remove it
 
 Views are board-specific and persist across sessions.
+
+### Themes
+
+EgenSkriven supports a comprehensive theme system with built-in themes and custom theme support.
+
+#### Built-in Themes
+
+| Theme | Style | Description |
+|-------|-------|-------------|
+| Dark | Dark | Default dark theme with blue accent |
+| Light | Light | Clean light theme for daytime use |
+| Gruvbox Dark | Dark | Warm retro groove colors |
+| Catppuccin Mocha | Dark | Soothing pastel colors |
+| Nord | Dark | Cool arctic bluish tones |
+| Tokyo Night | Dark | Purple-ish city lights inspired |
+
+#### Theme Selection
+
+1. Open Settings with `Ctrl+,` or click the settings icon
+2. Choose a theme from the grid (includes System option)
+3. Theme applies instantly with all colors updating
+
+#### System Mode
+
+When "System" is selected, the app follows your OS dark/light preference:
+- Configure which theme to use for dark mode (default: Dark)
+- Configure which theme to use for light mode (default: Light)
+- Automatically switches when your OS preference changes
+
+#### Accent Colors
+
+Customize the accent color used for buttons, links, and highlights:
+- **Theme Default** - Use the theme's carefully chosen accent color (indicated by "T" badge)
+- **8 preset colors** - Blue, Purple, Green, Orange, Pink, Cyan, Red, Yellow
+- Accent color resets to theme default when switching themes
+
+#### Custom Themes
+
+Import your own themes via JSON files:
+
+1. Click "Import Theme" in Settings
+2. Select a valid JSON theme file
+3. Theme appears in the selection grid and can be applied
+4. Remove custom themes with the × button
+
+**Custom Theme JSON Format:**
+
+```json
+{
+  "name": "My Custom Theme",
+  "appearance": "dark",
+  "author": "Your Name",
+  "colors": {
+    "bgApp": "#1a1b26",
+    "bgSidebar": "#16161e",
+    "bgCard": "#1f2335",
+    "bgCardHover": "#292e42",
+    "bgCardSelected": "#33394b",
+    "bgInput": "#1a1b26",
+    "bgOverlay": "rgba(0, 0, 0, 0.6)",
+    "textPrimary": "#c0caf5",
+    "textSecondary": "#9aa5ce",
+    "textMuted": "#565f89",
+    "textDisabled": "#414868",
+    "borderSubtle": "#292e42",
+    "borderDefault": "#33394b",
+    "accent": "#7aa2f7",
+    "accentHover": "#89b4fa",
+    "accentMuted": "rgba(122, 162, 247, 0.2)",
+    "shadowSm": "0 1px 2px rgba(0, 0, 0, 0.3)",
+    "shadowMd": "0 4px 6px rgba(0, 0, 0, 0.4)",
+    "shadowLg": "0 10px 15px rgba(0, 0, 0, 0.5)",
+    "shadowDrag": "0 12px 24px rgba(0, 0, 0, 0.6)",
+    "statusBacklog": "#6B7280",
+    "statusTodo": "#c0caf5",
+    "statusInProgress": "#e0af68",
+    "statusReview": "#bb9af7",
+    "statusDone": "#9ece6a",
+    "statusCanceled": "#6B7280",
+    "priorityUrgent": "#f7768e",
+    "priorityHigh": "#ff9e64",
+    "priorityMedium": "#e0af68",
+    "priorityLow": "#6B7280",
+    "priorityNone": "#414868",
+    "typeBug": "#f7768e",
+    "typeFeature": "#bb9af7",
+    "typeChore": "#6B7280"
+  }
+}
+```
+
+All color properties are required. Use hex colors (`#RRGGBB`) for most values, and `rgba()` for overlay/muted colors.
 
 ### Filter Builder (Web UI)
 
@@ -568,7 +668,9 @@ make clean    # Remove build artifacts
 ├── ui/                  # React frontend
 │   ├── src/
 │   │   ├── components/  # React components (Board, TaskCard, CommandPalette, etc.)
+│   │   ├── contexts/    # React contexts (ThemeContext, BoardContext, etc.)
 │   │   ├── hooks/       # Custom hooks (useTasks, useKeyboard, useSelection, etc.)
+│   │   ├── themes/      # Theme system (types, builtin themes, validation)
 │   │   ├── types/       # TypeScript types
 │   │   └── lib/         # PocketBase client
 │   └── ...
