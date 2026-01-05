@@ -6,5 +6,6 @@
     "requireSummary": false,
     "structuredSections": false
   },
-  "default_board": "WRK"
+  "server": {},
+  "default_board": "PROD"
 }
