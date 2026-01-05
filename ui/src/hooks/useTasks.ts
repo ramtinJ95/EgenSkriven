@@ -197,12 +197,37 @@ export function useTasks(boardId?: string): UseTasksReturn {
     [tasks, boardId]
   )
 
-  // Update a task
+  // Update a task with optimistic update
   const updateTask = useCallback(
     async (id: string, data: Partial<Task>): Promise<Task> => {
-      return pb.collection('tasks').update<Task>(id, data)
+      // Optimistic update - update local state immediately
+      setTasks((prev) =>
+        prev
+          .map((t) => (t.id === id ? { ...t, ...data, updated: new Date().toISOString() } : t))
+          .sort((a, b) => a.position - b.position)
+      )
+
+      try {
+        // Send to server
+        const updated = await pb.collection('tasks').update<Task>(id, data)
+
+        // Update with server response (includes computed fields like 'updated' timestamp)
+        setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)))
+
+        return updated
+      } catch (err) {
+        // Rollback on error - refetch all tasks
+        console.error('[useTasks] Update failed, refetching:', err)
+        const options: { sort: string; filter?: string } = { sort: 'position' }
+        if (boardId) {
+          options.filter = `board = "${boardId}"`
+        }
+        const records = await pb.collection('tasks').getFullList<Task>(options)
+        setTasks(records)
+        throw err
+      }
     },
-    []
+    [boardId]
   )
 
   // Delete a task
