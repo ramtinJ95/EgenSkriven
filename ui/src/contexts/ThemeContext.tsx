@@ -16,7 +16,6 @@ import {
 import {
   getAllThemes,
   getTheme,
-  loadCustomThemes,
   type Theme,
   type ThemeId,
 } from '../themes';
@@ -85,10 +84,8 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  // Load custom themes on mount
-  useEffect(() => {
-    loadCustomThemes();
-  }, []);
+  // Note: Custom themes are loaded synchronously at module initialization
+  // in themes/index.ts, so they're available before this component renders.
 
   // Initialize theme mode from localStorage
   const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {

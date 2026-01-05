@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { applyAccentColor } from '../themes/apply';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -30,6 +30,9 @@ interface UseAccentColorReturn {
 export function useAccentColor(): UseAccentColorReturn {
   const { activeTheme } = useTheme();
 
+  // Track the previous theme ID to detect theme changes
+  const prevThemeIdRef = useRef<string>(activeTheme.id);
+
   // Get stored custom accent (or null if none)
   const [customAccent, setCustomAccent] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
@@ -40,12 +43,22 @@ export function useAccentColor(): UseAccentColorReturn {
   const accentColor = customAccent || activeTheme.colors.accent;
   const isCustomAccent = customAccent !== null;
 
-  // Apply accent color on mount and when it changes
+  // Reset custom accent when theme changes (per design decision in context.md)
+  useEffect(() => {
+    if (prevThemeIdRef.current !== activeTheme.id) {
+      // Theme changed - reset to theme's default accent
+      setCustomAccent(null);
+      localStorage.removeItem(STORAGE_KEY);
+      prevThemeIdRef.current = activeTheme.id;
+    }
+  }, [activeTheme.id]);
+
+  // Apply custom accent color when it changes
   useEffect(() => {
     if (customAccent) {
       applyAccentColor(customAccent);
     }
-    // Theme accent is already applied by ThemeContext
+    // Theme accent is already applied by ThemeContext via applyTheme()
   }, [customAccent]);
 
   const setAccentColor = useCallback((color: string) => {

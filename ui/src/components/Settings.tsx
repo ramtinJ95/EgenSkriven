@@ -112,10 +112,17 @@ export function Settings({ isOpen, onClose }: SettingsProps) {
   );
 
   // Handle custom theme removal
-  const handleRemoveCustomTheme = useCallback((themeId: string) => {
-    removeCustomTheme(themeId);
-    setCustomThemes(getCustomThemes());
-  }, []);
+  const handleRemoveCustomTheme = useCallback(
+    (themeId: string) => {
+      // If removing the currently active theme, switch to default first
+      if (themeMode === themeId) {
+        setThemeMode('dark');
+      }
+      removeCustomTheme(themeId);
+      setCustomThemes(getCustomThemes());
+    },
+    [themeMode, setThemeMode]
+  );
 
   // Track when panel just opened to prevent immediate close
   useEffect(() => {
