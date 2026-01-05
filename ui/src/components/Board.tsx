@@ -10,7 +10,6 @@ import {
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import { Column } from './Column'
 import { TaskCard } from './TaskCard'
-import { useTasks } from '../hooks/useTasks'
 import { useCurrentBoard } from '../hooks/useCurrentBoard'
 import { type Task, type Column as ColumnType } from '../types/task'
 import { DEFAULT_COLUMNS } from '../types/board'
@@ -21,6 +20,7 @@ interface BoardProps {
   onTaskClick?: (task: Task) => void
   onTaskSelect?: (task: Task) => void
   selectedTaskId?: string | null
+  moveTask: (id: string, column: ColumnType, position: number) => Promise<Task>
 }
 
 /**
@@ -35,9 +35,8 @@ interface BoardProps {
  * - Click task to open detail panel
  * - Selected task state for keyboard navigation
  */
-export function Board({ tasks, onTaskClick, onTaskSelect, selectedTaskId }: BoardProps) {
+export function Board({ tasks, onTaskClick, onTaskSelect, selectedTaskId, moveTask }: BoardProps) {
   const { currentBoard, loading: boardLoading } = useCurrentBoard()
-  const { tasks: allTasks, loading: tasksLoading, error, moveTask } = useTasks(currentBoard?.id)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
 
   // Get columns from board or use defaults
@@ -48,7 +47,7 @@ export function Board({ tasks, onTaskClick, onTaskSelect, selectedTaskId }: Boar
     return DEFAULT_COLUMNS as ColumnType[]
   }, [currentBoard])
 
-  const loading = boardLoading || tasksLoading
+  const loading = boardLoading
 
   // Configure drag sensors
   // PointerSensor requires a small movement before dragging starts
@@ -86,7 +85,7 @@ export function Board({ tasks, onTaskClick, onTaskSelect, selectedTaskId }: Boar
 
   // Handle drag start - store the dragged task for overlay
   const handleDragStart = (event: DragStartEvent) => {
-    const task = allTasks.find((t) => t.id === event.active.id)
+    const task = tasks.find((t) => t.id === event.active.id)
     if (task) {
       setActiveTask(task)
     }
@@ -99,7 +98,7 @@ export function Board({ tasks, onTaskClick, onTaskSelect, selectedTaskId }: Boar
     if (!over) return
 
     const taskId = active.id as string
-    const task = allTasks.find((t) => t.id === taskId)
+    const task = tasks.find((t) => t.id === taskId)
     if (!task) return
 
     // Get the target column from the droppable area
@@ -126,14 +125,6 @@ export function Board({ tasks, onTaskClick, onTaskSelect, selectedTaskId }: Boar
     return (
       <div className={styles.loading}>
         <span>Loading tasks...</span>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className={styles.error}>
-        <span>Error: {error.message}</span>
       </div>
     )
   }

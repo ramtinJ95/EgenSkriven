@@ -32,7 +32,7 @@ import { COLUMNS, type Task, type Column } from './types/task'
 function AppContent() {
   const { boards } = useBoards()
   const { currentBoard, setCurrentBoard } = useCurrentBoard()
-  const { tasks, loading, createTask, updateTask, deleteTask } = useTasks(currentBoard?.id)
+  const { tasks, loading, createTask, updateTask, deleteTask, moveTask } = useTasks(currentBoard?.id)
   const {
     selectedTaskId,
     selectTask,
@@ -587,6 +587,7 @@ function AppContent() {
           onTaskClick={handleTaskClick}
           onTaskSelect={handleTaskSelect}
           selectedTaskId={selectedTaskId}
+          moveTask={moveTask}
         />
       ) : (
         <ListView
