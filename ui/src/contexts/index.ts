@@ -9,3 +9,6 @@ export { SelectionProvider } from './SelectionProvider'
 
 // Board context
 export { CurrentBoardProvider, useCurrentBoard } from './CurrentBoardContext'
+
+// Theme context
+export { ThemeProvider, useTheme } from './ThemeContext'
