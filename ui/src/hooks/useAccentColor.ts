@@ -1,57 +1,69 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { applyAccentColor } from '../themes/apply';
+import { useTheme } from '../contexts/ThemeContext';
 
 const STORAGE_KEY = 'egenskriven-accent';
-const DEFAULT_ACCENT = '#5E6AD2'; // Blue
-
-/**
- * Apply accent color to CSS custom properties.
- * This updates the --accent variable used throughout the app.
- */
-function applyAccentColor(color: string): void {
-  document.documentElement.style.setProperty('--accent', color);
-  
-  // Also set RGB values for transparency support
-  // Convert hex to RGB
-  const r = parseInt(color.slice(1, 3), 16);
-  const g = parseInt(color.slice(3, 5), 16);
-  const b = parseInt(color.slice(5, 7), 16);
-  document.documentElement.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
-}
 
 interface UseAccentColorReturn {
-  /** Current accent color (hex) */
+  /** Current accent color (hex) - null means using theme default */
   accentColor: string;
+  /** Whether a custom accent is set (not using theme default) */
+  isCustomAccent: boolean;
   /** Update accent color */
   setAccentColor: (color: string) => void;
+  /** Reset to theme's default accent color */
+  resetToThemeDefault: () => void;
 }
 
 /**
  * Hook to manage accent color preference.
- * 
+ *
+ * The accent color can either be:
+ * 1. The theme's default accent color (when no custom color is set)
+ * 2. A user-selected custom accent color
+ *
  * @example
- * const { accentColor, setAccentColor } = useAccentColor();
+ * const { accentColor, setAccentColor, resetToThemeDefault } = useAccentColor();
  * setAccentColor('#22C55E'); // Set to green
+ * resetToThemeDefault(); // Reset to theme's accent
  */
 export function useAccentColor(): UseAccentColorReturn {
-  const [accentColor, setAccentState] = useState<string>(() => {
-    if (typeof window === 'undefined') return DEFAULT_ACCENT;
-    return localStorage.getItem(STORAGE_KEY) || DEFAULT_ACCENT;
+  const { activeTheme } = useTheme();
+
+  // Get stored custom accent (or null if none)
+  const [customAccent, setCustomAccent] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(STORAGE_KEY);
   });
+
+  // Effective accent is either custom or theme default
+  const accentColor = customAccent || activeTheme.colors.accent;
+  const isCustomAccent = customAccent !== null;
 
   // Apply accent color on mount and when it changes
   useEffect(() => {
-    applyAccentColor(accentColor);
-  }, [accentColor]);
+    if (customAccent) {
+      applyAccentColor(customAccent);
+    }
+    // Theme accent is already applied by ThemeContext
+  }, [customAccent]);
 
-  const setAccentColor = (color: string) => {
+  const setAccentColor = useCallback((color: string) => {
     // Validate hex color format
     if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
       console.error('Invalid hex color:', color);
       return;
     }
-    setAccentState(color);
+    setCustomAccent(color);
     localStorage.setItem(STORAGE_KEY, color);
-  };
+    applyAccentColor(color);
+  }, []);
 
-  return { accentColor, setAccentColor };
+  const resetToThemeDefault = useCallback(() => {
+    setCustomAccent(null);
+    localStorage.removeItem(STORAGE_KEY);
+    // Theme accent will be applied by the next theme render
+  }, []);
+
+  return { accentColor, isCustomAccent, setAccentColor, resetToThemeDefault };
 }
