@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
-import { CurrentBoardProvider, useCurrentBoard } from './useCurrentBoard'
+import { CurrentBoardProvider, useCurrentBoard } from '../contexts/CurrentBoardContext'
 import type { ReactNode } from 'react'
 
 // Mock boards data
@@ -13,7 +13,7 @@ const mockBoards = [
 let mockBoardsLoading = false
 let mockBoardsData = [...mockBoards]
 
-vi.mock('./useBoards', () => ({
+vi.mock('../hooks/useBoards', () => ({
   useBoards: () => ({
     boards: mockBoardsData,
     loading: mockBoardsLoading,

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useCurrentBoard } from '../hooks/useCurrentBoard'
+import { useCurrentBoard } from '../contexts'
 import { BOARD_COLORS } from '../types/board'
 import { ViewsSidebar } from './ViewsSidebar'
 import styles from './Sidebar.module.css'

@@ -10,7 +10,7 @@ import {
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import { Column } from './Column'
 import { TaskCard } from './TaskCard'
-import { useCurrentBoard } from '../hooks/useCurrentBoard'
+import { useCurrentBoard } from '../contexts'
 import { type Task, type Column as ColumnType } from '../types/task'
 import { DEFAULT_COLUMNS } from '../types/board'
 import styles from './Board.module.css'

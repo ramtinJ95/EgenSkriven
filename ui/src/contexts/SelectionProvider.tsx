@@ -2,7 +2,7 @@ import { useState, useCallback, type ReactNode } from 'react'
 import {
   SelectionContext,
   type SelectionContextValue,
-} from './selectionContext'
+} from './SelectionContext'
 
 interface SelectionProviderProps {
   children: ReactNode

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from 'react'
 import type { Board } from '../types/board'
-import { useBoards } from './useBoards'
+import { useBoards } from '../hooks/useBoards'
 
 const STORAGE_KEY = 'egenskriven-current-board'
 

@@ -2,7 +2,7 @@ import { useContext } from 'react'
 import {
   SelectionContext,
   type SelectionContextValue,
-} from './selectionContext'
+} from '../contexts/SelectionContext'
 
 /**
  * Hook to access selection state and actions.
