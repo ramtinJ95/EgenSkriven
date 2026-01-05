@@ -43,8 +43,10 @@ export function Settings({ isOpen, onClose }: SettingsProps) {
     preferredLightTheme,
     setPreferredDarkTheme,
     setPreferredLightTheme,
+    refreshThemes,
   } = useTheme();
-  const { accentColor, setAccentColor } = useAccentColor();
+  const { accentColor, isCustomAccent, setAccentColor, resetToThemeDefault } =
+    useAccentColor();
   const panelRef = useRef<HTMLDivElement>(null);
   const justOpenedRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -92,6 +94,7 @@ export function Settings({ isOpen, onClose }: SettingsProps) {
 
           registerCustomTheme(theme);
           setCustomThemes(getCustomThemes());
+          refreshThemes(); // Update the theme grid
         } catch {
           setImportError('Failed to parse JSON file');
         }
@@ -108,7 +111,7 @@ export function Settings({ isOpen, onClose }: SettingsProps) {
         fileInputRef.current.value = '';
       }
     },
-    []
+    [refreshThemes]
   );
 
   // Handle custom theme removal
@@ -120,8 +123,9 @@ export function Settings({ isOpen, onClose }: SettingsProps) {
       }
       removeCustomTheme(themeId);
       setCustomThemes(getCustomThemes());
+      refreshThemes(); // Update the theme grid
     },
-    [themeMode, setThemeMode]
+    [themeMode, setThemeMode, refreshThemes]
   );
 
   // Track when panel just opened to prevent immediate close
@@ -273,18 +277,39 @@ export function Settings({ isOpen, onClose }: SettingsProps) {
             <div className={styles.row}>
               <label>Accent Color</label>
               <div className={styles.accentColorGrid}>
+                {/* Theme Default option */}
+                <button
+                  className={`${styles.accentColorOption} ${styles.themeDefaultOption} ${
+                    !isCustomAccent ? styles.selected : ''
+                  }`}
+                  style={{
+                    backgroundColor: accentColor,
+                    backgroundImage: !isCustomAccent
+                      ? 'none'
+                      : `linear-gradient(135deg, ${accentColor} 0%, ${accentColor} 100%)`,
+                  }}
+                  onClick={() => resetToThemeDefault()}
+                  title="Theme Default"
+                  aria-label="Use theme's default accent color"
+                >
+                  {!isCustomAccent && (
+                    <span className={styles.accentColorCheck}>&#10003;</span>
+                  )}
+                </button>
                 {ACCENT_COLORS.map((color) => (
                   <button
                     key={color.value}
                     className={`${styles.accentColorOption} ${
-                      accentColor === color.value ? styles.selected : ''
+                      isCustomAccent && accentColor === color.value
+                        ? styles.selected
+                        : ''
                     }`}
                     style={{ backgroundColor: color.value }}
                     onClick={() => setAccentColor(color.value)}
                     title={color.name}
                     aria-label={`Set accent color to ${color.name}`}
                   >
-                    {accentColor === color.value && (
+                    {isCustomAccent && accentColor === color.value && (
                       <span className={styles.accentColorCheck}>&#10003;</span>
                     )}
                   </button>
