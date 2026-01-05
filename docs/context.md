@@ -349,19 +349,53 @@ Copy this JSON to recreate the todo list using the `todowrite` tool:
 
 **IMPORTANT**: All `-test` tasks MUST use the `ui-test-engineer` agent for visual/functional verification, not just unit tests. The ui-test-engineer agent can interact with the running application in a real browser to verify UI behavior.
 
-### How to Test
+### Step-by-Step: How to Run UI Tests
 
-1. **Start the dev server** (if not already running):
-   ```bash
-   cd ui && npm run dev
-   ```
-   The app runs at `http://localhost:5173`
+#### Step 1: Start the Dev Server FIRST
 
-2. **Use the `ui-test-engineer` agent** with a detailed prompt describing:
-   - What feature to test
-   - Expected behavior
-   - Specific UI elements to verify
-   - Any interactions to perform (clicks, keyboard shortcuts, etc.)
+**CRITICAL**: The dev server MUST be running and verified BEFORE calling ui-test-engineer. The agent cannot start servers itself.
+
+```bash
+# Start the dev server and verify it's running
+cd /home/ramtinj/personal-workspace/EgenSkriven/ui && npm run dev &
+echo "Server starting..."
+sleep 5
+netstat -tlnp 2>/dev/null | grep 5173 || ss -tlnp | grep 5173
+```
+
+You should see output like:
+```
+VITE v7.3.0  ready in 160 ms
+  ➜  Local:   http://localhost:5173/
+```
+
+And the port check should show:
+```
+LISTEN ... :5173 ...
+```
+
+If the server is already running, you can verify with:
+```bash
+curl -s -o /dev/null -w "%{http_code}" http://localhost:5173
+# Should return: 200
+```
+
+#### Step 2: Call ui-test-engineer with Detailed Prompt
+
+Use the `task` tool with `subagent_type: ui-test-engineer`. The prompt MUST include:
+1. **App URL**: Always `http://localhost:5173`
+2. **Test Steps**: Numbered, specific actions to perform
+3. **Expected Behavior**: What should happen at each step
+4. **Required Output**: Specify the exact format you want back
+
+#### Step 3: Review the Test Report
+
+The ui-test-engineer will return a detailed report. Check:
+- All steps passed
+- No console errors
+- Overall verdict is PASS
+
+If FAIL, fix the issues and re-run the test.
 
 ### Example Test Prompts
 
@@ -420,7 +454,18 @@ Return a detailed test report including:
 5. Recommendations for fixes if FAIL
 ```
 
-### Example Complete Test Prompt
+### Complete Example: Running a UI Test
+
+Here's the full workflow for testing light mode CSS:
+
+**1. First, start and verify the dev server:**
+```bash
+cd /home/ramtinj/personal-workspace/EgenSkriven/ui && npm run dev &
+sleep 5
+ss -tlnp | grep 5173
+```
+
+**2. Then call ui-test-engineer with this prompt:**
 
 ```
 Test the light mode CSS implementation for the EgenSkriven app.
@@ -428,20 +473,71 @@ Test the light mode CSS implementation for the EgenSkriven app.
 **App URL**: http://localhost:5173
 
 **Test Steps**:
-1. Navigate to the app
-2. Open browser DevTools and select the <html> element
-3. Add attribute data-theme="light"
-4. Verify backgrounds change to light colors (#FFFFFF, #FAFAFA)
-5. Verify text changes to dark (#171717)
-6. Remove the attribute and verify dark mode returns
+1. Navigate to the app at http://localhost:5173
+2. Observe the initial dark mode state - the app should have dark backgrounds
+3. Using Playwright, execute JavaScript to add data-theme="light" attribute:
+   document.documentElement.setAttribute('data-theme', 'light')
+4. Verify the following color changes occur:
+   - App background should become white/light (#FFFFFF)
+   - Sidebar should become light gray (#FAFAFA)
+   - Text should become dark colored (#171717)
+   - Cards should have white backgrounds
+5. Execute JavaScript to remove the attribute:
+   document.documentElement.removeAttribute('data-theme')
+6. Verify dark mode colors return
+
+**Expected Behavior**:
+- Light mode: White/light backgrounds, dark text
+- Dark mode: Dark backgrounds (#0D0D0D), light text (#F5F5F5)
+- Instant transition with no delay
 
 **Required Output**:
-Return a detailed test report including:
-1. PASS/FAIL status for each test step
-2. Any errors or issues found (with details)
-3. Console errors observed (if any)
-4. Overall verdict: PASS or FAIL
-5. Recommendations for fixes if FAIL
+Return a detailed test report with the following format:
+
+## Test Report: Light Mode CSS
+
+### Step 1: Navigate to app
+- Status: PASS/FAIL
+- Observation: [what you saw]
+
+### Step 2: Initial dark mode
+- Status: PASS/FAIL
+- Observation: [describe the dark mode appearance]
+
+### Step 3: Apply light mode
+- Status: PASS/FAIL
+- Observation: [describe what changed]
+
+### Step 4: Verify light mode colors
+- Status: PASS/FAIL
+- Observation: [list which elements changed correctly]
+
+### Step 5: Remove light mode
+- Status: PASS/FAIL
+- Observation: [describe the return to dark mode]
+
+### Console Errors
+- [List any console errors, or "None"]
+
+### Overall Verdict
+- **PASS** or **FAIL**
+- Summary: [brief summary]
+
+### Recommendations
+- [Any fixes needed, or "None - all tests passed"]
+```
+
+**3. The ui-test-engineer will return a detailed report like:**
+```
+## Test Report: Light Mode CSS
+
+### Step 1: Navigate to app
+- Status: ✅ PASS
+- Observation: Successfully navigated to http://localhost:5173...
+
+### Overall Verdict
+- **✅ PASS**
+- Summary: The light mode CSS implementation is working correctly...
 ```
 
 ## Reference Documents
