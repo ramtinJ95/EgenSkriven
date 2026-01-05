@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import type { Task } from '../types/task'
 import type { Board } from '../types/board'
@@ -10,6 +11,8 @@ interface TaskCardProps {
   onClick?: (task: Task) => void
   onSelect?: (task: Task) => void
   currentBoard?: Board | null
+  /** When true, this card is rendered in the DragOverlay (the moving clone) */
+  isDragOverlay?: boolean
 }
 
 /**
@@ -23,14 +26,17 @@ interface TaskCardProps {
  * - Due date (if set)
  * 
  * Clicking opens the task detail panel.
+ * 
+ * Memoized to prevent unnecessary re-renders when other tasks change.
  */
-export function TaskCard({ task, isSelected = false, onClick, onSelect, currentBoard }: TaskCardProps) {
-  // Make this card draggable
+function TaskCardComponent({ task, isSelected = false, onClick, onSelect, currentBoard, isDragOverlay = false }: TaskCardProps) {
+  // Make this card draggable (skip if this is the drag overlay)
   const { attributes, listeners, setNodeRef, isDragging: isCurrentlyDragging } = useDraggable({
     id: task.id,
+    disabled: isDragOverlay,
   })
 
-  // When dragging, hide this card (the DragOverlay shows the visual)
+  // When dragging, reduce opacity (the DragOverlay shows the visual)
   const style: React.CSSProperties | undefined = isCurrentlyDragging
     ? { opacity: 0.3 }
     : undefined
@@ -68,17 +74,26 @@ export function TaskCard({ task, isSelected = false, onClick, onSelect, currentB
     }
   }
 
+  // Build class names - include global 'task-card' for drag-drop.css styles
+  const classNames = [
+    'task-card', // Global class for drag-drop.css
+    styles.card,
+    isSelected && styles.selected,
+    isCurrentlyDragging && 'dragging',
+    isDragOverlay && 'drag-overlay',
+  ].filter(Boolean).join(' ')
+
   return (
     <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
+      ref={isDragOverlay ? undefined : setNodeRef}
+      {...(isDragOverlay ? {} : listeners)}
+      {...(isDragOverlay ? {} : attributes)}
       style={style}
-      className={`${styles.card} ${isSelected ? styles.selected : ''}`}
+      className={classNames}
       data-task-id={task.id}
       onClick={handleClick}
       onFocus={handleFocus}
-      tabIndex={0}
+      tabIndex={isDragOverlay ? -1 : 0}
       role="button"
       aria-pressed={isSelected}
     >
@@ -136,3 +151,14 @@ export function TaskCard({ task, isSelected = false, onClick, onSelect, currentB
     </div>
   )
 }
+
+// Memoize to prevent unnecessary re-renders when other tasks change
+export const TaskCard = memo(TaskCardComponent, (prevProps, nextProps) => {
+  // Only re-render if these props change
+  return (
+    prevProps.task === nextProps.task &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.currentBoard === nextProps.currentBoard &&
+    prevProps.isDragOverlay === nextProps.isDragOverlay
+  )
+})
