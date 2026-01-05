@@ -183,7 +183,7 @@ export function Board({ tasks, onTaskClick, onTaskSelect, selectedTaskId, moveTa
       <DragOverlay dropAnimation={null}>
         {activeTask ? (
           <div style={{ width: 'var(--column-width)' }}>
-            <TaskCard task={activeTask} currentBoard={currentBoard} />
+            <TaskCard task={activeTask} currentBoard={currentBoard} isDragOverlay />
           </div>
         ) : null}
       </DragOverlay>
