@@ -230,10 +230,28 @@ export function useTasks(boardId?: string): UseTasksReturn {
     [boardId]
   )
 
-  // Delete a task
-  const deleteTask = useCallback(async (id: string): Promise<void> => {
-    await pb.collection('tasks').delete(id)
-  }, [])
+  // Delete a task with optimistic update
+  const deleteTask = useCallback(
+    async (id: string): Promise<void> => {
+      // Store task for potential rollback
+      const taskToDelete = tasks.find((t) => t.id === id)
+
+      // Optimistic delete
+      setTasks((prev) => prev.filter((t) => t.id !== id))
+
+      try {
+        await pb.collection('tasks').delete(id)
+      } catch (err) {
+        // Rollback - add task back
+        console.error('[useTasks] Delete failed, rolling back:', err)
+        if (taskToDelete) {
+          setTasks((prev) => [...prev, taskToDelete].sort((a, b) => a.position - b.position))
+        }
+        throw err
+      }
+    },
+    [tasks]
+  )
 
   // Move a task to a new column/position with optimistic update
   const moveTask = useCallback(
