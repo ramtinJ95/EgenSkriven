@@ -353,26 +353,9 @@ The global CSS files (drag-drop.css, focus.css) define styles for `.task-card` c
 
 ## UI Testing Instructions
 
-**IMPORTANT**: All `-test` tasks MUST use the `ui-test-engineer` agent for visual/functional verification.
+See `docs/ui-test-instructions.md` for detailed instructions on running UI tests with the `ui-test-engineer` agent.
 
-### Step-by-Step: How to Run UI Tests
-
-#### Step 1: Start the Dev Server FIRST
-
-```bash
-cd /home/ramtinj/personal-workspace/EgenSkriven/ui && npm run dev &
-sleep 3
-curl -s -o /dev/null -w "%{http_code}" http://localhost:5173
-# Should return: 200
-```
-
-#### Step 2: Call ui-test-engineer with Detailed Prompt
-
-Use the `task` tool with `subagent_type: ui-test-engineer`. Include:
-1. **App URL**: Always `http://localhost:5173`
-2. **Test Steps**: Numbered, specific actions
-3. **Expected Behavior**: What should happen
-4. **Required Output**: Format for the report
+**Quick Reference**: All `-test` tasks MUST use the `ui-test-engineer` agent. Always start the dev server first!
 
 ---
 
@@ -380,6 +363,7 @@ Use the `task` tool with `subagent_type: ui-test-engineer`. Include:
 
 - `docs/phase-7.md` - Full phase 7 specification with code examples for each task
 - `docs/ui-design.md` - Design specifications (colors, typography, spacing, animations)
+- `docs/ui-test-instructions.md` - Instructions for running UI tests with ui-test-engineer agent
 
 ---
 
