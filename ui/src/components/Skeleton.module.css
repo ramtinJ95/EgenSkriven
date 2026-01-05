@@ -1,0 +1,73 @@
+/* Skeleton Loading Styles */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-card-hover) 25%,
+    var(--bg-card) 50%,
+    var(--bg-card-hover) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Task Card Skeleton */
+.taskCardSkeleton {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.taskCardSkeletonHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.taskCardSkeletonTitle {
+  margin-top: var(--space-1);
+}
+
+.taskCardSkeletonFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-2);
+}
+
+/* Column Skeleton */
+.columnSkeleton {
+  width: 280px;
+  flex-shrink: 0;
+}
+
+.columnSkeletonHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.columnSkeletonCards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Board Skeleton */
+.boardSkeleton {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  overflow-x: auto;
+}
