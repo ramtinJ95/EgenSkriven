@@ -82,7 +82,7 @@ export const themeSchema = z.object({
     .min(1, 'Theme name is required')
     .max(50, 'Theme name must be 50 characters or less'),
   appearance: z.enum(['light', 'dark'], {
-    errorMap: () => ({ message: "Appearance must be 'light' or 'dark'" }),
+    error: "Appearance must be 'light' or 'dark'",
   }),
   author: z.string().optional(),
   source: z.string().url('Source must be a valid URL').optional(),
@@ -116,7 +116,7 @@ export function validateTheme(input: unknown): ValidationResult {
 
   return {
     success: false,
-    errors: result.error.errors.map(
+    errors: result.error.issues.map(
       (e) => `${e.path.join('.')}: ${e.message}`
     ),
   };
