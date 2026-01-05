@@ -77,10 +77,19 @@ export function useBoards(): UseBoardsReturn {
             break
 
           case 'update':
-            // Replace updated board in state
-            setBoards((prev) =>
-              prev.map((b) => (b.id === event.record.id ? event.record : b))
-            )
+            // Update or add board in state
+            setBoards((prev) => {
+              const existingIndex = prev.findIndex((b) => b.id === event.record.id)
+              if (existingIndex >= 0) {
+                // Board exists - replace it
+                const updated = [...prev]
+                updated[existingIndex] = event.record
+                return updated.sort((a, b) => a.name.localeCompare(b.name))
+              } else {
+                // Board somehow appeared - add it
+                return [...prev, event.record].sort((a, b) => a.name.localeCompare(b.name))
+              }
+            })
             break
 
           case 'delete':
