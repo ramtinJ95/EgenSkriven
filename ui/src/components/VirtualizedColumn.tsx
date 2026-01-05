@@ -15,6 +15,7 @@ interface VirtualizedColumnProps {
   onTaskClick?: (task: Task) => void
   onTaskSelect?: (task: Task) => void
   selectedTaskId?: string | null
+  isSelected?: (taskId: string) => boolean
   currentBoard?: Board | null
 }
 
@@ -49,6 +50,7 @@ export function VirtualizedColumn({
   onTaskClick, 
   onTaskSelect, 
   selectedTaskId, 
+  isSelected,
   currentBoard 
 }: VirtualizedColumnProps) {
   const parentRef = useRef<HTMLDivElement>(null)
@@ -119,7 +121,7 @@ export function VirtualizedColumn({
                   task={task}
                   onClick={onTaskClick}
                   onSelect={onTaskSelect}
-                  isSelected={selectedTaskId === task.id}
+                  isSelected={isSelected ? isSelected(task.id) : selectedTaskId === task.id}
                   currentBoard={currentBoard}
                 />
               </div>

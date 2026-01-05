@@ -25,6 +25,8 @@ interface BoardProps {
   onTaskClick?: (task: Task) => void
   onTaskSelect?: (task: Task) => void
   selectedTaskId?: string | null
+  multiSelectedIds?: Set<string>
+  isSelected?: (taskId: string) => boolean
   moveTask: (id: string, column: ColumnType, position: number) => Promise<Task>
 }
 
@@ -40,7 +42,7 @@ interface BoardProps {
  * - Click task to open detail panel
  * - Selected task state for keyboard navigation
  */
-export function Board({ tasks, onTaskClick, onTaskSelect, selectedTaskId, moveTask }: BoardProps) {
+export function Board({ tasks, onTaskClick, onTaskSelect, selectedTaskId, multiSelectedIds, isSelected, moveTask }: BoardProps) {
   const { currentBoard, loading: boardLoading } = useCurrentBoard()
   const [activeTask, setActiveTask] = useState<Task | null>(null)
 
@@ -160,6 +162,7 @@ export function Board({ tasks, onTaskClick, onTaskSelect, selectedTaskId, moveTa
                 onTaskClick={onTaskClick}
                 onTaskSelect={onTaskSelect}
                 selectedTaskId={selectedTaskId}
+                isSelected={isSelected}
                 currentBoard={currentBoard}
               />
             )
@@ -173,6 +176,7 @@ export function Board({ tasks, onTaskClick, onTaskSelect, selectedTaskId, moveTa
               onTaskClick={onTaskClick}
               onTaskSelect={onTaskSelect}
               selectedTaskId={selectedTaskId}
+              isSelected={isSelected}
               currentBoard={currentBoard}
             />
           )

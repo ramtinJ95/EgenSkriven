@@ -58,6 +58,25 @@
   color: var(--text-primary);
 }
 
+.iconButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.iconButton:hover {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+
 .shortcut {
   display: flex;
   align-items: center;

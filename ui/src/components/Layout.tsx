@@ -10,6 +10,7 @@ interface LayoutProps {
   filteredTasks: number
   onOpenFilterBuilder: () => void
   onOpenDisplayOptions: () => void
+  onOpenSettings?: () => void
 }
 
 const SIDEBAR_COLLAPSED_KEY = 'egenskriven-sidebar-collapsed'
@@ -32,6 +33,7 @@ export function Layout({
   filteredTasks,
   onOpenFilterBuilder,
   onOpenDisplayOptions,
+  onOpenSettings,
 }: LayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
@@ -49,7 +51,7 @@ export function Layout({
       <div className={styles.body}>
         <Sidebar collapsed={sidebarCollapsed} onToggle={handleToggleSidebar} />
         <div className={styles.content}>
-          <Header onDisplayOptionsClick={onOpenDisplayOptions} />
+          <Header onDisplayOptionsClick={onOpenDisplayOptions} onSettingsClick={onOpenSettings} />
           <FilterBar
             totalTasks={totalTasks}
             filteredTasks={filteredTasks}

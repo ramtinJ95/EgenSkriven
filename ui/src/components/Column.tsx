@@ -10,6 +10,7 @@ interface ColumnProps {
   onTaskClick?: (task: Task) => void
   onTaskSelect?: (task: Task) => void
   selectedTaskId?: string | null
+  isSelected?: (taskId: string) => boolean
   currentBoard?: Board | null
 }
 
@@ -35,7 +36,7 @@ function getColumnDisplayName(column: string): string {
  * Acts as a droppable target for drag-and-drop.
  * Displays column header with name and count.
  */
-export function Column({ column, tasks, onTaskClick, onTaskSelect, selectedTaskId, currentBoard }: ColumnProps) {
+export function Column({ column, tasks, onTaskClick, onTaskSelect, selectedTaskId, isSelected, currentBoard }: ColumnProps) {
   // Make this column a droppable target
   const { setNodeRef, isOver } = useDroppable({
     id: `column-${column}`,
@@ -67,7 +68,7 @@ export function Column({ column, tasks, onTaskClick, onTaskSelect, selectedTaskI
             task={task} 
             onClick={onTaskClick}
             onSelect={onTaskSelect}
-            isSelected={selectedTaskId === task.id}
+            isSelected={isSelected ? isSelected(task.id) : selectedTaskId === task.id}
             currentBoard={currentBoard}
           />
         ))}

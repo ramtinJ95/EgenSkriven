@@ -42,6 +42,8 @@ function AppContent() {
     selectAll,
     setFocusedColumn,
     focusedColumn,
+    multiSelectedIds,
+    isSelected,
   } = useSelection()
 
   // Filter state and hooks
@@ -134,15 +136,20 @@ function AppContent() {
     const currentColumn: Column = selectedTask?.column || (focusedColumn as Column) || COLUMNS[0]
     const currentIndex = COLUMNS.indexOf(currentColumn)
 
-    if (currentIndex < COLUMNS.length - 1) {
-      const nextColumn = COLUMNS[currentIndex + 1]
-      setFocusedColumn(nextColumn)
-
-      // Select first task in next column if available
+    // Find the next column with tasks (skip empty columns)
+    for (let i = currentIndex + 1; i < COLUMNS.length; i++) {
+      const nextColumn = COLUMNS[i]
       const tasksInColumn = tasksByColumn[nextColumn]
       if (tasksInColumn.length > 0) {
+        setFocusedColumn(nextColumn)
         selectTask(tasksInColumn[0].id)
+        return
       }
+    }
+    // If no column with tasks found to the right, just move to the next column
+    // (for visual column focus even if empty)
+    if (currentIndex < COLUMNS.length - 1) {
+      setFocusedColumn(COLUMNS[currentIndex + 1])
     }
   }, [selectedTask, focusedColumn, tasksByColumn, setFocusedColumn, selectTask])
 
@@ -151,15 +158,20 @@ function AppContent() {
     const currentColumn: Column = selectedTask?.column || (focusedColumn as Column) || COLUMNS[0]
     const currentIndex = COLUMNS.indexOf(currentColumn)
 
-    if (currentIndex > 0) {
-      const prevColumn = COLUMNS[currentIndex - 1]
-      setFocusedColumn(prevColumn)
-
-      // Select first task in previous column if available
+    // Find the previous column with tasks (skip empty columns)
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      const prevColumn = COLUMNS[i]
       const tasksInColumn = tasksByColumn[prevColumn]
       if (tasksInColumn.length > 0) {
+        setFocusedColumn(prevColumn)
         selectTask(tasksInColumn[0].id)
+        return
       }
+    }
+    // If no column with tasks found to the left, just move to the previous column
+    // (for visual column focus even if empty)
+    if (currentIndex > 0) {
+      setFocusedColumn(COLUMNS[currentIndex - 1])
     }
   }, [selectedTask, focusedColumn, tasksByColumn, setFocusedColumn, selectTask])
 
@@ -567,6 +579,7 @@ function AppContent() {
         filteredTasks={0}
         onOpenFilterBuilder={() => {}}
         onOpenDisplayOptions={() => {}}
+        onOpenSettings={() => setIsSettingsOpen(true)}
       >
         <div
           style={{
@@ -588,7 +601,45 @@ function AppContent() {
       filteredTasks={filteredTasks.length}
       onOpenFilterBuilder={() => setIsFilterBuilderOpen(true)}
       onOpenDisplayOptions={() => setIsDisplayOptionsOpen(true)}
+      onOpenSettings={() => setIsSettingsOpen(true)}
     >
+      {/* Selection count indicator - shows when multiple tasks are selected */}
+      {multiSelectedIds.size > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: 'var(--space-4)',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          padding: 'var(--space-2) var(--space-4)',
+          backgroundColor: 'var(--accent)',
+          color: 'white',
+          borderRadius: 'var(--radius-md)',
+          fontSize: 'var(--text-sm)',
+          fontWeight: 'var(--font-medium)',
+          boxShadow: 'var(--shadow-lg)',
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-2)',
+        }}>
+          <span>{multiSelectedIds.size} task{multiSelectedIds.size > 1 ? 's' : ''} selected</span>
+          <button
+            onClick={() => clearSelection()}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: 'none',
+              borderRadius: 'var(--radius-sm)',
+              padding: '2px 8px',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: 'var(--text-xs)',
+            }}
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       {/* Conditional rendering: Board or List view */}
       {displayOptions.viewMode === 'board' ? (
         <Board
@@ -596,6 +647,8 @@ function AppContent() {
           onTaskClick={handleTaskClick}
           onTaskSelect={handleTaskSelect}
           selectedTaskId={selectedTaskId}
+          multiSelectedIds={multiSelectedIds}
+          isSelected={isSelected}
           moveTask={moveTask}
         />
       ) : (
