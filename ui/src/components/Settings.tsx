@@ -1,7 +1,15 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAccentColor } from '../hooks/useAccentColor';
-import { getThemesByAppearance, type ThemeId } from '../themes';
+import {
+  getThemesByAppearance,
+  getCustomThemes,
+  registerCustomTheme,
+  removeCustomTheme,
+  validateTheme,
+  type ThemeId,
+  type Theme,
+} from '../themes';
 import styles from './Settings.module.css';
 
 interface SettingsProps {
@@ -39,6 +47,75 @@ export function Settings({ isOpen, onClose }: SettingsProps) {
   const { accentColor, setAccentColor } = useAccentColor();
   const panelRef = useRef<HTMLDivElement>(null);
   const justOpenedRef = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [customThemes, setCustomThemes] = useState<Theme[]>(() =>
+    getCustomThemes()
+  );
+
+  // Handle custom theme file import
+  const handleImportTheme = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      setImportError(null);
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const content = e.target?.result as string;
+          const parsed = JSON.parse(content);
+
+          // Validate the theme
+          const result = validateTheme(parsed);
+          if (!result.success) {
+            setImportError(`Invalid theme: ${result.errors.join(', ')}`);
+            return;
+          }
+
+          // Generate a unique ID from the file name
+          const themeId = file.name
+            .replace(/\.json$/i, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9-]/g, '-');
+
+          // Register the custom theme
+          const theme: Theme = {
+            id: themeId,
+            name: result.theme.name,
+            appearance: result.theme.appearance,
+            colors: result.theme.colors,
+            author: result.theme.author,
+            source: result.theme.source,
+          };
+
+          registerCustomTheme(theme);
+          setCustomThemes(getCustomThemes());
+        } catch {
+          setImportError('Failed to parse JSON file');
+        }
+      };
+
+      reader.onerror = () => {
+        setImportError('Failed to read file');
+      };
+
+      reader.readAsText(file);
+
+      // Reset the input so the same file can be imported again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    },
+    []
+  );
+
+  // Handle custom theme removal
+  const handleRemoveCustomTheme = useCallback((themeId: string) => {
+    removeCustomTheme(themeId);
+    setCustomThemes(getCustomThemes());
+  }, []);
 
   // Track when panel just opened to prevent immediate close
   useEffect(() => {
@@ -207,6 +284,70 @@ export function Settings({ isOpen, onClose }: SettingsProps) {
                 ))}
               </div>
             </div>
+          </section>
+
+          {/* Custom Themes Section */}
+          <section className={styles.section}>
+            <h3>Custom Themes</h3>
+
+            {/* Import button */}
+            <div className={styles.row}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                onChange={handleImportTheme}
+                className={styles.hiddenInput}
+                id="theme-import"
+              />
+              <button
+                className={styles.importButton}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Import Theme
+              </button>
+            </div>
+
+            {/* Import error message */}
+            {importError && (
+              <div className={styles.errorMessage}>{importError}</div>
+            )}
+
+            {/* List of custom themes */}
+            {customThemes.length > 0 ? (
+              <div className={styles.customThemesList}>
+                {customThemes.map((theme) => (
+                  <div key={theme.id} className={styles.customThemeItem}>
+                    <div className={styles.customThemeInfo}>
+                      <div
+                        className={styles.customThemeSwatch}
+                        style={{ backgroundColor: theme.colors.bgApp }}
+                      >
+                        <div
+                          className={styles.customThemeAccent}
+                          style={{ backgroundColor: theme.colors.accent }}
+                        />
+                      </div>
+                      <span className={styles.customThemeName}>
+                        {theme.name}
+                      </span>
+                    </div>
+                    <button
+                      className={styles.removeButton}
+                      onClick={() => handleRemoveCustomTheme(theme.id)}
+                      title="Remove theme"
+                      aria-label={`Remove ${theme.name} theme`}
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className={styles.hint}>
+                No custom themes imported. Import a JSON theme file to add one.
+              </p>
+            )}
           </section>
 
           {/* Keyboard Shortcuts Section */}
