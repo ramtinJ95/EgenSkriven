@@ -202,8 +202,8 @@ Examples:
 			}
 			record.Set("history", history)
 
-			// Save the record
-			if err := app.Save(record); err != nil {
+			// Save the record using hybrid approach (API first, then fallback to direct)
+			if err := saveRecordHybrid(app, record, out); err != nil {
 				return out.Error(ExitGeneralError,
 					fmt.Sprintf("failed to create task: %v", err), nil)
 			}
@@ -471,7 +471,7 @@ func addBatch(app *pocketbase.PocketBase, out *output.Formatter, useStdin bool, 
 		}
 		record.Set("history", history)
 
-		if err := app.Save(record); err != nil {
+		if err := saveRecordHybrid(app, record, out); err != nil {
 			errors = append(errors, fmt.Sprintf("task %d (%s): failed to save: %v", i+1, input.Title, err))
 			continue
 		}
@@ -560,4 +560,168 @@ func formatCustomIDError(id string) string {
 		return fmt.Sprintf("invalid id '%s': must be exactly 15 characters (got %d)", id, len(id))
 	}
 	return fmt.Sprintf("invalid id '%s': must contain only lowercase letters (a-z) and digits (0-9)", id)
+}
+
+// saveRecordHybrid attempts to save a record via HTTP API first (for real-time updates),
+// falling back to direct database access if the server is not running.
+func saveRecordHybrid(app *pocketbase.PocketBase, record *core.Record, out *output.Formatter) error {
+	// If direct mode is enabled, skip API attempt
+	if isDirectMode() {
+		verboseLog("Using direct database access (--direct flag)")
+		return app.Save(record)
+	}
+
+	// Try HTTP API first
+	client := NewAPIClient()
+	if client.IsServerRunning() {
+		verboseLog("Server is running, using HTTP API for real-time updates")
+
+		// Convert record to TaskData for API
+		taskData := recordToTaskData(record)
+
+		// Create via API
+		_, err := client.CreateTask(taskData)
+		if err != nil {
+			// Check if it's a validation error (don't fall back)
+			if apiErr, ok := IsAPIError(err); ok && apiErr.IsValidationError() {
+				return fmt.Errorf("validation error: %s", apiErr.Message)
+			}
+
+			// Network or other error - fall back with warning
+			warnLog("API request failed, falling back to direct database: %v", err)
+			verboseLog("Falling back to direct database access")
+			return app.Save(record)
+		}
+
+		verboseLog("Task created via API (real-time updates enabled)")
+		return nil
+	}
+
+	// Server not running - fall back to direct
+	verboseLog("Server not running, using direct database access")
+	return app.Save(record)
+}
+
+// updateRecordHybrid attempts to update a record via HTTP API first (for real-time updates),
+// falling back to direct database access if the server is not running.
+func updateRecordHybrid(app *pocketbase.PocketBase, record *core.Record, out *output.Formatter) error {
+	// If direct mode is enabled, skip API attempt
+	if isDirectMode() {
+		verboseLog("Using direct database access (--direct flag)")
+		return app.Save(record)
+	}
+
+	// Try HTTP API first
+	client := NewAPIClient()
+	if client.IsServerRunning() {
+		verboseLog("Server is running, using HTTP API for real-time updates")
+
+		// Convert record to TaskData for API
+		taskData := recordToTaskData(record)
+
+		// Update via API
+		_, err := client.UpdateTask(record.Id, taskData)
+		if err != nil {
+			// Check if it's a validation error (don't fall back)
+			if apiErr, ok := IsAPIError(err); ok && apiErr.IsValidationError() {
+				return fmt.Errorf("validation error: %s", apiErr.Message)
+			}
+
+			// Network or other error - fall back with warning
+			warnLog("API request failed, falling back to direct database: %v", err)
+			verboseLog("Falling back to direct database access")
+			return app.Save(record)
+		}
+
+		verboseLog("Task updated via API (real-time updates enabled)")
+		return nil
+	}
+
+	// Server not running - fall back to direct
+	verboseLog("Server not running, using direct database access")
+	return app.Save(record)
+}
+
+// deleteRecordHybrid attempts to delete a record via HTTP API first (for real-time updates),
+// falling back to direct database access if the server is not running.
+func deleteRecordHybrid(app *pocketbase.PocketBase, record *core.Record, out *output.Formatter) error {
+	// If direct mode is enabled, skip API attempt
+	if isDirectMode() {
+		verboseLog("Using direct database access (--direct flag)")
+		return app.Delete(record)
+	}
+
+	// Try HTTP API first
+	client := NewAPIClient()
+	if client.IsServerRunning() {
+		verboseLog("Server is running, using HTTP API for real-time updates")
+
+		// Delete via API
+		err := client.DeleteTask(record.Id)
+		if err != nil {
+			// Check if it's a validation error (don't fall back)
+			if apiErr, ok := IsAPIError(err); ok && apiErr.IsValidationError() {
+				return fmt.Errorf("error: %s", apiErr.Message)
+			}
+
+			// Network or other error - fall back with warning
+			warnLog("API request failed, falling back to direct database: %v", err)
+			verboseLog("Falling back to direct database access")
+			return app.Delete(record)
+		}
+
+		verboseLog("Task deleted via API (real-time updates enabled)")
+		return nil
+	}
+
+	// Server not running - fall back to direct
+	verboseLog("Server not running, using direct database access")
+	return app.Delete(record)
+}
+
+// recordToTaskData converts a core.Record to TaskData for API calls.
+func recordToTaskData(record *core.Record) TaskData {
+	// Get labels as string slice
+	var labels []string
+	if rawLabels := record.Get("labels"); rawLabels != nil {
+		if l, ok := rawLabels.([]string); ok {
+			labels = l
+		}
+	}
+
+	// Get blocked_by as string slice
+	var blockedBy []string
+	if rawBlocked := record.Get("blocked_by"); rawBlocked != nil {
+		if b, ok := rawBlocked.([]string); ok {
+			blockedBy = b
+		}
+	}
+
+	// Get history
+	var history []any
+	if rawHistory := record.Get("history"); rawHistory != nil {
+		if h, ok := rawHistory.([]map[string]any); ok {
+			for _, entry := range h {
+				history = append(history, entry)
+			}
+		}
+	}
+
+	return TaskData{
+		ID:             record.Id,
+		Title:          record.GetString("title"),
+		Description:    record.GetString("description"),
+		Type:           record.GetString("type"),
+		Priority:       record.GetString("priority"),
+		Column:         record.GetString("column"),
+		Position:       record.GetFloat("position"),
+		Labels:         labels,
+		BlockedBy:      blockedBy,
+		CreatedBy:      record.GetString("created_by"),
+		CreatedByAgent: record.GetString("created_by_agent"),
+		Epic:           record.GetString("epic"),
+		Board:          record.GetString("board"),
+		Seq:            record.GetInt("seq"),
+		History:        history,
+	}
 }

@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/pocketbase/pocketbase"
@@ -10,8 +12,10 @@ import (
 
 var (
 	// Global flags
-	jsonOutput bool
-	quietMode  bool
+	jsonOutput  bool
+	quietMode   bool
+	directMode  bool // Skip HTTP API, use direct database access
+	verboseMode bool // Show detailed output including API/direct mode
 )
 
 // Register adds all CLI commands to the PocketBase app.
@@ -25,6 +29,10 @@ func Register(app *pocketbase.PocketBase) {
 		"Output in JSON format")
 	app.RootCmd.PersistentFlags().BoolVarP(&quietMode, "quiet", "q", false,
 		"Suppress non-essential output")
+	app.RootCmd.PersistentFlags().BoolVar(&directMode, "direct", false,
+		"Skip HTTP API, use direct database access (faster offline, no real-time updates)")
+	app.RootCmd.PersistentFlags().BoolVarP(&verboseMode, "verbose", "v", false,
+		"Show detailed output including connection method")
 
 	// Register all commands
 	app.RootCmd.AddCommand(newAddCmd(app))
@@ -115,6 +123,30 @@ func escapeLikePattern(s string) string {
 	s = strings.ReplaceAll(s, "%", "\\%")
 	s = strings.ReplaceAll(s, "_", "\\_")
 	return s
+}
+
+// isDirectMode returns true if direct database access should be used.
+func isDirectMode() bool {
+	return directMode
+}
+
+// isVerboseMode returns true if verbose output is enabled.
+func isVerboseMode() bool {
+	return verboseMode
+}
+
+// verboseLog prints a message if verbose mode is enabled.
+func verboseLog(format string, args ...any) {
+	if verboseMode && !quietMode {
+		fmt.Fprintf(os.Stderr, "[verbose] "+format+"\n", args...)
+	}
+}
+
+// warnLog prints a warning message to stderr.
+func warnLog(format string, args ...any) {
+	if !quietMode {
+		fmt.Fprintf(os.Stderr, "Warning: "+format+"\n", args...)
+	}
 }
 
 // Note: All command functions are now implemented in separate files

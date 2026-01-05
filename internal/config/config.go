@@ -13,6 +13,12 @@ var ValidWorkflows = []string{"strict", "light", "minimal"}
 // ValidModes is the list of valid agent mode values.
 var ValidModes = []string{"autonomous", "collaborative", "supervised"}
 
+// ServerConfig defines server connection settings for CLI hybrid mode.
+type ServerConfig struct {
+	// URL is the PocketBase server URL (default: http://localhost:8090)
+	URL string `json:"url,omitempty"`
+}
+
 // AgentConfig defines agent-specific behavior settings.
 type AgentConfig struct {
 	// Workflow mode: "strict", "light", "minimal"
@@ -39,8 +45,9 @@ type AgentConfig struct {
 
 // Config represents the project configuration.
 type Config struct {
-	Agent        AgentConfig `json:"agent"`
-	DefaultBoard string      `json:"default_board,omitempty"` // Default board prefix for CLI commands
+	Agent        AgentConfig  `json:"agent"`
+	Server       ServerConfig `json:"server,omitempty"`
+	DefaultBoard string       `json:"default_board,omitempty"` // Default board prefix for CLI commands
 }
 
 // DefaultConfig returns configuration with default values.

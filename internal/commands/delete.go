@@ -114,7 +114,7 @@ Examples:
 					continue
 				}
 
-				if err := app.Delete(record); err != nil {
+				if err := deleteRecordHybrid(app, record, out); err != nil {
 					return out.Error(ExitGeneralError,
 						fmt.Sprintf("failed to delete task %s: %v", t.ref, err), nil)
 				}
