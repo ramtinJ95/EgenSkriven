@@ -1,6 +1,7 @@
 import { useMemo, useEffect, useRef } from 'react'
 import type { Task } from '../types/task'
-import { Filter, useFilterStore } from '../stores/filters'
+import type { Filter } from '../stores/filters'
+import { useFilterStore } from '../stores/filters'
 
 // Debounce delay for search (ms)
 const SEARCH_DEBOUNCE_MS = 300

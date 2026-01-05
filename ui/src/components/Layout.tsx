@@ -1,10 +1,15 @@
 import { useState, type ReactNode } from 'react'
 import { Header } from './Header'
 import { Sidebar } from './Sidebar'
+import { FilterBar } from './FilterBar'
 import styles from './Layout.module.css'
 
 interface LayoutProps {
   children: ReactNode
+  totalTasks: number
+  filteredTasks: number
+  onOpenFilterBuilder: () => void
+  onOpenDisplayOptions: () => void
 }
 
 const SIDEBAR_COLLAPSED_KEY = 'egenskriven-sidebar-collapsed'
@@ -14,13 +19,20 @@ const SIDEBAR_COLLAPSED_KEY = 'egenskriven-sidebar-collapsed'
  *
  * Structure:
  * - Sidebar: Board navigation (collapsible)
- * - Header: App title and actions
+ * - Header: App title, search, and display options
+ * - FilterBar: Active filters display
  * - Main: Content area (board/list view)
  *
  * Note: CurrentBoardProvider must wrap App, not Layout,
  * because AppContent uses useCurrentBoard before Layout renders.
  */
-export function Layout({ children }: LayoutProps) {
+export function Layout({
+  children,
+  totalTasks,
+  filteredTasks,
+  onOpenFilterBuilder,
+  onOpenDisplayOptions,
+}: LayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
     return saved === 'true'
@@ -37,7 +49,12 @@ export function Layout({ children }: LayoutProps) {
       <div className={styles.body}>
         <Sidebar collapsed={sidebarCollapsed} onToggle={handleToggleSidebar} />
         <div className={styles.content}>
-          <Header />
+          <Header onDisplayOptionsClick={onOpenDisplayOptions} />
+          <FilterBar
+            totalTasks={totalTasks}
+            filteredTasks={filteredTasks}
+            onOpenFilterBuilder={onOpenFilterBuilder}
+          />
           <main className={styles.main}>{children}</main>
         </div>
       </div>

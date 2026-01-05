@@ -1,11 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { pb } from '../lib/pb'
-import {
-  Filter,
-  MatchMode,
-  DisplayOptions,
-  useFilterStore,
-} from '../stores/filters'
+import type { Filter, MatchMode, DisplayOptions } from '../stores/filters'
+import { useFilterStore } from '../stores/filters'
 
 // View record from PocketBase
 export interface View {

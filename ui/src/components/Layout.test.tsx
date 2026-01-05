@@ -21,30 +21,60 @@ vi.mock('../hooks/useCurrentBoard', () => ({
   }),
 }))
 
+// Mock filter store
+vi.mock('../stores/filters', () => ({
+  useFilterStore: () => ({
+    filters: [],
+    matchMode: 'all',
+    searchQuery: '',
+    setSearchQuery: vi.fn(),
+    clearFilters: vi.fn(),
+    removeFilter: vi.fn(),
+    setMatchMode: vi.fn(),
+  }),
+}))
+
+// Helper to render Layout with required props
+const renderLayout = (children: React.ReactNode) => {
+  return render(
+    <Layout
+      totalTasks={10}
+      filteredTasks={5}
+      onOpenFilterBuilder={vi.fn()}
+      onOpenDisplayOptions={vi.fn()}
+    >
+      {children}
+    </Layout>
+  )
+}
+
 describe('Layout', () => {
   // Test 6.1: Renders Header component
   it('renders Header component', () => {
-    render(<Layout><div>Content</div></Layout>)
+    renderLayout(<div>Content</div>)
     // Both Header and Sidebar have "EgenSkriven" - get the first one
     expect(screen.getAllByText('EgenSkriven').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders header with keyboard shortcuts', () => {
-    render(<Layout><div>Content</div></Layout>)
-    expect(screen.getByText('Create')).toBeInTheDocument()
-    expect(screen.getByText('Open')).toBeInTheDocument()
-    expect(screen.getByText('Close')).toBeInTheDocument()
+  it('renders header with display button', () => {
+    renderLayout(<div>Content</div>)
+    expect(screen.getByText('Display')).toBeInTheDocument()
   })
 
   // Test 6.2: Renders children in main area
   it('renders children in main area', () => {
-    render(<Layout><div>Test Content</div></Layout>)
+    renderLayout(<div>Test Content</div>)
     expect(screen.getByText('Test Content')).toBeInTheDocument()
   })
 
   it('renders multiple children', () => {
     render(
-      <Layout>
+      <Layout
+        totalTasks={10}
+        filteredTasks={5}
+        onOpenFilterBuilder={vi.fn()}
+        onOpenDisplayOptions={vi.fn()}
+      >
         <div>First Child</div>
         <div>Second Child</div>
       </Layout>
@@ -54,15 +84,19 @@ describe('Layout', () => {
   })
 
   it('renders complex children', () => {
-    render(
-      <Layout>
-        <article>
-          <h1>Article Title</h1>
-          <p>Article content</p>
-        </article>
-      </Layout>
+    renderLayout(
+      <article>
+        <h1>Article Title</h1>
+        <p>Article content</p>
+      </article>
     )
     expect(screen.getByRole('heading', { name: 'Article Title' })).toBeInTheDocument()
     expect(screen.getByText('Article content')).toBeInTheDocument()
+  })
+
+  it('renders FilterBar with task counts', () => {
+    renderLayout(<div>Content</div>)
+    // FilterBar shows "5 of 10 tasks" when there are active filters
+    expect(screen.getByText(/5 of 10/)).toBeInTheDocument()
   })
 })
