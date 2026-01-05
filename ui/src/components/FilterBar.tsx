@@ -45,8 +45,23 @@ function FilterPill({ filter, onRemove }: FilterPillProps) {
 
   const showValue = filter.operator !== 'is_set' && filter.operator !== 'is_not_set'
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault()
+      onRemove()
+    }
+  }
+
+  const filterDescription = `${FIELD_LABELS[filter.field]} ${OPERATOR_LABELS[filter.operator]}${showValue && filter.value !== null ? ` ${formatValue()}` : ''}`
+
   return (
-    <div className={styles.pill}>
+    <div
+      className={styles.pill}
+      tabIndex={0}
+      role="button"
+      aria-label={`Filter: ${filterDescription}. Press Delete or Backspace to remove.`}
+      onKeyDown={handleKeyDown}
+    >
       <span className={styles.pillField}>{FIELD_LABELS[filter.field]}</span>
       <span className={styles.pillOperator}>{OPERATOR_LABELS[filter.operator]}</span>
       {showValue && filter.value !== null && (
@@ -56,6 +71,7 @@ function FilterPill({ filter, onRemove }: FilterPillProps) {
         className={styles.pillRemove}
         onClick={onRemove}
         aria-label={`Remove ${FIELD_LABELS[filter.field]} filter`}
+        tabIndex={-1}
       >
         ×
       </button>

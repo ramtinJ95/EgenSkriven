@@ -67,9 +67,11 @@ export function useViews(boardId: string | null): UseViewsReturn {
     setLoading(true)
     setError(null)
 
+    // Sanitize boardId to prevent filter injection
+    const sanitizedBoardId = boardId.replace(/"/g, '')
     pb.collection('views')
       .getFullList<View>({
-        filter: `board = "${boardId}"`,
+        filter: `board = "${sanitizedBoardId}"`,
         sort: '-is_favorite,name',
       })
       .then((records) => {
@@ -101,10 +103,16 @@ export function useViews(boardId: string | null): UseViewsReturn {
       }
     }
 
+    // Store the current boardId for cleanup comparison
+    const currentBoardId = boardId
     pb.collection('views').subscribe<View>('*', handleEvent)
 
     return () => {
-      pb.collection('views').unsubscribe('*')
+      // Only unsubscribe if we're cleaning up for the same board
+      // This prevents race conditions when boardId changes rapidly
+      if (currentBoardId === boardId) {
+        pb.collection('views').unsubscribe('*')
+      }
     }
   }, [boardId])
 

@@ -63,6 +63,8 @@ export function FilterBuilder({ isOpen, onClose }: FilterBuilderProps) {
 
   // Epics data
   const [epics, setEpics] = useState<Epic[]>([])
+  const [epicsError, setEpicsError] = useState<string | null>(null)
+  const [epicsLoading, setEpicsLoading] = useState(false)
 
   // Available labels from localStorage or default
   const [availableLabels] = useState<string[]>(() => {
@@ -73,10 +75,16 @@ export function FilterBuilder({ isOpen, onClose }: FilterBuilderProps) {
 
   // Fetch epics on mount
   useEffect(() => {
+    setEpicsLoading(true)
+    setEpicsError(null)
     pb.collection('epics')
       .getFullList<Epic>()
       .then(setEpics)
-      .catch(console.error)
+      .catch((err) => {
+        console.error('Failed to load epics:', err)
+        setEpicsError('Failed to load epics')
+      })
+      .finally(() => setEpicsLoading(false))
   }, [])
 
   // Reset operator and value when field changes
@@ -223,13 +231,22 @@ export function FilterBuilder({ isOpen, onClose }: FilterBuilderProps) {
             className={styles.select}
             value={selectedValue as string}
             onChange={(e) => setSelectedValue(e.target.value)}
+            disabled={epicsLoading}
           >
-            <option value="">Select epic...</option>
-            {epics.map((epic) => (
-              <option key={epic.id} value={epic.id}>
-                {epic.title}
-              </option>
-            ))}
+            {epicsLoading ? (
+              <option value="">Loading epics...</option>
+            ) : epicsError ? (
+              <option value="">{epicsError}</option>
+            ) : (
+              <>
+                <option value="">Select epic...</option>
+                {epics.map((epic) => (
+                  <option key={epic.id} value={epic.id}>
+                    {epic.title}
+                  </option>
+                ))}
+              </>
+            )}
           </select>
         )
 

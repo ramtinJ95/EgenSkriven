@@ -47,6 +47,7 @@ function AppContent() {
   // Filter state and hooks
   const displayOptions = useFilterStore((s) => s.displayOptions)
   const setDisplayOptions = useFilterStore((s) => s.setDisplayOptions)
+  const clearView = useFilterStore((s) => s.clearView)
 
   // Apply search debouncing (updates debouncedSearchQuery in store)
   useSearchDebounce()
@@ -319,6 +320,8 @@ function AppContent() {
         action: () => {
           setCurrentBoard(board)
           clearSelection()
+          // Clear filters when switching boards to prevent stale filter state
+          clearView()
         },
       })),
 
@@ -342,6 +345,7 @@ function AppContent() {
       currentBoard,
       setCurrentBoard,
       clearSelection,
+      clearView,
       displayOptions.viewMode,
       setDisplayOptions,
     ]
@@ -579,6 +583,7 @@ function AppContent() {
       {/* Conditional rendering: Board or List view */}
       {displayOptions.viewMode === 'board' ? (
         <Board
+          tasks={filteredTasks}
           onTaskClick={handleTaskClick}
           onTaskSelect={handleTaskSelect}
           selectedTaskId={selectedTaskId}

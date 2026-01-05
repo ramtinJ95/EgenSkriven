@@ -1,5 +1,7 @@
-import { describe, it, expect } from 'vitest'
-import { filterHelpers } from './useFilteredTasks'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { renderHook, act, waitFor } from '@testing-library/react'
+import { filterHelpers, useFilteredTasks, useSearchDebounce } from './useFilteredTasks'
+import { useFilterStore } from '../stores/filters'
 import type { Task } from '../types/task'
 
 const {
@@ -431,5 +433,238 @@ describe('edge cases', () => {
 
   it('handles empty string task value', () => {
     expect(matchTextFilter('', 'contains', 'test')).toBe(false)
+  })
+})
+
+// Integration tests for hooks with Zustand store
+describe('useFilteredTasks hook integration', () => {
+  const mockTasks = [
+    createMockTask({ id: '1', title: 'High Priority Bug', priority: 'high', type: 'bug', labels: ['frontend'] }),
+    createMockTask({ id: '2', title: 'Medium Feature', priority: 'medium', type: 'feature', labels: ['backend'] }),
+    createMockTask({ id: '3', title: 'Low Bug', priority: 'low', type: 'bug', labels: ['frontend'] }),
+    createMockTask({ id: '4', title: 'Urgent Chore', priority: 'urgent', type: 'chore', labels: ['docs'] }),
+  ]
+
+  beforeEach(() => {
+    // Reset the store to initial state before each test
+    useFilterStore.setState({
+      filters: [],
+      matchMode: 'all',
+      searchQuery: '',
+      debouncedSearchQuery: '',
+      displayOptions: {
+        viewMode: 'board',
+        density: 'comfortable',
+        visibleFields: ['priority', 'labels', 'due_date'],
+        groupBy: 'column',
+      },
+      currentViewId: null,
+      isModified: false,
+    })
+  })
+
+  it('returns all tasks when no filters are applied', () => {
+    const { result } = renderHook(() => useFilteredTasks(mockTasks))
+    expect(result.current).toHaveLength(4)
+  })
+
+  it('filters tasks by single filter with "all" match mode', () => {
+    // Add a filter for high priority
+    act(() => {
+      useFilterStore.getState().addFilter({
+        field: 'priority',
+        operator: 'is',
+        value: 'high',
+      })
+    })
+
+    const { result } = renderHook(() => useFilteredTasks(mockTasks))
+    expect(result.current).toHaveLength(1)
+    expect(result.current[0].id).toBe('1')
+  })
+
+  it('filters tasks with multiple filters using "all" match mode (AND logic)', () => {
+    act(() => {
+      useFilterStore.getState().addFilter({
+        field: 'type',
+        operator: 'is',
+        value: 'bug',
+      })
+      useFilterStore.getState().addFilter({
+        field: 'labels',
+        operator: 'includes_any',
+        value: ['frontend'],
+      })
+    })
+
+    const { result } = renderHook(() => useFilteredTasks(mockTasks))
+    // Should match tasks that are bugs AND have frontend label
+    expect(result.current).toHaveLength(2) // task 1 and task 3
+    expect(result.current.map((t) => t.id)).toEqual(['1', '3'])
+  })
+
+  it('filters tasks with multiple filters using "any" match mode (OR logic)', () => {
+    act(() => {
+      useFilterStore.getState().setMatchMode('any')
+      useFilterStore.getState().addFilter({
+        field: 'priority',
+        operator: 'is',
+        value: 'urgent',
+      })
+      useFilterStore.getState().addFilter({
+        field: 'type',
+        operator: 'is',
+        value: 'feature',
+      })
+    })
+
+    const { result } = renderHook(() => useFilteredTasks(mockTasks))
+    // Should match tasks that are urgent OR features
+    expect(result.current).toHaveLength(2) // task 2 (feature) and task 4 (urgent)
+    expect(result.current.map((t) => t.id)).toEqual(['2', '4'])
+  })
+
+  it('filters tasks by debounced search query', () => {
+    act(() => {
+      // Directly set the debounced search query (simulating the debounce completion)
+      useFilterStore.setState({ debouncedSearchQuery: 'bug' })
+    })
+
+    const { result } = renderHook(() => useFilteredTasks(mockTasks))
+    // Should match tasks with "bug" in title
+    expect(result.current).toHaveLength(2)
+    expect(result.current.map((t) => t.id)).toEqual(['1', '3'])
+  })
+
+  it('combines search and filters correctly', () => {
+    act(() => {
+      // Set search query (debounced)
+      useFilterStore.setState({ debouncedSearchQuery: 'bug' })
+      // Add filter for high priority
+      useFilterStore.getState().addFilter({
+        field: 'priority',
+        operator: 'is',
+        value: 'high',
+      })
+    })
+
+    const { result } = renderHook(() => useFilteredTasks(mockTasks))
+    // Should match high priority tasks with "bug" in title
+    expect(result.current).toHaveLength(1)
+    expect(result.current[0].id).toBe('1')
+  })
+
+  it('returns empty array when no tasks match', () => {
+    act(() => {
+      useFilterStore.getState().addFilter({
+        field: 'priority',
+        operator: 'is',
+        value: 'critical', // non-existent priority
+      })
+    })
+
+    const { result } = renderHook(() => useFilteredTasks(mockTasks))
+    expect(result.current).toHaveLength(0)
+  })
+
+  it('updates filtered results when store changes', () => {
+    const { result, rerender } = renderHook(() => useFilteredTasks(mockTasks))
+    
+    // Initially all tasks
+    expect(result.current).toHaveLength(4)
+
+    // Add a filter
+    act(() => {
+      useFilterStore.getState().addFilter({
+        field: 'type',
+        operator: 'is',
+        value: 'bug',
+      })
+    })
+
+    // Rerender to get updated result
+    rerender()
+    expect(result.current).toHaveLength(2)
+
+    // Remove the filter
+    act(() => {
+      const filters = useFilterStore.getState().filters
+      if (filters.length > 0) {
+        useFilterStore.getState().removeFilter(filters[0].id)
+      }
+    })
+
+    rerender()
+    expect(result.current).toHaveLength(4)
+  })
+})
+
+describe('useSearchDebounce hook integration', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    // Reset the store
+    useFilterStore.setState({
+      searchQuery: '',
+      debouncedSearchQuery: '',
+    })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('debounces search query updates', async () => {
+    renderHook(() => useSearchDebounce())
+
+    // Set search query
+    act(() => {
+      useFilterStore.getState().setSearchQuery('test')
+    })
+
+    // Immediately after, debounced query should still be empty
+    expect(useFilterStore.getState().debouncedSearchQuery).toBe('')
+
+    // Fast forward past debounce delay (300ms)
+    act(() => {
+      vi.advanceTimersByTime(300)
+    })
+
+    // Now debounced query should be updated
+    expect(useFilterStore.getState().debouncedSearchQuery).toBe('test')
+  })
+
+  it('cancels pending debounce when query changes', async () => {
+    renderHook(() => useSearchDebounce())
+
+    // Set initial search query
+    act(() => {
+      useFilterStore.getState().setSearchQuery('first')
+    })
+
+    // Advance only 100ms (not enough for debounce)
+    act(() => {
+      vi.advanceTimersByTime(100)
+    })
+
+    // Change query before debounce completes
+    act(() => {
+      useFilterStore.getState().setSearchQuery('second')
+    })
+
+    // Advance past original debounce time
+    act(() => {
+      vi.advanceTimersByTime(200)
+    })
+
+    // Should still be empty because the second query restarted the timer
+    expect(useFilterStore.getState().debouncedSearchQuery).toBe('')
+
+    // Complete the debounce for second query
+    act(() => {
+      vi.advanceTimersByTime(100)
+    })
+
+    // Now it should have the second value
+    expect(useFilterStore.getState().debouncedSearchQuery).toBe('second')
   })
 })
