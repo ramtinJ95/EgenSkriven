@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { filterHelpers, useFilteredTasks, useSearchDebounce } from './useFilteredTasks'
 import { useFilterStore } from '../stores/filters'
 import type { Task } from '../types/task'
