@@ -29,40 +29,34 @@ export function Settings({ isOpen, onClose }: SettingsProps) {
   const { theme, setTheme } = useTheme();
   const { accentColor, setAccentColor } = useAccentColor();
   const panelRef = useRef<HTMLDivElement>(null);
+  const justOpenedRef = useRef(false);
 
-  // Close on Escape key
+  // Track when panel just opened to prevent immediate close
   useEffect(() => {
-    if (!isOpen) return;
+    if (isOpen) {
+      justOpenedRef.current = true;
+    }
+  }, [isOpen]);
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
+  // Note: Escape key is handled centrally in App.tsx to avoid duplicate handlers
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  // Close when clicking outside
+  // Close when clicking outside (using mousedown for more reliable detection)
   useEffect(() => {
     if (!isOpen) return;
 
     const handleClickOutside = (e: MouseEvent) => {
+      // Skip if panel just opened (prevents the opening click from closing it)
+      if (justOpenedRef.current) {
+        justOpenedRef.current = false;
+        return;
+      }
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
         onClose();
       }
     };
 
-    // Delay to prevent immediate close from the click that opened it
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('click', handleClickOutside);
-    }, 0);
-
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('click', handleClickOutside);
-    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;

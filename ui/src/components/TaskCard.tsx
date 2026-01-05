@@ -153,12 +153,5 @@ function TaskCardComponent({ task, isSelected = false, onClick, onSelect, curren
 }
 
 // Memoize to prevent unnecessary re-renders when other tasks change
-export const TaskCard = memo(TaskCardComponent, (prevProps, nextProps) => {
-  // Only re-render if these props change
-  return (
-    prevProps.task === nextProps.task &&
-    prevProps.isSelected === nextProps.isSelected &&
-    prevProps.currentBoard === nextProps.currentBoard &&
-    prevProps.isDragOverlay === nextProps.isDragOverlay
-  )
-})
+// Uses default shallow comparison which handles all props including callbacks
+export const TaskCard = memo(TaskCardComponent)

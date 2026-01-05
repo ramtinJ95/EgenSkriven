@@ -1,10 +1,13 @@
-import { useRef, useCallback } from 'react'
+import { useRef } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { TaskCard } from './TaskCard'
 import { COLUMN_NAMES, type Task } from '../types/task'
 import type { Board } from '../types/board'
 import styles from './Column.module.css'
+
+// Estimated task card height - used as initial estimate before measurement
+const ESTIMATED_TASK_HEIGHT = 88
 
 interface VirtualizedColumnProps {
   column: string
@@ -58,14 +61,11 @@ export function VirtualizedColumn({
     },
   })
 
-  // Estimate task card height (adjust based on design)
-  // This should match the actual task card height
-  const estimateSize = useCallback(() => 88, [])
-
   const virtualizer = useVirtualizer({
     count: tasks.length,
     getScrollElement: () => parentRef.current,
-    estimateSize,
+    // Initial estimate - actual sizes measured dynamically
+    estimateSize: () => ESTIMATED_TASK_HEIGHT,
     overscan: 5, // Render 5 extra items above/below viewport
     gap: 8, // Gap between items (matches --space-2)
   })
@@ -105,6 +105,8 @@ export function VirtualizedColumn({
             return (
               <div
                 key={task.id}
+                data-index={virtualItem.index}
+                ref={virtualizer.measureElement}
                 style={{
                   position: 'absolute',
                   top: 0,
