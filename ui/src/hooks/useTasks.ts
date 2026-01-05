@@ -116,12 +116,21 @@ export function useTasks(boardId?: string): UseTasksReturn {
               debugLog('Removing task - moved to different board')
               setTasks((prev) => prev.filter((t) => t.id !== event.record.id))
             } else {
-              debugLog('Updating task in state')
+              // Task belongs to this board - update or add it
               setTasks((prev) => {
-                const exists = prev.some((t) => t.id === event.record.id)
-                debugLog('Task exists in state:', exists)
-                // Replace updated task in state
-                return prev.map((t) => (t.id === event.record.id ? event.record : t))
+                const existingIndex = prev.findIndex((t) => t.id === event.record.id)
+                debugLog('Task exists in state:', existingIndex >= 0)
+                if (existingIndex >= 0) {
+                  // Task exists - replace it
+                  debugLog('Replacing existing task')
+                  const updated = [...prev]
+                  updated[existingIndex] = event.record
+                  return updated
+                } else {
+                  // Task moved INTO this board from another board - add it
+                  debugLog('Task moved INTO this board - adding')
+                  return [...prev, event.record].sort((a, b) => a.position - b.position)
+                }
               })
             }
             break
