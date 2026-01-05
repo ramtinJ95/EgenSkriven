@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
 import { pb } from '../lib/pb'
+import type { FilterField, FilterOperator } from '../stores/filters'
 import {
   useFilterStore,
-  FilterField,
-  FilterOperator,
   getOperatorsForField,
   operatorRequiresValue,
 } from '../stores/filters'

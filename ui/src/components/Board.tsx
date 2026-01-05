@@ -12,6 +12,7 @@ import { Column } from './Column'
 import { TaskCard } from './TaskCard'
 import { useTasks } from '../hooks/useTasks'
 import { useCurrentBoard } from '../hooks/useCurrentBoard'
+import { useFilteredTasks } from '../hooks/useFilteredTasks'
 import { type Task, type Column as ColumnType } from '../types/task'
 import { DEFAULT_COLUMNS } from '../types/board'
 import styles from './Board.module.css'
@@ -24,10 +25,10 @@ interface BoardProps {
 
 /**
  * Kanban board with columns and drag-and-drop.
- * 
+ *
  * Features:
  * - Displays tasks grouped by column
- * - Filters tasks by current board
+ * - Filters tasks by current board and active filters
  * - Supports board-specific custom columns
  * - Drag tasks between columns
  * - Real-time updates from CLI changes
@@ -36,8 +37,11 @@ interface BoardProps {
  */
 export function Board({ onTaskClick, onTaskSelect, selectedTaskId }: BoardProps) {
   const { currentBoard, loading: boardLoading } = useCurrentBoard()
-  const { tasks, loading: tasksLoading, error, moveTask } = useTasks(currentBoard?.id)
+  const { tasks: allTasks, loading: tasksLoading, error, moveTask } = useTasks(currentBoard?.id)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
+
+  // Apply filters to tasks
+  const tasks = useFilteredTasks(allTasks)
 
   // Get columns from board or use defaults
   const columns = useMemo(() => {
@@ -85,7 +89,7 @@ export function Board({ onTaskClick, onTaskSelect, selectedTaskId }: BoardProps)
 
   // Handle drag start - store the dragged task for overlay
   const handleDragStart = (event: DragStartEvent) => {
-    const task = tasks.find((t) => t.id === event.active.id)
+    const task = allTasks.find((t) => t.id === event.active.id)
     if (task) {
       setActiveTask(task)
     }
@@ -98,7 +102,7 @@ export function Board({ onTaskClick, onTaskSelect, selectedTaskId }: BoardProps)
     if (!over) return
 
     const taskId = active.id as string
-    const task = tasks.find((t) => t.id === taskId)
+    const task = allTasks.find((t) => t.id === taskId)
     if (!task) return
 
     // Get the target column from the droppable area
@@ -110,10 +114,7 @@ export function Board({ onTaskClick, onTaskSelect, selectedTaskId }: BoardProps)
 
     // Calculate new position (append to end of target column)
     const targetTasks = tasksByColumn[targetColumn]
-    const maxPosition = targetTasks.reduce(
-      (max, t) => Math.max(max, t.position),
-      0
-    )
+    const maxPosition = targetTasks.reduce((max, t) => Math.max(max, t.position), 0)
     const newPosition = maxPosition + 1000
 
     // Move task to new column

@@ -5,8 +5,11 @@ import { useKeyboardShortcuts } from './hooks/useKeyboard'
 import { useTasks } from './hooks/useTasks'
 import { useBoards } from './hooks/useBoards'
 import { CurrentBoardProvider, useCurrentBoard } from './hooks/useCurrentBoard'
+import { useFilteredTasks, useSearchDebounce } from './hooks/useFilteredTasks'
+import { useFilterStore } from './stores/filters'
 import { Layout } from './components/Layout'
 import { Board } from './components/Board'
+import { ListView } from './components/ListView'
 import { TaskDetail } from './components/TaskDetail'
 import { QuickCreate } from './components/QuickCreate'
 import { CommandPalette, type Command } from './components/CommandPalette'
@@ -18,6 +21,8 @@ import {
 } from './components/PropertyPicker'
 import { ShortcutsHelp } from './components/ShortcutsHelp'
 import { PeekPreview } from './components/PeekPreview'
+import { FilterBuilder } from './components/FilterBuilder'
+import { DisplayOptions } from './components/DisplayOptions'
 import { COLUMNS, type Task, type Column } from './types/task'
 
 /**
@@ -28,9 +33,9 @@ function AppContent() {
   const { boards } = useBoards()
   const { currentBoard, setCurrentBoard } = useCurrentBoard()
   const { tasks, loading, createTask, updateTask, deleteTask } = useTasks(currentBoard?.id)
-  const { 
-    selectedTaskId, 
-    selectTask, 
+  const {
+    selectedTaskId,
+    selectTask,
     clearSelection,
     toggleMultiSelect,
     selectRange,
@@ -39,12 +44,25 @@ function AppContent() {
     focusedColumn,
   } = useSelection()
 
+  // Filter state and hooks
+  const displayOptions = useFilterStore((s) => s.displayOptions)
+  const setDisplayOptions = useFilterStore((s) => s.setDisplayOptions)
+
+  // Apply search debouncing (updates debouncedSearchQuery in store)
+  useSearchDebounce()
+
+  // Filter tasks based on active filters and search
+  // This is used for ListView and navigation; Board uses its own internal filtering
+  const filteredTasks = useFilteredTasks(tasks)
+
   // Modal states
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false)
   const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isPeekOpen, setIsPeekOpen] = useState(false)
+  const [isFilterBuilderOpen, setIsFilterBuilderOpen] = useState(false)
+  const [isDisplayOptionsOpen, setIsDisplayOptionsOpen] = useState(false)
 
   // Property picker states
   const [statusPickerOpen, setStatusPickerOpen] = useState(false)
@@ -61,8 +79,8 @@ function AppContent() {
     [tasks, selectedTaskId]
   )
 
-  // Get sorted task IDs for navigation
-  const sortedTaskIds = useMemo(() => tasks.map((t) => t.id), [tasks])
+  // Get sorted task IDs for navigation (use filtered tasks for navigation)
+  const sortedTaskIds = useMemo(() => filteredTasks.map((t) => t.id), [filteredTasks])
 
   // Get tasks grouped by column for column navigation
   const tasksByColumn = useMemo(() => {
@@ -73,11 +91,11 @@ function AppContent() {
       review: [],
       done: [],
     }
-    for (const task of tasks) {
+    for (const task of filteredTasks) {
       grouped[task.column]?.push(task)
     }
     return grouped
-  }, [tasks])
+  }, [filteredTasks])
 
   // Navigation helpers
   const navigateToNextTask = useCallback(() => {
@@ -113,11 +131,11 @@ function AppContent() {
     // Find current column
     const currentColumn: Column = selectedTask?.column || (focusedColumn as Column) || COLUMNS[0]
     const currentIndex = COLUMNS.indexOf(currentColumn)
-    
+
     if (currentIndex < COLUMNS.length - 1) {
       const nextColumn = COLUMNS[currentIndex + 1]
       setFocusedColumn(nextColumn)
-      
+
       // Select first task in next column if available
       const tasksInColumn = tasksByColumn[nextColumn]
       if (tasksInColumn.length > 0) {
@@ -130,11 +148,11 @@ function AppContent() {
     // Find current column
     const currentColumn: Column = selectedTask?.column || (focusedColumn as Column) || COLUMNS[0]
     const currentIndex = COLUMNS.indexOf(currentColumn)
-    
+
     if (currentIndex > 0) {
       const prevColumn = COLUMNS[currentIndex - 1]
       setFocusedColumn(prevColumn)
-      
+
       // Select first task in previous column if available
       const tasksInColumn = tasksByColumn[prevColumn]
       if (tasksInColumn.length > 0) {
@@ -196,6 +214,26 @@ function AppContent() {
     [selectedTaskId, updateTask]
   )
 
+  const handleTaskClick = useCallback(
+    (task: Task) => {
+      selectTask(task.id)
+      setIsDetailOpen(true)
+    },
+    [selectTask]
+  )
+
+  const handleTaskSelect = useCallback(
+    (task: Task) => {
+      selectTask(task.id)
+      // Store reference to the task card element for anchor positioning
+      const element = document.querySelector(`[data-task-id="${task.id}"]`)
+      if (element instanceof HTMLElement) {
+        setAnchorElement(element)
+      }
+    },
+    [selectTask]
+  )
+
   // Build command palette commands
   const commands: Command[] = useMemo(
     () => [
@@ -245,6 +283,25 @@ function AppContent() {
         when: () => !!selectedTaskId,
       },
       {
+        id: 'open-filter',
+        label: 'Open filter builder',
+        shortcut: { key: 'f' },
+        section: 'actions',
+        icon: '⊛',
+        action: () => setIsFilterBuilderOpen(true),
+      },
+      {
+        id: 'toggle-view',
+        label: 'Toggle board/list view',
+        shortcut: { key: 'b', meta: true },
+        section: 'actions',
+        icon: '☰',
+        action: () =>
+          setDisplayOptions({
+            viewMode: displayOptions.viewMode === 'board' ? 'list' : 'board',
+          }),
+      },
+      {
         id: 'show-shortcuts',
         label: 'Show keyboard shortcuts',
         shortcut: { key: '?' },
@@ -276,7 +333,18 @@ function AppContent() {
         },
       })),
     ],
-    [tasks, selectedTaskId, handleDeleteTask, selectTask, boards, currentBoard, setCurrentBoard, clearSelection]
+    [
+      tasks,
+      selectedTaskId,
+      handleDeleteTask,
+      selectTask,
+      boards,
+      currentBoard,
+      setCurrentBoard,
+      clearSelection,
+      displayOptions.viewMode,
+      setDisplayOptions,
+    ]
   )
 
   // Register keyboard shortcuts
@@ -297,7 +365,13 @@ function AppContent() {
       handler: () => {
         // Handle Escape in priority order
         // Return false if nothing was done, allowing event to propagate
-        if (isPeekOpen) {
+        if (isFilterBuilderOpen) {
+          setIsFilterBuilderOpen(false)
+          return true
+        } else if (isDisplayOptionsOpen) {
+          setIsDisplayOptionsOpen(false)
+          return true
+        } else if (isPeekOpen) {
           setIsPeekOpen(false)
           return true
         } else if (isDetailOpen) {
@@ -358,6 +432,22 @@ function AppContent() {
         handleDeleteTask()
       },
       description: 'Delete task',
+    },
+
+    // Filter shortcuts
+    {
+      combo: { key: 'f' },
+      handler: () => setIsFilterBuilderOpen(true),
+      description: 'Open filter builder',
+    },
+    {
+      combo: { key: 'b', meta: true },
+      handler: () => {
+        setDisplayOptions({
+          viewMode: displayOptions.viewMode === 'board' ? 'list' : 'board',
+        })
+      },
+      description: 'Toggle board/list view',
     },
 
     // Property shortcuts (only when task selected)
@@ -459,7 +549,12 @@ function AppContent() {
 
   if (loading) {
     return (
-      <Layout>
+      <Layout
+        totalTasks={0}
+        filteredTasks={0}
+        onOpenFilterBuilder={() => {}}
+        onOpenDisplayOptions={() => {}}
+      >
         <div
           style={{
             display: 'flex',
@@ -475,22 +570,26 @@ function AppContent() {
   }
 
   return (
-    <Layout>
-      <Board
-        onTaskClick={(task) => {
-          selectTask(task.id)
-          setIsDetailOpen(true)
-        }}
-        onTaskSelect={(task) => {
-          selectTask(task.id)
-          // Store reference to the task card element for anchor positioning
-          const element = document.querySelector(`[data-task-id="${task.id}"]`)
-          if (element instanceof HTMLElement) {
-            setAnchorElement(element)
-          }
-        }}
-        selectedTaskId={selectedTaskId}
-      />
+    <Layout
+      totalTasks={tasks.length}
+      filteredTasks={filteredTasks.length}
+      onOpenFilterBuilder={() => setIsFilterBuilderOpen(true)}
+      onOpenDisplayOptions={() => setIsDisplayOptionsOpen(true)}
+    >
+      {/* Conditional rendering: Board or List view */}
+      {displayOptions.viewMode === 'board' ? (
+        <Board
+          onTaskClick={handleTaskClick}
+          onTaskSelect={handleTaskSelect}
+          selectedTaskId={selectedTaskId}
+        />
+      ) : (
+        <ListView
+          tasks={filteredTasks}
+          onTaskClick={handleTaskClick}
+          selectedTaskId={selectedTaskId}
+        />
+      )}
 
       {/* Task Detail Panel */}
       <TaskDetail
@@ -513,6 +612,18 @@ function AppContent() {
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
         commands={commands}
+      />
+
+      {/* Filter Builder Modal */}
+      <FilterBuilder
+        isOpen={isFilterBuilderOpen}
+        onClose={() => setIsFilterBuilderOpen(false)}
+      />
+
+      {/* Display Options Menu */}
+      <DisplayOptions
+        isOpen={isDisplayOptionsOpen}
+        onClose={() => setIsDisplayOptionsOpen(false)}
       />
 
       {/* Property Pickers */}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useViews, ParsedView } from '../hooks/useViews'
+import type { ParsedView } from '../hooks/useViews'
+import { useViews } from '../hooks/useViews'
 import { useFilterStore } from '../stores/filters'
 import styles from './ViewsSidebar.module.css'
 

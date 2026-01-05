@@ -7,12 +7,14 @@
   background-color: var(--bg-sidebar);
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
+  gap: var(--space-4);
 }
 
 .title {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  flex-shrink: 0;
 }
 
 .logo {
@@ -21,10 +23,39 @@
   color: var(--text-primary);
 }
 
+.center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
 .actions {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.displayButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.displayButton:hover {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
 }
 
 .shortcut {

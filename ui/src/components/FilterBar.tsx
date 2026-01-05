@@ -1,4 +1,5 @@
-import { useFilterStore, Filter, FilterField } from '../stores/filters'
+import type { Filter, FilterField } from '../stores/filters'
+import { useFilterStore } from '../stores/filters'
 import styles from './FilterBar.module.css'
 
 // Human-readable field labels
