@@ -1,5 +1,20 @@
 import '@testing-library/jest-dom'
 
+// Mock matchMedia for tests (required by ThemeContext)
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: (query: string) => ({
+    matches: query === '(prefers-color-scheme: dark)',
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  }),
+})
+
 // Mock localStorage for tests
 const localStorageMock = (() => {
   let store: Record<string, string> = {}

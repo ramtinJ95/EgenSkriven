@@ -53,10 +53,12 @@ describe('TaskDetail', () => {
       expect(screen.getByText('Test description')).toBeInTheDocument()
     })
 
-    it('does not render description section when description is empty', () => {
+    it('shows add description button when description is empty', () => {
       const taskWithoutDescription = { ...mockTask, description: undefined }
       render(<TaskDetail {...defaultProps} task={taskWithoutDescription} />)
-      expect(screen.queryByText('Description')).not.toBeInTheDocument()
+      // Description section is always shown, but with an "add" button when empty
+      expect(screen.getByText('Description')).toBeInTheDocument()
+      expect(screen.getByText('Click to add description...')).toBeInTheDocument()
     })
 
     it('renders labels', () => {

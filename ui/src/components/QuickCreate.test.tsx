@@ -41,7 +41,7 @@ describe('QuickCreate', () => {
       const createButton = screen.getByRole('button', { name: /create/i })
       await user.click(createButton)
 
-      expect(onCreate).toHaveBeenCalledWith('New test task', 'backlog')
+      expect(onCreate).toHaveBeenCalledWith('New test task', 'backlog', undefined)
     })
 
     it('trims whitespace from title before calling onCreate', async () => {
@@ -56,7 +56,7 @@ describe('QuickCreate', () => {
       const createButton = screen.getByRole('button', { name: /create/i })
       await user.click(createButton)
 
-      expect(onCreate).toHaveBeenCalledWith('Trimmed title', 'backlog')
+      expect(onCreate).toHaveBeenCalledWith('Trimmed title', 'backlog', undefined)
     })
 
     it('calls onClose after successful creation', async () => {
@@ -141,7 +141,7 @@ describe('QuickCreate', () => {
       const createButton = screen.getByRole('button', { name: /create/i })
       await user.click(createButton)
 
-      expect(onCreate).toHaveBeenCalledWith('Task in todo', 'todo')
+      expect(onCreate).toHaveBeenCalledWith('Task in todo', 'todo', undefined)
     })
 
     it('allows selecting in_progress column', async () => {
@@ -159,7 +159,7 @@ describe('QuickCreate', () => {
       const createButton = screen.getByRole('button', { name: /create/i })
       await user.click(createButton)
 
-      expect(onCreate).toHaveBeenCalledWith('In progress task', 'in_progress')
+      expect(onCreate).toHaveBeenCalledWith('In progress task', 'in_progress', undefined)
     })
   })
 
