@@ -1,399 +1,294 @@
-# Phase 5: Multi-Board Support - Implementation Context
+# Phase 6: Filtering & Views - Implementation Context
 
-**Last Updated**: 2026-01-05
-**Branch**: `implement-phase-5`
-**Status**: Complete - All tests passing, CLI and UI verified
+**Last Updated:** 2026-01-05
+**Branch:** `implement-phase-6`
+**Status:** In Progress (~65% complete)
+
+---
 
 ## Overview
 
-This document captures the implementation progress of Phase 5 (Multi-Board Support) to enable seamless handoff. The goal is to allow users to organize tasks into multiple boards with unique prefixes, custom columns, and display IDs like `WRK-123`.
+Phase 6 adds advanced filtering, search, saved views, and display options to the EgenSkriven kanban board application. This transforms it from a basic kanban board into a powerful task management system.
+
+### Key Features Being Implemented
+- Filter tasks by status, priority, type, labels, due dates, and more
+- Real-time search across task titles and descriptions
+- Save filter combinations as reusable "views"
+- Toggle between board and list views
+- Customize display options (density, visible fields, grouping)
+
+---
 
 ## What Has Been Done
 
-### 1. Database Migrations (Complete)
+### 1. Dependencies (Task 6.1)
+- **Zustand** installed for state management
+- Commit: `feat(ui): add zustand for filter state management`
 
-Three new migrations were created to extend the schema:
+### 2. Database Migration (Task 6.2)
+- Created `migrations/8_views.go` for the views collection
+- **Note:** The phase-6.md doc incorrectly says `3_views.go` but migrations 3-7 already exist
+- Fields: `name`, `board` (relation), `filters` (JSON), `display` (JSON), `is_favorite` (bool), `match_mode` (select: all/any)
+- Commit: `feat(db): add views collection migration for saved filters`
 
-| File | Purpose |
-|------|---------|
-| `migrations/4_boards.go` | Creates `boards` collection with fields: `name`, `prefix`, `columns` (JSON), `color`. Includes unique index on `prefix`. |
-| `migrations/5_tasks_board_relation.go` | Adds `board` RelationField to `tasks` collection linking to `boards`. Includes index for performance. |
-| `migrations/6_tasks_sequence.go` | Adds `seq` NumberField to `tasks` for per-board sequence numbers used in display IDs. Includes compound index on `(board, seq)`. |
+### 3. Filter State Store (Task 6.3)
+- Created `ui/src/stores/filters.ts`
+- Zustand store with localStorage persistence via `persist` middleware
+- Persists: filters, matchMode, displayOptions, currentViewId
+- Does NOT persist: searchQuery, debouncedSearchQuery (intentional)
+- Includes helper functions: `getOperatorsForField()`, `operatorRequiresValue()`
+- Commit: `feat(ui): add zustand filter store with localStorage persist`
 
-### 2. Board Service (Complete)
+### 4. Filter Logic Hook (Task 6.4)
+- Created `ui/src/hooks/useFilteredTasks.ts`
+- Implements all filter matching logic:
+  - `matchSelectFilter` - for column, priority, type, created_by
+  - `matchLabelsFilter` - for labels (includes_any, includes_all, includes_none)
+  - `matchDateFilter` - for due_date (is, before, after, is_set, is_not_set)
+  - `matchRelationFilter` - for epic
+  - `matchTextFilter` - for title (contains, is, is_not)
+  - `matchesSearch` - searches title, description, id, labels
+- Includes `useSearchDebounce` hook with 300ms debounce
+- Exports `filterHelpers` for testing
+- Commit: `feat(ui): add useFilteredTasks hook with debounced search`
 
-Created `internal/board/board.go` with the following functionality:
+### 5. Filter Tests (Task 6.5)
+- Created `ui/src/hooks/useFilteredTasks.test.ts`
+- 68 tests covering all filter operations
+- Tests for: select filters, labels filters, date filters, relation filters, text filters, search, AND/OR combination, edge cases
+- All tests passing
+- Commit: `test(ui): add comprehensive tests for filter logic`
 
-- **Types**: `Board` struct, `CreateInput` struct
-- **Constants**: `DefaultColumns` = `["backlog", "todo", "in_progress", "review", "done"]`
-- **Functions**:
-  - `Create(app, input)` - Creates a board with validation (prefix uppercase, alphanumeric, unique)
-  - `GetByNameOrPrefix(app, ref)` - Flexible lookup by ID, prefix, or name (case-insensitive)
-  - `GetAll(app)` - Returns all boards
-  - `GetNextSequence(app, boardID)` - Returns next sequence number for a board
-  - `FormatDisplayID(prefix, seq)` - Formats display ID (e.g., "WRK-123")
-  - `ParseDisplayID(displayID)` - Parses display ID into prefix and sequence
-  - `RecordToBoard(record)` - Converts PocketBase record to Board struct
-  - `Delete(app, boardID, deleteTasks)` - Deletes board with optional task cleanup
+### 6. FilterBar Component (Task 6.6)
+- Created `ui/src/components/FilterBar.tsx` + `.module.css`
+- Displays active filters as removable "pills"
+- Shows search query as a pill
+- AND/OR toggle for multiple filters
+- "Clear all" button
+- Task count stats (e.g., "5 of 12 tasks")
+- Filter button to open FilterBuilder
+- Commit: `feat(ui): add FilterBar component with filter pills`
 
-### 3. Config Updates (Complete)
+### 7. FilterBuilder Component (Task 6.7)
+- Created `ui/src/components/FilterBuilder.tsx` + `.module.css`
+- Modal overlay for creating filters
+- Dynamic field/operator/value selection
+- Fetches epics from PocketBase for epic filter dropdown
+- Includes hardcoded common labels (frontend, backend, bug, etc.)
+- Shows existing filters with ability to remove
+- AND/OR mode toggle
+- Commit: `feat(ui): add FilterBuilder modal for creating filters`
 
-Updated `internal/config/config.go`:
+### 8. SearchBar Component (Task 6.8)
+- Created `ui/src/components/SearchBar.tsx` + `.module.css`
+- Global "/" keyboard shortcut to focus
+- Escape to clear or blur
+- Clear button when search has value
+- Shows "/" shortcut hint (hidden when focused)
+- Uses `forwardRef` for external focus control
+- Commit: `feat(ui): add SearchBar component with / shortcut`
 
-- Added `DefaultBoard string` field to `Config` struct
-- This stores the user's preferred default board prefix for CLI commands
+### 9. useViews Hook (Task 6.9)
+- Created `ui/src/hooks/useViews.ts`
+- Fetches views for current board from PocketBase
+- Realtime subscription for create/update/delete
+- CRUD operations: createView, updateView, deleteView, toggleFavorite
+- `applyView()` - loads a view into the filter store
+- `saveCurrentAsView()` - saves current filters as new view
+- Parses JSON fields (filters, display) from PocketBase
+- Commit: `feat(ui): add useViews hook for saved filter views`
 
-### 4. CLI Commands (Complete)
+### 10. ViewsSidebar Component (Task 6.10)
+- Created `ui/src/components/ViewsSidebar.tsx` + `.module.css`
+- Displays saved views in sidebar
+- Separates favorites and regular views
+- Click to apply view
+- Star button to toggle favorite
+- Delete button with confirmation
+- "Modified" badge when current view has changes
+- "Save" button appears when filters are active
+- Inline form for naming new views
+- Commit: `feat(ui): add ViewsSidebar component for saved views`
 
-#### Board Commands (`internal/commands/board.go`)
+---
 
-New `board` command with subcommands:
+## What Remains To Be Done
 
-| Command | Description |
-|---------|-------------|
-| `board list` | Lists all boards, marks current default with `>` |
-| `board add "Name" --prefix PRE` | Creates a new board (supports `--color`, `--columns`) |
-| `board show <ref>` | Shows board details and task count |
-| `board use <ref>` | Sets default board in `.egenskriven/config.json` |
-| `board delete <ref>` | Deletes board and tasks (supports `--force`) |
+### 11. ListView Component (Task 6.11) - PENDING
+- File: `ui/src/components/ListView.tsx` + `.module.css`
+- Table view alternative to the kanban board
+- Sortable columns (click header to sort)
+- Columns: Status, ID, Title, Labels, Priority, Due Date
+- Row selection (highlight selected task)
+- StatusBadge and PriorityBadge sub-components
+- Reference: phase-6.md lines 628-712
 
-#### Updated Add Command (`internal/commands/add.go`)
+### 12. DisplayOptions Component (Task 6.12) - PENDING
+- File: `ui/src/components/DisplayOptions.tsx` + `.module.css`
+- Dropdown/popover for display settings
+- View mode toggle: Board / List
+- Density toggle: Compact / Comfortable
+- Visible fields checkboxes: priority, labels, due_date, epic, type
+- Group by dropdown (board mode only): Status, Priority, Type, Epic
+- Reference: phase-6.md lines 719-792
 
-- Added `--board` / `-b` flag to specify target board
-- Added `resolveBoard()` helper that checks: explicit flag > config default > first board > create "Default" board
-- Tasks now get `board` and `seq` fields set on creation
-- Output shows display IDs (e.g., "Created: Task title [WRK-1]")
-- Batch creation also supports board assignment
+### 13. App Integration (Task 6.13) - PENDING
+- Update `ui/src/App.tsx` to wire everything together
+- Import and use `useFilteredTasks(tasks)` hook
+- Add `useSearchDebounce()` call
+- Pass filtered tasks to Board component
+- Add state for: isFilterBuilderOpen, isDisplayOptionsOpen
+- Add SearchBar to Header
+- Add FilterBar below Header
+- Add ViewsSidebar to Sidebar component
+- Conditionally render Board or ListView based on displayOptions.viewMode
+- Reference: phase-6.md lines 796-869
 
-#### Updated List Command (`internal/commands/list.go`)
+### 14. Keyboard Shortcuts (Task 6.14) - PENDING
+- `F` - Open filter builder
+- `Cmd+B` / `Ctrl+B` - Toggle board/list view
+- `/` - Focus search (already implemented in SearchBar)
+- `Escape` - Close modals
+- Add to existing `useKeyboardShortcuts` hook or App.tsx
+- Reference: phase-6.md lines 827-847
 
-- Added `--board` / `-b` flag to filter by specific board
-- Added `--all-boards` flag to show tasks from all boards
-- Tasks display with board-prefixed IDs instead of internal IDs
-- Uses new `TasksWithBoards()` and `TasksWithFieldsAndBoards()` output methods
+### 15. Run Migration (Task 6.15) - PENDING
+- Execute: `./egenskriven migrate up`
+- Verify views collection exists in PocketBase admin
+- Test CRUD operations work
 
-#### Updated Root Command (`internal/commands/root.go`)
+### 16. Run Tests (Task 6.16) - PENDING
+- Execute: `cd ui && npm run test:run`
+- Ensure all existing tests still pass
+- Filter tests (68) should all pass
 
-- Registered `newBoardCmd(app)` in the command tree
+### 17. Manual Testing (Task 6.17) - PENDING
+- Verify checklist from phase-6.md (lines 874-910):
+  - [ ] Views collection exists with correct fields
+  - [ ] Filter by status, priority, type works
+  - [ ] Filter by labels (includes_any, includes_all) works
+  - [ ] Multiple filters combine with AND/OR correctly
+  - [ ] Clear filters shows all tasks
+  - [ ] Search filters in real-time (case-insensitive)
+  - [ ] Search works on title and description
+  - [ ] Create new view from current filters
+  - [ ] Apply saved view restores filters
+  - [ ] Favorite/unfavorite views
+  - [ ] Delete views
+  - [ ] "Modified" indicator when view changed
+  - [ ] Cmd+B toggles board/list view
+  - [ ] Density changes card size
+  - [ ] Toggle visible fields works
+  - [ ] List view displays tasks in table
+  - [ ] Column sorting works
+  - [ ] Row selection works
+  - [ ] F opens filter builder
+  - [ ] / focuses search
+  - [ ] Esc closes modals
 
-### 5. Task Resolver (Complete)
+---
 
-Updated `internal/resolver/resolver.go`:
+## Files Created/Modified
 
-- Added display ID resolution as **first** resolution attempt
-- Resolution order is now:
-  1. Display ID (e.g., "WRK-123") - parses prefix, finds board, queries by board+seq
-  2. Exact internal ID
-  3. ID prefix match
-  4. Title substring match
-
-### 6. Output Formatter (Complete)
-
-Updated `internal/output/output.go` with new methods:
-
-- `TasksWithBoards(tasks, boardsMap)` - Outputs tasks with display IDs
-- `TasksWithFieldsAndBoards(tasks, fields, boardsMap)` - JSON output with field selection and display IDs
-- `printTaskLineWithBoard(task, boardsMap)` - Helper for human-readable output
-- `taskToMapWithBoard(task, boardsMap)` - Adds `display_id`, `board`, `seq` to JSON
-- `getDisplayID(task, boardsMap)` - Returns display ID or falls back to short ID
-
-### 7. Frontend Hooks (Complete)
-
-#### useBoards Hook (`ui/src/hooks/useBoards.ts`)
-
-- Fetches all boards from PocketBase on mount
-- Subscribes to real-time create/update/delete events
-- Provides `createBoard(input)` and `deleteBoard(id)` functions
-- Returns `{ boards, loading, error, createBoard, deleteBoard }`
-
-#### useCurrentBoard Hook (`ui/src/hooks/useCurrentBoard.tsx`)
-
-- Context provider pattern (`CurrentBoardProvider`)
-- Tracks active board state
-- Persists selection to localStorage (`egenskriven-current-board` key)
-- Auto-syncs when boards are updated or deleted
-- Returns `{ currentBoard, setCurrentBoard, loading }`
-
-#### Updated useTasks Hook (`ui/src/hooks/useTasks.ts`)
-
-- Added optional `boardId` parameter to filter tasks
-- Re-fetches when boardId changes
-- Real-time updates filter by board
-- `createTask()` now includes board and seq fields
-
-### 8. Frontend Types (Complete)
-
-#### Board Type (`ui/src/types/board.ts`)
-
-- `Board` interface extending PocketBase `RecordModel`
-- `DEFAULT_COLUMNS` constant
-- `BOARD_COLORS` array for color picker
-- `formatDisplayId(prefix, seq)` helper
-- `parseDisplayId(displayId)` helper
-
-#### Updated Task Type (`ui/src/types/task.ts`)
-
-- Added `board?: string` field (board ID relation)
-- Added `seq?: number` field (per-board sequence)
-
-### 9. Frontend Components (Complete)
-
-#### Sidebar Component (`ui/src/components/Sidebar.tsx` + `.module.css`)
-
-- Collapsible sidebar with board list
-- Current board indicator (highlighted)
-- Board color dots
-- "New board" button opens modal
-- `NewBoardModal` with name, prefix, color picker
-- Persists collapsed state to localStorage
-
-#### Updated Layout Component (`ui/src/components/Layout.tsx`)
-
-- Wraps app in `CurrentBoardProvider`
-- Integrates Sidebar with collapsed state management
-- Updated CSS for sidebar + content layout
-
-#### Updated Board Component (`ui/src/components/Board.tsx`)
-
-- Uses `useCurrentBoard()` to get current board
-- Passes `boardId` to `useTasks()` for filtering
-- Supports board's custom columns (falls back to defaults)
-- Shows "No board selected" message when appropriate
-- Passes `currentBoard` to Column and TaskCard
-
-#### Updated Column Component (`ui/src/components/Column.tsx`)
-
-- Accepts `column` as `string` (not just ColumnType) for custom columns
-- Added `getColumnDisplayName()` for formatting custom column names
-- Passes `currentBoard` to TaskCard
-
-#### Updated TaskCard Component (`ui/src/components/TaskCard.tsx`)
-
-- Accepts `currentBoard` prop
-- Shows display ID (e.g., "WRK-123") when board and seq available
-- Falls back to short internal ID if no board
-
-#### Updated CommandPalette Component (`ui/src/components/CommandPalette.tsx`)
-
-- Added `'boards'` section type
-- Added "SWITCH BOARD" section in UI
-- Board commands show current board indicator
-
-#### Updated App Component (`ui/src/App.tsx`)
-
-- Imports and uses `useBoards` and `useCurrentBoard`
-- Passes `currentBoard?.id` to `useTasks()`
-- Builds board switching commands for CommandPalette
-- Clears selection when switching boards
-
-## Git Commits Made
-
-### Backend (Previous Session)
+### New Files
 ```
-49bb038 feat(migrations): add boards collection migration
-18b66e3 feat(migrations): add board relation field to tasks
-122c1bf feat(migrations): add seq field to tasks for display IDs
-55bccc8 feat(board): add board service with CRUD operations
-0911967 feat(cli): add board commands (list, add, show, use, delete)
-f363453 feat(cli): add --board flag to add command with display IDs
-e3dd56e feat(cli): add --board and --all-boards flags to list command
-2884c90 feat(resolver): add display ID resolution (PREFIX-NUMBER)
-1dd6cd2 docs: add implementation context for phase-5 handoff
+migrations/8_views.go                           # Views collection migration
+ui/src/stores/filters.ts                        # Zustand filter store
+ui/src/hooks/useFilteredTasks.ts               # Filter logic hook
+ui/src/hooks/useFilteredTasks.test.ts          # Filter tests (68 tests)
+ui/src/hooks/useViews.ts                       # Saved views hook
+ui/src/components/FilterBar.tsx                # Active filters display
+ui/src/components/FilterBar.module.css
+ui/src/components/FilterBuilder.tsx            # Filter creation modal
+ui/src/components/FilterBuilder.module.css
+ui/src/components/SearchBar.tsx                # Search input
+ui/src/components/SearchBar.module.css
+ui/src/components/ViewsSidebar.tsx             # Saved views list
+ui/src/components/ViewsSidebar.module.css
 ```
 
-### Frontend (Current Session)
+### Modified Files (pending)
 ```
-8f388e8 feat(ui): add useBoards hook and Board type
-f632c81 feat(ui): add useCurrentBoard hook with localStorage
-1c54e75 feat(ui): add boardId filter to useTasks hook
-69ad395 feat(ui): add Sidebar component with board list
-7726286 feat(ui): integrate Sidebar into Layout component
-5de29e7 feat(ui): update Board to use current board context
-1d14a11 feat(ui): show display ID on TaskCard component
-d8c56f7 feat(ui): add board switching to CommandPalette
+ui/package.json                                 # Added zustand dependency
+ui/src/App.tsx                                  # Integration (pending)
+ui/src/components/Sidebar.tsx                   # Add ViewsSidebar (pending)
+ui/src/components/Header.tsx                    # Add SearchBar (pending)
 ```
 
-## Completed Tasks
-
-All Phase 5 tasks have been completed:
-
-| ID | Task | Status | Notes |
-|----|------|--------|-------|
-| 5.10 | Create board service tests (`internal/board/board_test.go`) | Complete | 35 tests covering Create, GetByNameOrPrefix, GetNextSequence, ParseDisplayID, Delete |
-| 5.20 | CLI verification checklist | Complete | All commands verified working |
-| 5.21 | UI verification checklist | Complete | Build passes, all components properly implemented |
-
-### CLI Verification Checklist (5.20)
-
-Run these commands to verify CLI functionality:
-
-```bash
-# Build the application
-go build -o egenskriven ./cmd/egenskriven
-
-# Start the server (in background or separate terminal)
-./egenskriven serve &
-
-# Board CRUD
-./egenskriven board add "Work" --prefix WRK --color "#3B82F6"
-./egenskriven board add "Personal" --prefix PER --color "#22C55E"
-./egenskriven board list                    # Should show both boards
-./egenskriven board show WRK                # Should show board details
-./egenskriven board use WRK                 # Set default board
-
-# Task creation with display IDs
-./egenskriven add "Test task 1"             # Should create WRK-1
-./egenskriven add "Test task 2" -b PER      # Should create PER-1
-./egenskriven add "Test task 3"             # Should create WRK-2
-
-# List with board filtering
-./egenskriven list                          # Show only WRK tasks
-./egenskriven list -b PER                   # Show only PER tasks
-./egenskriven list --all-boards             # Show all tasks
-
-# Resolver with display IDs
-./egenskriven show WRK-1                    # Should resolve and show task
-./egenskriven done PER-1                    # Should move task to done
-
-# Cleanup
-./egenskriven board delete PER --force      # Delete board and its tasks
-```
-
-### UI Verification Checklist (5.21)
-
-1. **Sidebar**
-   - [ ] Sidebar appears on left side of screen
-   - [ ] Board list shows all boards with colors
-   - [ ] Current board is highlighted
-   - [ ] Clicking board switches to it
-   - [ ] Collapse/expand button works
-   - [ ] "New board" button opens modal
-   - [ ] Modal validates prefix (uppercase, alphanumeric, unique)
-   - [ ] Color picker works
-
-2. **Board View**
-   - [ ] Shows only tasks from current board
-   - [ ] Columns match board's custom columns (or defaults)
-   - [ ] "No board selected" shows when appropriate
-
-3. **Task Cards**
-   - [ ] Display ID shows (e.g., "WRK-1") instead of internal ID
-   - [ ] Falls back to short ID if no board/seq
-
-4. **Command Palette (Cmd+K)**
-   - [ ] "SWITCH BOARD" section appears
-   - [ ] All boards listed with names and prefixes
-   - [ ] Current board has filled dot indicator
-   - [ ] Selecting board switches to it
-
-5. **Real-time Updates**
-   - [ ] Creating board via CLI appears in sidebar
-   - [ ] Creating task via CLI appears on board
-   - [ ] Deleting board switches to another
+---
 
 ## Key Implementation Details
 
-### Display ID Format
+### Filter Store Structure
+```typescript
+interface FilterState {
+  filters: Filter[]                    // Active filters
+  matchMode: 'all' | 'any'            // AND/OR mode
+  searchQuery: string                  // Immediate search input
+  debouncedSearchQuery: string         // Debounced for filtering
+  displayOptions: DisplayOptions       // View settings
+  currentViewId: string | null         // Active saved view
+  isModified: boolean                  // View has unsaved changes
+}
 
-- Format: `PREFIX-NUMBER` (e.g., `WRK-123`, `PER-1`)
-- Prefix: 1-10 uppercase alphanumeric characters, unique per board
-- Number: Per-board incrementing sequence starting at 1
-
-### Board Resolution (CLI)
-
-The `board.GetByNameOrPrefix()` function accepts:
-- Exact board ID
-- Prefix (case-insensitive): "WRK" or "wrk"
-- Name (case-insensitive): "Work" or "work"
-- Partial name match: "wor" matches "Work" if unique
-
-### Default Board Logic
-
-When creating tasks without `--board` flag:
-1. Check `--board` flag
-2. Check `config.DefaultBoard` from `.egenskriven/config.json`
-3. Use first existing board
-4. Create "Default" board with prefix "DEF" if none exist
-
-### UI State Management
-
-- **CurrentBoardProvider**: Wraps Layout to provide board context
-- **localStorage keys**:
-  - `egenskriven-current-board`: Selected board ID
-  - `egenskriven-sidebar-collapsed`: Sidebar collapsed state
-
-### Sequence Number Generation (UI)
-
-When creating tasks from UI, the `useTasks.createTask()` function:
-1. Fetches all tasks for the board sorted by `-seq`
-2. Takes max seq + 1 (or 1 if no tasks)
-3. Includes `board` and `seq` in create payload
-
-## File Structure Reference
-
-```
-internal/
-  board/
-    board.go           # Board service (DONE)
-    board_test.go      # Tests (TODO - 5.10)
-  commands/
-    board.go           # Board CLI commands (DONE)
-    add.go             # Updated with --board (DONE)
-    list.go            # Updated with --board, --all-boards (DONE)
-    root.go            # Registered board command (DONE)
-  config/
-    config.go          # Added DefaultBoard field (DONE)
-  output/
-    output.go          # Added board-aware output methods (DONE)
-  resolver/
-    resolver.go        # Added display ID resolution (DONE)
-
-migrations/
-  4_boards.go                  # Boards collection (DONE)
-  5_tasks_board_relation.go    # Board field on tasks (DONE)
-  6_tasks_sequence.go          # Seq field on tasks (DONE)
-
-ui/src/
-  types/
-    board.ts           # Board type and helpers (DONE)
-    task.ts            # Added board, seq fields (DONE)
-  hooks/
-    useBoards.ts       # Board CRUD hook (DONE)
-    useCurrentBoard.tsx # Current board context (DONE)
-    useTasks.ts        # Added boardId filter (DONE)
-  components/
-    Sidebar.tsx        # Board navigation (DONE)
-    Sidebar.module.css # Sidebar styles (DONE)
-    Layout.tsx         # Integrated sidebar (DONE)
-    Layout.module.css  # Updated layout styles (DONE)
-    Board.tsx          # Board filtering (DONE)
-    Board.module.css   # Added empty state (DONE)
-    Column.tsx         # Custom column names (DONE)
-    TaskCard.tsx       # Display IDs (DONE)
-    CommandPalette.tsx # Board switching (DONE)
-  App.tsx              # Board context usage (DONE)
+interface DisplayOptions {
+  viewMode: 'board' | 'list'
+  density: 'compact' | 'comfortable'
+  visibleFields: string[]              // ['priority', 'labels', 'due_date']
+  groupBy: 'column' | 'priority' | 'type' | 'epic' | null
+}
 ```
 
-## How To Continue
+### Filter Types
+```typescript
+type FilterField = 'column' | 'priority' | 'type' | 'labels' | 'due_date' | 'epic' | 'created_by' | 'title'
 
-1. Read this document for full context
-2. Recreate the todo list using the JSON in "To Recreate Todo List" section
-3. Run verification checklists (5.20, 5.21)
-4. Write board service tests if time permits (5.10)
-5. Update this document with any issues found
+type FilterOperator = 'is' | 'is_not' | 'is_any_of' | 'includes_any' | 'includes_all' | 'includes_none' | 'before' | 'after' | 'is_set' | 'is_not_set' | 'contains'
 
-## Verification Commands
-
-```bash
-# Build and verify Go code compiles
-go build ./...
-
-# Run existing tests
-go test ./...
-
-# Build UI
-cd ui && npm run build
-
-# Start the application
-./egenskriven serve
+interface Filter {
+  id: string
+  field: FilterField
+  operator: FilterOperator
+  value: string | string[] | null
+}
 ```
+
+### localStorage Key
+- `egenskriven-filters` - Persisted filter state
+
+---
+
+## Git Commits (in order)
+1. `feat(ui): add zustand for filter state management`
+2. `feat(db): add views collection migration for saved filters`
+3. `feat(ui): add zustand filter store with localStorage persist`
+4. `feat(ui): add useFilteredTasks hook with debounced search`
+5. `test(ui): add comprehensive tests for filter logic`
+6. `feat(ui): add FilterBar component with filter pills`
+7. `feat(ui): add FilterBuilder modal for creating filters`
+8. `feat(ui): add SearchBar component with / shortcut`
+9. `feat(ui): add useViews hook for saved filter views`
+10. `feat(ui): add ViewsSidebar component for saved views`
+
+---
+
+## Todo List for Remaining Tasks
+
+Copy this to recreate the todo list:
+
+```
+6.11 - Create ListView component: ui/src/components/ListView.tsx + .module.css [PENDING, MEDIUM]
+6.12 - Create DisplayOptions component: ui/src/components/DisplayOptions.tsx + .module.css [PENDING, MEDIUM]
+6.13 - Integrate into App.tsx: Wire up filters, views, search, display toggle [PENDING, HIGH]
+6.14 - Add keyboard shortcuts: F=filter, Cmd+B=toggle view, /=search focus, Esc=close modals [PENDING, MEDIUM]
+6.15 - Run migration and verify views collection exists [PENDING, HIGH]
+6.16 - Run tests: cd ui && npm test - verify all pass [PENDING, MEDIUM]
+6.17 - Manual testing: Verify all checklist items from phase-6.md [PENDING, MEDIUM]
+```
+
+---
+
+## Reference Documents
+- `docs/phase-6.md` - Full implementation spec with code examples
+- `ui/src/types/task.ts` - Task type definitions (Column, Priority, TaskType, etc.)
+- `ui/src/styles/tokens.css` - CSS variables for styling
