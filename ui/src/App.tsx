@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import { SelectionProvider, CurrentBoardProvider, useCurrentBoard } from './contexts'
+import { SelectionProvider, CurrentBoardProvider, useCurrentBoard, ThemeProvider } from './contexts'
 import { useSelection } from './hooks/useSelection'
 import { useKeyboardShortcuts } from './hooks/useKeyboard'
 import { useTasks } from './hooks/useTasks'
@@ -683,15 +683,18 @@ function AppContent() {
  * Main application component.
  *
  * Wraps AppContent in providers:
+ * - ThemeProvider: Theme state management (light/dark/system)
  * - CurrentBoardProvider: Board selection state (must be outermost since AppContent uses it)
  * - SelectionProvider: Task selection state management
  */
 export default function App() {
   return (
-    <CurrentBoardProvider>
-      <SelectionProvider>
-        <AppContent />
-      </SelectionProvider>
-    </CurrentBoardProvider>
+    <ThemeProvider>
+      <CurrentBoardProvider>
+        <SelectionProvider>
+          <AppContent />
+        </SelectionProvider>
+      </CurrentBoardProvider>
+    </ThemeProvider>
   )
 }
