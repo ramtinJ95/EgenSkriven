@@ -16,8 +16,9 @@ let mockCurrentBoard = mockBoards[0]
 const mockSetCurrentBoard = vi.fn()
 const mockCreateBoard = vi.fn()
 
-// Mock useCurrentBoard hook (Sidebar now only uses this hook which provides all data)
-vi.mock('../hooks/useCurrentBoard', () => ({
+// Mock useCurrentBoard hook (imported via ../contexts which re-exports from CurrentBoardContext)
+vi.mock('../contexts/CurrentBoardContext', () => ({
+  CurrentBoardProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   useCurrentBoard: () => ({
     currentBoard: mockCurrentBoard,
     setCurrentBoard: mockSetCurrentBoard,
@@ -26,6 +27,34 @@ vi.mock('../hooks/useCurrentBoard', () => ({
     boardsError: mockBoardsError,
     createBoard: mockCreateBoard,
     deleteBoard: vi.fn(),
+  }),
+}))
+
+// Mock ThemeContext to avoid matchMedia issues
+vi.mock('../contexts/ThemeContext', () => ({
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useTheme: () => ({
+    themeName: 'dark',
+    setThemeName: vi.fn(),
+    resolvedTheme: {
+      name: 'Dark',
+      appearance: 'dark' as const,
+      colors: {},
+    },
+    activeTheme: {
+      id: 'dark',
+      name: 'Dark',
+      appearance: 'dark' as const,
+      colors: { accent: '#5E6AD2' },
+    },
+    allThemes: [],
+    customThemes: [],
+    importTheme: vi.fn(),
+    removeCustomTheme: vi.fn(),
+    darkTheme: 'dark',
+    setDarkTheme: vi.fn(),
+    lightTheme: 'light',
+    setLightTheme: vi.fn(),
   }),
 }))
 

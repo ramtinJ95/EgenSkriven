@@ -52,8 +52,9 @@ const mockTasks: Task[] = [
 // Mock moveTask function (now passed as prop)
 const mockMoveTask = vi.fn().mockResolvedValue(mockTasks[0])
 
-// Mock the useCurrentBoard hook
-vi.mock('../hooks/useCurrentBoard', () => ({
+// Mock the useCurrentBoard hook (imported via ../contexts which re-exports from CurrentBoardContext)
+vi.mock('../contexts/CurrentBoardContext', () => ({
+  CurrentBoardProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   useCurrentBoard: () => ({
     currentBoard: {
       id: 'board-1',
@@ -64,6 +65,38 @@ vi.mock('../hooks/useCurrentBoard', () => ({
     },
     setCurrentBoard: vi.fn(),
     loading: false,
+    boards: [],
+    boardsError: null,
+    createBoard: vi.fn(),
+    deleteBoard: vi.fn(),
+  }),
+}))
+
+// Mock ThemeContext to avoid matchMedia issues
+vi.mock('../contexts/ThemeContext', () => ({
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useTheme: () => ({
+    themeName: 'dark',
+    setThemeName: vi.fn(),
+    resolvedTheme: {
+      name: 'Dark',
+      appearance: 'dark' as const,
+      colors: {},
+    },
+    activeTheme: {
+      id: 'dark',
+      name: 'Dark',
+      appearance: 'dark' as const,
+      colors: { accent: '#5E6AD2' },
+    },
+    allThemes: [],
+    customThemes: [],
+    importTheme: vi.fn(),
+    removeCustomTheme: vi.fn(),
+    darkTheme: 'dark',
+    setDarkTheme: vi.fn(),
+    lightTheme: 'light',
+    setLightTheme: vi.fn(),
   }),
 }))
 

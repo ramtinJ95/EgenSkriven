@@ -50,8 +50,8 @@ const mockBoards = [
   { id: 'board-1', name: 'Work', prefix: 'WRK', columns: ['backlog', 'todo', 'in_progress', 'review', 'done'], color: '#3B82F6', collectionId: 'boards', collectionName: 'boards' },
 ]
 
-// Mock useCurrentBoard hook (now provides all board data)
-vi.mock('./hooks/useCurrentBoard', () => ({
+// Mock useCurrentBoard hook (imported via ./contexts which re-exports from CurrentBoardContext)
+vi.mock('./contexts/CurrentBoardContext', () => ({
   CurrentBoardProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   useCurrentBoard: () => ({
     currentBoard: mockBoards[0],
@@ -61,6 +61,34 @@ vi.mock('./hooks/useCurrentBoard', () => ({
     boardsError: null,
     createBoard: vi.fn(),
     deleteBoard: vi.fn(),
+  }),
+}))
+
+// Mock ThemeContext to avoid matchMedia issues
+vi.mock('./contexts/ThemeContext', () => ({
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useTheme: () => ({
+    themeName: 'dark',
+    setThemeName: vi.fn(),
+    resolvedTheme: {
+      name: 'Dark',
+      appearance: 'dark' as const,
+      colors: {},
+    },
+    activeTheme: {
+      id: 'dark',
+      name: 'Dark',
+      appearance: 'dark' as const,
+      colors: { accent: '#5E6AD2' },
+    },
+    allThemes: [],
+    customThemes: [],
+    importTheme: vi.fn(),
+    removeCustomTheme: vi.fn(),
+    darkTheme: 'dark',
+    setDarkTheme: vi.fn(),
+    lightTheme: 'light',
+    setLightTheme: vi.fn(),
   }),
 }))
 
