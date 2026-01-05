@@ -55,9 +55,11 @@ func init() {
 		// MatchMode: How multiple filters are combined
 		// "all" = AND (all filters must match)
 		// "any" = OR (at least one filter must match)
+		// Required is true to ensure a value is always set; frontend defaults to "all"
 		collection.Fields.Add(&core.SelectField{
-			Name:   "match_mode",
-			Values: []string{"all", "any"},
+			Name:     "match_mode",
+			Values:   []string{"all", "any"},
+			Required: true,
 		})
 
 		// API Rules - allow public access (local-first tool, no auth needed)

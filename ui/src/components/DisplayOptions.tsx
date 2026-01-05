@@ -88,8 +88,8 @@ export function DisplayOptions({ isOpen, onClose }: DisplayOptionsProps) {
 
   const handleGroupByChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const value = e.target.value as 'column' | 'priority' | 'type' | 'epic' | null
-      setDisplayOptions({ groupBy: value || null })
+      const value = e.target.value as 'column' | 'priority' | 'type' | 'epic'
+      setDisplayOptions({ groupBy: value })
     },
     [setDisplayOptions]
   )

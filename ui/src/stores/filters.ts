@@ -122,13 +122,14 @@ export const useFilterStore = create<FilterState>()(
           isModified: true,
         })),
 
-      // Clear all filters and search
+      // Clear all filters and search (complete reset, not a modification)
       clearFilters: () =>
         set({
           filters: [],
           searchQuery: '',
           debouncedSearchQuery: '',
-          isModified: true,
+          currentViewId: null,
+          isModified: false,
         }),
 
       // Set the match mode (all/any)

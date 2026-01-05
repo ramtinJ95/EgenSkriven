@@ -12,12 +12,12 @@ import { Column } from './Column'
 import { TaskCard } from './TaskCard'
 import { useTasks } from '../hooks/useTasks'
 import { useCurrentBoard } from '../hooks/useCurrentBoard'
-import { useFilteredTasks } from '../hooks/useFilteredTasks'
 import { type Task, type Column as ColumnType } from '../types/task'
 import { DEFAULT_COLUMNS } from '../types/board'
 import styles from './Board.module.css'
 
 interface BoardProps {
+  tasks: Task[] // Filtered tasks passed from parent
   onTaskClick?: (task: Task) => void
   onTaskSelect?: (task: Task) => void
   selectedTaskId?: string | null
@@ -35,13 +35,10 @@ interface BoardProps {
  * - Click task to open detail panel
  * - Selected task state for keyboard navigation
  */
-export function Board({ onTaskClick, onTaskSelect, selectedTaskId }: BoardProps) {
+export function Board({ tasks, onTaskClick, onTaskSelect, selectedTaskId }: BoardProps) {
   const { currentBoard, loading: boardLoading } = useCurrentBoard()
   const { tasks: allTasks, loading: tasksLoading, error, moveTask } = useTasks(currentBoard?.id)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
-
-  // Apply filters to tasks
-  const tasks = useFilteredTasks(allTasks)
 
   // Get columns from board or use defaults
   const columns = useMemo(() => {

@@ -1,54 +1,57 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { Board } from './Board'
-import { COLUMNS, COLUMN_NAMES } from '../types/task'
+import { COLUMNS, COLUMN_NAMES, type Task } from '../types/task'
 
-// Default mock data
-const defaultMockData = {
-  tasks: [
-    {
-      id: 'task-1',
-      title: 'Task in Backlog',
-      type: 'feature',
-      priority: 'medium',
-      column: 'backlog',
-      position: 1000,
-      labels: [],
-      created_by: 'user',
-      collectionId: 'tasks',
-      collectionName: 'tasks',
-      created: '2024-01-15T10:00:00Z',
-      updated: '2024-01-15T10:00:00Z',
-    },
-    {
-      id: 'task-2',
-      title: 'Task in Todo',
-      type: 'bug',
-      priority: 'high',
-      column: 'todo',
-      position: 1000,
-      labels: [],
-      created_by: 'cli',
-      collectionId: 'tasks',
-      collectionName: 'tasks',
-      created: '2024-01-15T10:00:00Z',
-      updated: '2024-01-15T10:00:00Z',
-    },
-    {
-      id: 'task-3',
-      title: 'Task in Progress',
-      type: 'chore',
-      priority: 'low',
-      column: 'in_progress',
-      position: 1000,
-      labels: [],
-      created_by: 'agent',
-      collectionId: 'tasks',
-      collectionName: 'tasks',
-      created: '2024-01-15T10:00:00Z',
-      updated: '2024-01-15T10:00:00Z',
-    },
-  ],
+// Default mock tasks data (passed as prop)
+const mockTasks: Task[] = [
+  {
+    id: 'task-1',
+    title: 'Task in Backlog',
+    type: 'feature',
+    priority: 'medium',
+    column: 'backlog',
+    position: 1000,
+    labels: [],
+    created_by: 'user',
+    collectionId: 'tasks',
+    collectionName: 'tasks',
+    created: '2024-01-15T10:00:00Z',
+    updated: '2024-01-15T10:00:00Z',
+  } as Task,
+  {
+    id: 'task-2',
+    title: 'Task in Todo',
+    type: 'bug',
+    priority: 'high',
+    column: 'todo',
+    position: 1000,
+    labels: [],
+    created_by: 'cli',
+    collectionId: 'tasks',
+    collectionName: 'tasks',
+    created: '2024-01-15T10:00:00Z',
+    updated: '2024-01-15T10:00:00Z',
+  } as Task,
+  {
+    id: 'task-3',
+    title: 'Task in Progress',
+    type: 'chore',
+    priority: 'low',
+    column: 'in_progress',
+    position: 1000,
+    labels: [],
+    created_by: 'agent',
+    collectionId: 'tasks',
+    collectionName: 'tasks',
+    created: '2024-01-15T10:00:00Z',
+    updated: '2024-01-15T10:00:00Z',
+  } as Task,
+]
+
+// useTasks hook mock for internal operations (loading, error, moveTask etc.)
+const defaultMockUseTasks = {
+  tasks: mockTasks,
   loading: false,
   error: null as Error | null,
   moveTask: vi.fn(),
@@ -58,7 +61,7 @@ const defaultMockData = {
 }
 
 // Mutable mock that can be changed per test
-let mockUseTasks = { ...defaultMockData }
+let mockUseTasks = { ...defaultMockUseTasks }
 
 // Mock the useTasks hook
 vi.mock('../hooks/useTasks', () => ({
@@ -83,12 +86,12 @@ vi.mock('../hooks/useCurrentBoard', () => ({
 describe('Board', () => {
   beforeEach(() => {
     // Reset mock to default before each test
-    mockUseTasks = { ...defaultMockData }
+    mockUseTasks = { ...defaultMockUseTasks }
   })
 
   describe('normal state', () => {
     it('renders all five columns', () => {
-      render(<Board />)
+      render(<Board tasks={mockTasks} />)
 
       // Check all column headers are present
       COLUMNS.forEach((column) => {
@@ -97,7 +100,7 @@ describe('Board', () => {
     })
 
     it('groups tasks into correct columns', () => {
-      render(<Board />)
+      render(<Board tasks={mockTasks} />)
 
       // Tasks should be rendered - use getAllByText since strict mode may render multiple
       expect(screen.getAllByText('Task in Backlog').length).toBeGreaterThanOrEqual(1)
@@ -106,7 +109,7 @@ describe('Board', () => {
     })
 
     it('displays task counts', () => {
-      render(<Board />)
+      render(<Board tasks={mockTasks} />)
 
       // At least one column should show a count
       // The exact count depends on render behavior, so we just check counts exist
@@ -118,25 +121,25 @@ describe('Board', () => {
   describe('loading state', () => {
     it('shows loading message when loading', () => {
       mockUseTasks = {
-        ...defaultMockData,
+        ...defaultMockUseTasks,
         tasks: [],
         loading: true,
         error: null,
       }
 
-      render(<Board />)
+      render(<Board tasks={[]} />)
       expect(screen.getByText('Loading tasks...')).toBeInTheDocument()
     })
 
     it('does not render columns when loading', () => {
       mockUseTasks = {
-        ...defaultMockData,
+        ...defaultMockUseTasks,
         tasks: [],
         loading: true,
         error: null,
       }
 
-      render(<Board />)
+      render(<Board tasks={[]} />)
       expect(screen.queryByText('Backlog')).not.toBeInTheDocument()
       expect(screen.queryByText('Todo')).not.toBeInTheDocument()
     })
@@ -146,39 +149,39 @@ describe('Board', () => {
   describe('error state', () => {
     it('shows error message when error occurs', () => {
       mockUseTasks = {
-        ...defaultMockData,
+        ...defaultMockUseTasks,
         tasks: [],
         loading: false,
         error: new Error('Failed to fetch tasks'),
       }
 
-      render(<Board />)
+      render(<Board tasks={[]} />)
       expect(screen.getByText(/Error:/)).toBeInTheDocument()
       expect(screen.getByText(/Failed to fetch tasks/)).toBeInTheDocument()
     })
 
     it('does not render columns when error occurs', () => {
       mockUseTasks = {
-        ...defaultMockData,
+        ...defaultMockUseTasks,
         tasks: [],
         loading: false,
         error: new Error('Network error'),
       }
 
-      render(<Board />)
+      render(<Board tasks={[]} />)
       expect(screen.queryByText('Backlog')).not.toBeInTheDocument()
       expect(screen.queryByText('Todo')).not.toBeInTheDocument()
     })
 
     it('displays specific error message from Error object', () => {
       mockUseTasks = {
-        ...defaultMockData,
+        ...defaultMockUseTasks,
         tasks: [],
         loading: false,
         error: new Error('Connection timeout'),
       }
 
-      render(<Board />)
+      render(<Board tasks={[]} />)
       expect(screen.getByText('Error: Connection timeout')).toBeInTheDocument()
     })
   })

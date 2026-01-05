@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { ParsedView } from '../hooks/useViews'
 import { useViews } from '../hooks/useViews'
 import { useFilterStore } from '../stores/filters'
@@ -18,6 +18,10 @@ export function ViewsSidebar({ boardId }: ViewsSidebarProps) {
   const [isCreating, setIsCreating] = useState(false)
   const [newViewName, setNewViewName] = useState('')
   const [savingView, setSavingView] = useState(false)
+  
+  // Confirmation dialog state
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const confirmDialogRef = useRef<HTMLDivElement>(null)
 
   // Separate favorites and regular views
   const favoriteViews = views.filter((v) => v.is_favorite)
@@ -39,15 +43,45 @@ export function ViewsSidebar({ boardId }: ViewsSidebarProps) {
     }
   }
 
-  const handleDeleteView = async (e: React.MouseEvent, viewId: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, viewId: string) => {
     e.stopPropagation()
-    if (confirm('Delete this view?')) {
-      await deleteView(viewId)
-      if (currentViewId === viewId) {
-        clearView()
+    setDeleteConfirmId(viewId)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmId) return
+    
+    await deleteView(deleteConfirmId)
+    if (currentViewId === deleteConfirmId) {
+      clearView()
+    }
+    setDeleteConfirmId(null)
+  }
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmId(null)
+  }
+
+  // Close confirmation dialog on Escape key
+  useEffect(() => {
+    if (!deleteConfirmId) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setDeleteConfirmId(null)
       }
     }
-  }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [deleteConfirmId])
+
+  // Focus the confirm dialog when it opens
+  useEffect(() => {
+    if (deleteConfirmId && confirmDialogRef.current) {
+      confirmDialogRef.current.focus()
+    }
+  }, [deleteConfirmId])
 
   const handleToggleFavorite = async (e: React.MouseEvent, viewId: string) => {
     e.stopPropagation()
@@ -83,7 +117,7 @@ export function ViewsSidebar({ boardId }: ViewsSidebarProps) {
           </button>
           <button
             className={styles.actionButton}
-            onClick={(e) => handleDeleteView(e, view.id)}
+            onClick={(e) => handleDeleteClick(e, view.id)}
             title="Delete view"
           >
             ×
@@ -181,6 +215,42 @@ export function ViewsSidebar({ boardId }: ViewsSidebarProps) {
             </div>
           )}
         </>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirmId && (
+        <div className={styles.confirmOverlay} onClick={handleCancelDelete}>
+          <div
+            ref={confirmDialogRef}
+            className={styles.confirmDialog}
+            onClick={(e) => e.stopPropagation()}
+            tabIndex={-1}
+            role="alertdialog"
+            aria-labelledby="confirm-title"
+            aria-describedby="confirm-description"
+          >
+            <p id="confirm-title" className={styles.confirmTitle}>
+              Delete this view?
+            </p>
+            <p id="confirm-description" className={styles.confirmDescription}>
+              This action cannot be undone.
+            </p>
+            <div className={styles.confirmActions}>
+              <button
+                className={styles.cancelButton}
+                onClick={handleCancelDelete}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.deleteButton}
+                onClick={handleConfirmDelete}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -18,22 +18,16 @@ export function useSearchDebounce(): void {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    // Clear any existing timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-    }
-
     // Set new timeout to update debounced value
-    timeoutRef.current = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery)
     }, SEARCH_DEBOUNCE_MS)
 
     // Cleanup on unmount or when searchQuery changes
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
+      clearTimeout(timeoutId)
     }
+    // Note: setDebouncedSearchQuery is a stable Zustand action, but included for correctness
   }, [searchQuery, setDebouncedSearchQuery])
 }
 
