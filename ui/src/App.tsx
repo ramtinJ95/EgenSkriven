@@ -22,6 +22,7 @@ import { ShortcutsHelp } from './components/ShortcutsHelp'
 import { PeekPreview } from './components/PeekPreview'
 import { FilterBuilder } from './components/FilterBuilder'
 import { DisplayOptions } from './components/DisplayOptions'
+import { Settings } from './components/Settings'
 import { COLUMNS, type Task, type Column } from './types/task'
 
 /**
@@ -63,6 +64,7 @@ function AppContent() {
   const [isPeekOpen, setIsPeekOpen] = useState(false)
   const [isFilterBuilderOpen, setIsFilterBuilderOpen] = useState(false)
   const [isDisplayOptionsOpen, setIsDisplayOptionsOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   // Property picker states
   const [statusPickerOpen, setStatusPickerOpen] = useState(false)
@@ -359,6 +361,11 @@ function AppContent() {
       description: 'Open command palette',
     },
     {
+      combo: { key: ',', meta: true },
+      handler: () => setIsSettingsOpen(true),
+      description: 'Open settings',
+    },
+    {
       combo: { key: '?' },
       handler: () => setIsShortcutsHelpOpen(true),
       description: 'Show shortcuts help',
@@ -368,7 +375,10 @@ function AppContent() {
       handler: () => {
         // Handle Escape in priority order
         // Return false if nothing was done, allowing event to propagate
-        if (isFilterBuilderOpen) {
+        if (isSettingsOpen) {
+          setIsSettingsOpen(false)
+          return true
+        } else if (isFilterBuilderOpen) {
           setIsFilterBuilderOpen(false)
           return true
         } else if (isDisplayOptionsOpen) {
@@ -674,6 +684,12 @@ function AppContent() {
         task={selectedTask}
         isOpen={isPeekOpen}
         onClose={() => setIsPeekOpen(false)}
+      />
+
+      {/* Settings Panel */}
+      <Settings
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
     </Layout>
   )
