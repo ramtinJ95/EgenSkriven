@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Header } from './Header'
 import { Sidebar } from './Sidebar'
-import { CurrentBoardProvider } from '../hooks/useCurrentBoard'
 import styles from './Layout.module.css'
 
 interface LayoutProps {
@@ -18,8 +17,8 @@ const SIDEBAR_COLLAPSED_KEY = 'egenskriven-sidebar-collapsed'
  * - Header: App title and actions
  * - Main: Content area (board/list view)
  *
- * The CurrentBoardProvider wraps the layout to provide
- * board context to all child components.
+ * Note: CurrentBoardProvider must wrap App, not Layout,
+ * because AppContent uses useCurrentBoard before Layout renders.
  */
 export function Layout({ children }: LayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -34,16 +33,14 @@ export function Layout({ children }: LayoutProps) {
   }
 
   return (
-    <CurrentBoardProvider>
-      <div className={styles.layout}>
-        <div className={styles.body}>
-          <Sidebar collapsed={sidebarCollapsed} onToggle={handleToggleSidebar} />
-          <div className={styles.content}>
-            <Header />
-            <main className={styles.main}>{children}</main>
-          </div>
+    <div className={styles.layout}>
+      <div className={styles.body}>
+        <Sidebar collapsed={sidebarCollapsed} onToggle={handleToggleSidebar} />
+        <div className={styles.content}>
+          <Header />
+          <main className={styles.main}>{children}</main>
         </div>
       </div>
-    </CurrentBoardProvider>
+    </div>
   )
 }

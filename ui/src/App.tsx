@@ -4,7 +4,7 @@ import { useSelection } from './hooks/useSelection'
 import { useKeyboardShortcuts } from './hooks/useKeyboard'
 import { useTasks } from './hooks/useTasks'
 import { useBoards } from './hooks/useBoards'
-import { useCurrentBoard } from './hooks/useCurrentBoard'
+import { CurrentBoardProvider, useCurrentBoard } from './hooks/useCurrentBoard'
 import { Layout } from './components/Layout'
 import { Board } from './components/Board'
 import { TaskDetail } from './components/TaskDetail'
@@ -565,13 +565,16 @@ function AppContent() {
 /**
  * Main application component.
  *
- * Wraps AppContent in SelectionProvider to enable selection state management
- * across all components.
+ * Wraps AppContent in providers:
+ * - CurrentBoardProvider: Board selection state (must be outermost since AppContent uses it)
+ * - SelectionProvider: Task selection state management
  */
 export default function App() {
   return (
-    <SelectionProvider>
-      <AppContent />
-    </SelectionProvider>
+    <CurrentBoardProvider>
+      <SelectionProvider>
+        <AppContent />
+      </SelectionProvider>
+    </CurrentBoardProvider>
   )
 }

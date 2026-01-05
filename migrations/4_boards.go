@@ -59,6 +59,14 @@ func init() {
 			"CREATE UNIQUE INDEX idx_boards_prefix ON boards(prefix)",
 		}
 
+		// API Rules - allow public access (local-first tool, no auth needed)
+		// Empty string means "allow all"
+		collection.ListRule = func() *string { s := ""; return &s }()
+		collection.ViewRule = func() *string { s := ""; return &s }()
+		collection.CreateRule = func() *string { s := ""; return &s }()
+		collection.UpdateRule = func() *string { s := ""; return &s }()
+		collection.DeleteRule = func() *string { s := ""; return &s }()
+
 		if err := app.Save(collection); err != nil {
 			return err
 		}
