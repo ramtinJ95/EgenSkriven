@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { SelectionProvider } from './SelectionProvider'
+import { SelectionProvider } from '../contexts/SelectionProvider'
 import { useSelection } from './useSelection'
 
 // Wrapper for renderHook that provides the SelectionProvider
