@@ -1,0 +1,118 @@
+/* Drag and Drop Styles */
+
+/* Body state during drag */
+body.is-dragging {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+body.is-dragging * {
+  cursor: grabbing !important;
+}
+
+/* Task card grab cursor */
+.task-card {
+  cursor: grab;
+}
+
+.task-card:active {
+  cursor: grabbing;
+}
+
+/* Dragging task (original position) */
+.task-card.dragging {
+  opacity: 0.5;
+}
+
+/* Drag overlay (the moving clone) */
+.task-card.drag-overlay {
+  box-shadow: var(--shadow-drag);
+  transform: rotate(3deg) scale(1.02);
+  cursor: grabbing;
+}
+
+/* Drop target indicator */
+.column.drag-over {
+  background: rgba(var(--accent-rgb), 0.05);
+}
+
+/* Drop position indicator */
+.drop-indicator {
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+  margin: var(--space-1) 0;
+  animation: pulse-subtle 1s ease-in-out infinite;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Empty column drop area */
+.column-empty-drop {
+  min-height: 100px;
+  border: 2px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  transition: border-color var(--duration-fast) ease,
+              background-color var(--duration-fast) ease;
+}
+
+.column-empty-drop.drag-over {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.05);
+}
+
+/* Auto-scroll zones (visual indicator) */
+.auto-scroll-zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 60px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-fast) ease;
+}
+
+.auto-scroll-zone.top {
+  top: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(var(--accent-rgb), 0.1),
+    transparent
+  );
+}
+
+.auto-scroll-zone.bottom {
+  bottom: 0;
+  background: linear-gradient(
+    to top,
+    rgba(var(--accent-rgb), 0.1),
+    transparent
+  );
+}
+
+.auto-scroll-zone.active {
+  opacity: 1;
+}
+
+/* Touch improvements */
+@media (hover: none) {
+  .task-card {
+    /* Prevent long-press context menu on mobile */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+  }
+
+  /* Visual feedback for touch hold */
+  .task-card.touch-active {
+    transform: scale(0.98);
+    transition: transform var(--duration-fast) ease;
+  }
+}
