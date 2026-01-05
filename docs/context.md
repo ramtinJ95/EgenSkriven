@@ -347,13 +347,101 @@ Copy this JSON to recreate the todo list using the `todowrite` tool:
 
 ## UI Testing Instructions
 
-After each implementation task, use the `ui-test-engineer` agent to verify:
+**IMPORTANT**: All `-test` tasks MUST use the `ui-test-engineer` agent for visual/functional verification, not just unit tests. The ui-test-engineer agent can interact with the running application in a real browser to verify UI behavior.
+
+### How to Test
+
+1. **Start the dev server** (if not already running):
+   ```bash
+   cd ui && npm run dev
+   ```
+   The app runs at `http://localhost:5173`
+
+2. **Use the `ui-test-engineer` agent** with a detailed prompt describing:
+   - What feature to test
+   - Expected behavior
+   - Specific UI elements to verify
+   - Any interactions to perform (clicks, keyboard shortcuts, etc.)
+
+### Example Test Prompts
+
+**7.1-test (Light Mode CSS)**:
+```
+Test the light mode CSS implementation. The app is at http://localhost:5173.
+1. Open browser DevTools
+2. Select the <html> element
+3. Add attribute data-theme="light"
+4. Verify: backgrounds should be light (#FFFFFF, #FAFAFA), text should be dark (#171717)
+5. Verify sidebar, cards, and input backgrounds all change appropriately
+6. Remove the attribute and verify dark mode returns
+```
+
+**7.2-test (Theme Context)**:
+```
+Test the theme switching functionality at http://localhost:5173.
+1. Open the Settings panel (Cmd+,)
+2. Change theme from System to Light - verify UI switches to light colors
+3. Change to Dark - verify UI switches to dark colors
+4. Refresh the page - verify theme preference persists
+5. Change to System - verify it follows OS preference
+```
+
+**7.3-test (Settings Panel)**:
+```
+Test the Settings panel at http://localhost:5173.
+1. Press Cmd+, (or Ctrl+, on Linux) - verify settings panel opens
+2. Verify theme dropdown is present with options: System, Light, Dark
+3. Verify accent color grid shows 8 color options
+4. Click outside the panel - verify it closes
+5. Open again, press Escape - verify it closes
+6. Select an accent color - verify UI accent color changes
+```
+
+### Testing Checklist for Each Task
+
+- [ ] Visual appearance matches design specs
+- [ ] Interactions work as expected (clicks, hovers, keyboard)
+- [ ] State persists correctly (localStorage)
+- [ ] No console errors
+- [ ] Accessibility (keyboard navigation, focus states)
+- [ ] Edge cases (empty states, loading states)
+
+### Required Output from ui-test-engineer
+
+**IMPORTANT**: Always specify what output you want back from the ui-test-engineer agent. Include this at the end of your test prompt:
 
 ```
-Example prompt for 7.1-test:
-"Test the light mode CSS implementation. The app is at http://localhost:5173. 
-Open browser DevTools, add data-theme='light' attribute to the <html> element, 
-and verify all colors change correctly - backgrounds should be light, text should be dark."
+**Required Output**:
+Return a detailed test report including:
+1. PASS/FAIL status for each test step
+2. Any errors or issues found (with details)
+3. Console errors observed (if any)
+4. Overall verdict: PASS or FAIL
+5. Recommendations for fixes if FAIL
+```
+
+### Example Complete Test Prompt
+
+```
+Test the light mode CSS implementation for the EgenSkriven app.
+
+**App URL**: http://localhost:5173
+
+**Test Steps**:
+1. Navigate to the app
+2. Open browser DevTools and select the <html> element
+3. Add attribute data-theme="light"
+4. Verify backgrounds change to light colors (#FFFFFF, #FAFAFA)
+5. Verify text changes to dark (#171717)
+6. Remove the attribute and verify dark mode returns
+
+**Required Output**:
+Return a detailed test report including:
+1. PASS/FAIL status for each test step
+2. Any errors or issues found (with details)
+3. Console errors observed (if any)
+4. Overall verdict: PASS or FAIL
+5. Recommendations for fixes if FAIL
 ```
 
 ## Reference Documents
