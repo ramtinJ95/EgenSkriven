@@ -11,6 +11,8 @@ import {
   useContext,
   useEffect,
   useState,
+  useMemo,
+  useCallback,
   type ReactNode,
 } from 'react';
 import {
@@ -43,6 +45,8 @@ interface ThemeContextValue {
   setPreferredDarkTheme: (id: ThemeId) => void;
   /** Set preferred light theme for system mode */
   setPreferredLightTheme: (id: ThemeId) => void;
+  /** Refresh available themes (call after adding/removing custom themes) */
+  refreshThemes: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
@@ -86,6 +90,14 @@ interface ThemeProviderProps {
 export function ThemeProvider({ children }: ThemeProviderProps) {
   // Note: Custom themes are loaded synchronously at module initialization
   // in themes/index.ts, so they're available before this component renders.
+
+  // Track custom theme changes to refresh available themes
+  const [customThemeVersion, setCustomThemeVersion] = useState(0);
+
+  // Function to trigger theme list refresh
+  const refreshThemes = useCallback(() => {
+    setCustomThemeVersion((v) => v + 1);
+  }, []);
 
   // Initialize theme mode from localStorage
   const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
@@ -164,17 +176,22 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     localStorage.setItem(STORAGE_KEYS.lightPref, id);
   };
 
+  // Compute available themes with dependency on version
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const availableThemes = useMemo(() => getAllThemes(), [customThemeVersion]);
+
   return (
     <ThemeContext.Provider
       value={{
         themeMode,
         activeTheme,
         setThemeMode,
-        availableThemes: getAllThemes(),
+        availableThemes,
         preferredDarkTheme,
         preferredLightTheme,
         setPreferredDarkTheme,
         setPreferredLightTheme,
+        refreshThemes,
       }}
     >
       {children}
