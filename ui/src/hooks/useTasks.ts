@@ -235,15 +235,39 @@ export function useTasks(boardId?: string): UseTasksReturn {
     await pb.collection('tasks').delete(id)
   }, [])
 
-  // Move a task to a new column/position
+  // Move a task to a new column/position with optimistic update
   const moveTask = useCallback(
     async (id: string, column: Column, position: number): Promise<Task> => {
-      return pb.collection('tasks').update<Task>(id, {
-        column,
-        position,
-      })
+      // Optimistic update
+      setTasks((prev) =>
+        prev
+          .map((t) => (t.id === id ? { ...t, column, position } : t))
+          .sort((a, b) => a.position - b.position)
+      )
+
+      try {
+        const updated = await pb.collection('tasks').update<Task>(id, {
+          column,
+          position,
+        })
+
+        // Sync with server response
+        setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)))
+
+        return updated
+      } catch (err) {
+        // Rollback - refetch
+        console.error('[useTasks] Move failed, refetching:', err)
+        const options: { sort: string; filter?: string } = { sort: 'position' }
+        if (boardId) {
+          options.filter = `board = "${boardId}"`
+        }
+        const records = await pb.collection('tasks').getFullList<Task>(options)
+        setTasks(records)
+        throw err
+      }
     },
-    []
+    [boardId]
   )
 
   return {
