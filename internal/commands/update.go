@@ -156,8 +156,8 @@ Examples:
 			// Add to history
 			addHistoryEntry(task, "updated", "", changes)
 
-			// Save the task
-			if err := app.Save(task); err != nil {
+			// Save the task using hybrid approach (API first, then fallback to direct)
+			if err := updateRecordHybrid(app, task, out); err != nil {
 				return out.Error(ExitGeneralError, fmt.Sprintf("failed to update task: %v", err), nil)
 			}
 

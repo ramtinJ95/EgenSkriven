@@ -129,7 +129,7 @@ Examples:
 				},
 			})
 
-			if err := app.Save(task); err != nil {
+			if err := updateRecordHybrid(app, task, out); err != nil {
 				return out.Error(ExitGeneralError, fmt.Sprintf("failed to move task: %v", err), nil)
 			}
 
