@@ -21,17 +21,18 @@ vi.mock('../hooks/useCurrentBoard', () => ({
   }),
 }))
 
-// Mock filter store
+// Mock filter store - Zustand stores use selector pattern
+const mockFilterState = {
+  filters: [],
+  matchMode: 'all',
+  searchQuery: '',
+  setSearchQuery: vi.fn(),
+  clearFilters: vi.fn(),
+  removeFilter: vi.fn(),
+  setMatchMode: vi.fn(),
+}
 vi.mock('../stores/filters', () => ({
-  useFilterStore: () => ({
-    filters: [],
-    matchMode: 'all',
-    searchQuery: '',
-    setSearchQuery: vi.fn(),
-    clearFilters: vi.fn(),
-    removeFilter: vi.fn(),
-    setMatchMode: vi.fn(),
-  }),
+  useFilterStore: (selector: (state: typeof mockFilterState) => unknown) => selector(mockFilterState),
 }))
 
 // Helper to render Layout with required props
@@ -59,6 +60,11 @@ describe('Layout', () => {
   it('renders header with display button', () => {
     renderLayout(<div>Content</div>)
     expect(screen.getByText('Display')).toBeInTheDocument()
+  })
+
+  it('renders header with search bar', () => {
+    renderLayout(<div>Content</div>)
+    expect(screen.getByPlaceholderText(/search tasks/i)).toBeInTheDocument()
   })
 
   // Test 6.2: Renders children in main area
@@ -96,7 +102,7 @@ describe('Layout', () => {
 
   it('renders FilterBar with task counts', () => {
     renderLayout(<div>Content</div>)
-    // FilterBar shows "5 of 10 tasks" when there are active filters
-    expect(screen.getByText(/5 of 10/)).toBeInTheDocument()
+    // FilterBar shows total task count when no filters active
+    expect(screen.getByText('10 tasks')).toBeInTheDocument()
   })
 })
