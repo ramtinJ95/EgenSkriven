@@ -110,9 +110,9 @@ function saveCustomThemes(): void {
 
 /**
  * Load custom themes from localStorage.
- * Should be called on app initialization.
+ * Called automatically at module load time.
  */
-export function loadCustomThemes(): void {
+function loadCustomThemes(): void {
   try {
     const stored = localStorage.getItem(CUSTOM_THEMES_KEY);
     if (stored) {
@@ -124,6 +124,12 @@ export function loadCustomThemes(): void {
   } catch (e) {
     console.error('Failed to load custom themes:', e);
   }
+}
+
+// Load custom themes synchronously at module initialization
+// This ensures themes are available before any React components render
+if (typeof window !== 'undefined') {
+  loadCustomThemes();
 }
 
 /**
