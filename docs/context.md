@@ -2,7 +2,7 @@
 
 This document contains all context needed to continue Phase 7 implementation in a new session.
 
-**Last Updated**: Session ended after completing tasks 7.0 through 7.1-test
+**Last Updated**: Session ended after completing tasks through 7.6 (Skeleton components created but not integrated)
 
 ## Current Progress Summary
 
@@ -16,45 +16,48 @@ This document contains all context needed to continue Phase 7 implementation in 
 | 7.0b-test | Verified context migration - build passes, tests pass | (verified via build + tests) |
 | 7.1 | Created theme-light.css with light mode color overrides | `feat(ui): add light mode theme CSS with color token overrides` |
 | 7.1-test | Verified light mode CSS via ui-test-engineer - ALL PASS | (verified via ui-test-engineer) |
+| 7.2 | Created ThemeContext.tsx with theme state management | `feat(ui): add ThemeContext for theme state management` |
+| 7.2-test | Verified ThemeContext via ui-test-engineer - ALL PASS | (verified via ui-test-engineer) |
+| 7.3 | Created Settings.tsx & Settings.module.css with theme dropdown and accent colors | `feat(ui): add Settings panel with theme and accent colors` |
+| 7.3-test | Verified Settings panel via ui-test-engineer - ALL PASS | (verified via ui-test-engineer) |
+| 7.4 | Created useAccentColor.ts hook | `feat(ui): add useAccentColor hook for accent color mgmt` |
+| 7.4-test | Verified accent colors via ui-test-engineer - ALL PASS | (verified via ui-test-engineer) |
+| 7.5 | Created animations.css with keyframes and utility classes | `feat(ui): add centralized animations.css with keyframes` |
+| 7.6 | Created Skeleton.tsx & Skeleton.module.css (components exist but NOT integrated) | `feat(ui): add Skeleton loading components` |
+| 7.10 | Updated App.tsx - wrapped with ThemeProvider, added Cmd+, shortcut | (included in Settings commit) |
+| 7.10-test | Verified App.tsx changes via ui-test-engineer - ALL PASS | (verified via ui-test-engineer) |
 | 7.11 | Updated main.tsx to import index.css | (done as part of 7.0) |
 | 7.14 | Fixed all import paths after context migration | (done as part of 7.0b) |
 | 7.14-test | Verified imports - build passes | (verified via build) |
 
 ### 🔜 NEXT TASK TO DO
 
-**Task 7.2**: Create ThemeContext.tsx in contexts/
-- Theme state management (system/light/dark)
-- localStorage persistence
-- System preference detection via `prefers-color-scheme` media query
-- See `docs/phase-7.md` for full implementation code
+**Task 7.5-test**: Verify animations.css
+- The file was created but NOT tested with ui-test-engineer
+- Need to verify keyframes work on modals/panels
+- Need to verify reduced motion media query disables animations
+
+Then continue with:
+- **Task 7.6-test**: Verify Skeleton components (they exist but aren't integrated into Board.tsx yet)
+- **Task 7.7**: Create focus.css
 
 ### 📋 REMAINING TASKS
 
-| Task | Description | Priority |
-|------|-------------|----------|
-| **7.2** | **Create ThemeContext.tsx** | **High** |
-| 7.2-test | Verify ThemeContext with ui-test-engineer | High |
-| 7.3 | Create Settings.tsx & Settings.module.css | High |
-| 7.3-test | Verify Settings panel with ui-test-engineer | High |
-| 7.4 | Create useAccentColor.ts hook | High |
-| 7.4-test | Verify accent colors with ui-test-engineer | High |
-| 7.5 | Create animations.css | Medium |
-| 7.5-test | Verify animations with ui-test-engineer | Medium |
-| 7.6 | Create Skeleton.tsx & Skeleton.module.css | Medium |
-| 7.6-test | Verify skeletons with ui-test-engineer | Medium |
-| 7.7 | Create focus.css | Medium |
-| 7.7-test | Verify focus styles with ui-test-engineer | Medium |
-| 7.8 | Create drag-drop.css | Medium |
-| 7.8-test | Verify drag-drop with ui-test-engineer | Medium |
-| 7.9 | Install @tanstack/react-virtual, create VirtualizedColumn.tsx | Medium |
-| 7.9-test | Verify virtualization with ui-test-engineer | Medium |
-| 7.10 | Update App.tsx (ThemeProvider, Cmd+, shortcut) | High |
-| 7.10-test | Verify App.tsx with ui-test-engineer | High |
-| 7.12 | Update Board.tsx (skeleton, virtualization) | Medium |
-| 7.12-test | Verify Board.tsx with ui-test-engineer | Medium |
-| 7.13 | Update TaskCard.tsx (memo, drag overlay) | Medium |
-| 7.13-test | Verify TaskCard.tsx with ui-test-engineer | Medium |
-| 7.15 | FINAL regression test with ui-test-engineer | High |
+| Task | Description | Priority | Status |
+|------|-------------|----------|--------|
+| **7.5-test** | **Verify animations - Keyframes work on modals/panels, reduced motion** | **Medium** | **PENDING** |
+| **7.6-test** | **Verify skeletons - BoardSkeleton displays, animation pulses** | **Medium** | **PENDING** |
+| 7.7 | Create focus.css | Medium | Pending |
+| 7.7-test | Verify focus styles | Medium | Pending |
+| 7.8 | Create drag-drop.css | Medium | Pending |
+| 7.8-test | Verify drag-drop styles | Medium | Pending |
+| 7.9 | Install @tanstack/react-virtual, create VirtualizedColumn.tsx | Medium | Pending |
+| 7.9-test | Verify virtualization | Medium | Pending |
+| 7.12 | Update Board.tsx (skeleton, virtualization) | Medium | Pending |
+| 7.12-test | Verify Board.tsx changes | Medium | Pending |
+| 7.13 | Update TaskCard.tsx (memo, drag overlay) | Medium | Pending |
+| 7.13-test | Verify TaskCard.tsx changes | Medium | Pending |
+| 7.15 | FINAL regression test | High | Pending |
 
 ---
 
@@ -64,47 +67,53 @@ This document contains all context needed to continue Phase 7 implementation in 
 ```
 ui/src/
 ├── styles/
-│   ├── index.css           # ✅ Entry point (imports tokens, base, theme-light)
+│   ├── index.css           # ✅ Entry point (imports tokens, base, theme-light, animations)
 │   ├── tokens.css          # ✅ CSS variables only (dark mode defaults)
 │   ├── base.css            # ✅ Reset, body, typography
 │   ├── theme-light.css     # ✅ Light mode overrides [data-theme="light"]
-│   ├── animations.css      # ❌ TODO
+│   ├── animations.css      # ✅ Keyframes, utility classes, reduced motion support
 │   ├── focus.css           # ❌ TODO
 │   └── drag-drop.css       # ❌ TODO
 ├── contexts/
-│   ├── index.ts            # ✅ Re-exports all contexts
+│   ├── index.ts            # ✅ Re-exports all contexts (including ThemeContext)
 │   ├── SelectionContext.ts # ✅ Moved from hooks/
 │   ├── SelectionProvider.tsx # ✅ Moved from hooks/
 │   ├── CurrentBoardContext.tsx # ✅ Moved from hooks/
-│   └── ThemeContext.tsx    # ❌ TODO (next task)
+│   └── ThemeContext.tsx    # ✅ Theme state (system/light/dark), localStorage, system preference
 ├── hooks/
 │   ├── useSelection.ts     # ✅ Updated import path
-│   ├── useAccentColor.ts   # ❌ TODO
+│   ├── useAccentColor.ts   # ✅ Accent color management with localStorage
 │   └── ...existing hooks
 ├── components/
-│   ├── Board.tsx           # ✅ Updated import path
+│   ├── Board.tsx           # ✅ Updated import path (needs skeleton integration)
 │   ├── Sidebar.tsx         # ✅ Updated import path
-│   ├── Settings.tsx        # ❌ TODO
-│   ├── Skeleton.tsx        # ❌ TODO
+│   ├── Settings.tsx        # ✅ Settings panel with theme dropdown and accent colors
+│   ├── Settings.module.css # ✅ Settings panel styles
+│   ├── Skeleton.tsx        # ✅ Skeleton, TaskCardSkeleton, ColumnSkeleton, BoardSkeleton
+│   ├── Skeleton.module.css # ✅ Skeleton styles with shimmer animation
 │   ├── VirtualizedColumn.tsx # ❌ TODO
 │   └── ...existing components
-├── App.tsx                 # ✅ Updated import paths (needs ThemeProvider wrap)
+├── App.tsx                 # ✅ Wrapped with ThemeProvider, has Cmd+, shortcut for Settings
 └── main.tsx                # ✅ Imports index.css
 ```
 
 ### What's Working
 - ✅ Dark mode (default) - all CSS variables in tokens.css
-- ✅ Light mode CSS - theme-light.css overrides when `data-theme="light"` is set
-- ✅ Context architecture - contexts/ directory with proper exports
+- ✅ Light mode - theme-light.css overrides when `data-theme="light"` is set
+- ✅ Theme switching - ThemeContext with system/light/dark options
+- ✅ Theme persistence - saves to localStorage as `egenskriven-theme`
+- ✅ Accent color customization - 8 colors, persists to `egenskriven-accent`
+- ✅ Settings panel - opens with Cmd+, (or Ctrl+,), closes with Escape or click outside
+- ✅ Animations CSS - keyframes defined, reduced motion support
+- ✅ Skeleton components - exist but NOT integrated into Board.tsx yet
 - ✅ All existing functionality (selection, board switching, tasks, etc.)
-- ✅ Build passes, all tests pass
+- ✅ Build passes
 
 ### What's NOT Working Yet
-- ❌ No way for users to switch themes (needs ThemeContext + Settings panel)
-- ❌ No accent color customization
-- ❌ No loading skeletons
+- ❌ Skeleton components not integrated into Board.tsx (shows "Loading..." text instead)
 - ❌ No virtualization for large lists
-- ❌ No enhanced animations
+- ❌ No enhanced focus styles (focus.css)
+- ❌ No drag-drop visual feedback CSS (drag-drop.css)
 
 ---
 
@@ -153,43 +162,43 @@ Copy this JSON to recreate the todo list using the `todowrite` tool:
   {
     "id": "7.2",
     "content": "7.2 Create ThemeContext.tsx in contexts/ - Theme state (system/light/dark), localStorage persistence, system preference detection",
-    "status": "pending",
+    "status": "completed",
     "priority": "high"
   },
   {
     "id": "7.2-test",
     "content": "7.2-TEST: Verify ThemeContext - Theme switches between dark/light/system, persists after refresh, responds to OS preference changes",
-    "status": "pending",
+    "status": "completed",
     "priority": "high"
   },
   {
     "id": "7.3",
     "content": "7.3 Create Settings.tsx & Settings.module.css - Settings panel with theme dropdown and accent color grid (Cmd+, shortcut)",
-    "status": "pending",
+    "status": "completed",
     "priority": "high"
   },
   {
     "id": "7.3-test",
     "content": "7.3-TEST: Verify Settings panel - Opens with Cmd+,, closes with Escape/outside click, theme dropdown works, accent colors selectable",
-    "status": "pending",
+    "status": "completed",
     "priority": "high"
   },
   {
     "id": "7.4",
     "content": "7.4 Create useAccentColor.ts hook - Accent color management with 8 colors, --accent-rgb variable, localStorage persistence",
-    "status": "pending",
+    "status": "completed",
     "priority": "high"
   },
   {
     "id": "7.4-test",
     "content": "7.4-TEST: Verify accent colors - All 8 colors apply correctly, --accent and --accent-rgb update, persists after refresh",
-    "status": "pending",
+    "status": "completed",
     "priority": "high"
   },
   {
     "id": "7.5",
     "content": "7.5 Create animations.css - Centralized keyframes (fadeIn, scaleIn, slideInFromRight, slideDown, slideUp) + utility classes + reduced motion support",
-    "status": "pending",
+    "status": "completed",
     "priority": "medium"
   },
   {
@@ -201,7 +210,7 @@ Copy this JSON to recreate the todo list using the `todowrite` tool:
   {
     "id": "7.6",
     "content": "7.6 Create Skeleton.tsx & Skeleton.module.css - Loading skeleton components (Skeleton, TaskCardSkeleton, ColumnSkeleton, BoardSkeleton)",
-    "status": "pending",
+    "status": "completed",
     "priority": "medium"
   },
   {
@@ -249,13 +258,13 @@ Copy this JSON to recreate the todo list using the `todowrite` tool:
   {
     "id": "7.10",
     "content": "7.10 Update App.tsx - Wrap with ThemeProvider, add Cmd+, keyboard shortcut for settings panel",
-    "status": "pending",
+    "status": "completed",
     "priority": "high"
   },
   {
     "id": "7.10-test",
     "content": "7.10-TEST: Verify App.tsx changes - ThemeProvider works, Cmd+, opens settings, no breaking changes to existing functionality",
-    "status": "pending",
+    "status": "completed",
     "priority": "high"
   },
   {
@@ -315,9 +324,10 @@ Copy this JSON to recreate the todo list using the `todowrite` tool:
 
 1. **Contexts Directory**: Created `ui/src/contexts/` directory (industry standard) and moved existing context files there
 2. **CSS Organization**: Split into logical files with `index.css` entry point
-3. **Virtualization**: Will use `@tanstack/react-virtual` for columns with >50 tasks
-4. **Testing**: Use `ui-test-engineer` agent after each implementation task (see detailed instructions below)
-5. **Deferred**: Toast notifications, mobile/responsive layouts
+3. **CSS Modules**: Using `.module.css` for component-specific styles (e.g., Settings.module.css, Skeleton.module.css)
+4. **Virtualization**: Will use `@tanstack/react-virtual` for columns with >50 tasks
+5. **Testing**: Use `ui-test-engineer` agent after each implementation task (see detailed instructions below)
+6. **Deferred**: Toast notifications, mobile/responsive layouts
 
 ---
 
@@ -387,71 +397,6 @@ Return a detailed test report including:
 5. Recommendations for fixes if FAIL
 ```
 
-### Complete Example: Running a UI Test
-
-Here's the full workflow for testing (example from 7.1-test):
-
-**1. First, start and verify the dev server:**
-```bash
-cd /home/ramtinj/personal-workspace/EgenSkriven/ui && npm run dev &
-sleep 5
-ss -tlnp | grep 5173
-```
-
-**2. Then call ui-test-engineer with this prompt:**
-
-```
-Test the light mode CSS implementation for the EgenSkriven app.
-
-**App URL**: http://localhost:5173
-
-**Test Steps**:
-1. Navigate to the app at http://localhost:5173
-2. Observe the initial dark mode state - the app should have dark backgrounds
-3. Using Playwright, execute JavaScript to add data-theme="light" attribute:
-   document.documentElement.setAttribute('data-theme', 'light')
-4. Verify the following color changes occur:
-   - App background should become white/light (#FFFFFF)
-   - Sidebar should become light gray (#FAFAFA)
-   - Text should become dark colored (#171717)
-   - Cards should have white backgrounds
-5. Execute JavaScript to remove the attribute:
-   document.documentElement.removeAttribute('data-theme')
-6. Verify dark mode colors return
-
-**Expected Behavior**:
-- Light mode: White/light backgrounds, dark text
-- Dark mode: Dark backgrounds (#0D0D0D), light text (#F5F5F5)
-- Instant transition with no delay
-
-**Required Output**:
-Return a detailed test report with the following format:
-
-## Test Report: [Feature Name]
-
-### Step 1: [Step description]
-- Status: PASS/FAIL
-- Observation: [what you saw]
-
-### Step 2: [Step description]
-- Status: PASS/FAIL
-- Observation: [what you saw]
-
-[...continue for all steps...]
-
-### Console Errors
-- [List any console errors, or "None"]
-
-### Overall Verdict
-- **PASS** or **FAIL**
-- Summary: [brief summary]
-
-### Recommendations
-- [Any fixes needed, or "None - all tests passed"]
-```
-
-**3. The ui-test-engineer will return a detailed report.**
-
 ---
 
 ## Reference Documents
@@ -465,7 +410,7 @@ Return a detailed test report with the following format:
 
 1. **Read this file** (`docs/context.md`) - you're doing this now!
 2. **Recreate the todo list** using the JSON above with the `todowrite` tool
-3. **Check the "NEXT TASK TO DO" section** above - currently **Task 7.2**
+3. **Check the "NEXT TASK TO DO" section** above - currently **Task 7.5-test**
 4. **Read `docs/phase-7.md`** for the implementation code for the next task
 5. **Start the dev server** before running any ui-test-engineer tests
 6. **After each task**: commit with conventional commit format (max 70 chars)
@@ -474,11 +419,12 @@ Return a detailed test report with the following format:
 ### Git Commits Made This Session
 
 ```
-refactor(ui): split CSS into modular files with index entry point
-refactor(ui): move context files to dedicated contexts/ directory
-feat(ui): add light mode theme CSS with color token overrides
-docs: add ui-test-engineer instructions to context.md
-docs: add detailed ui-test-engineer workflow instructions
+feat(ui): add ThemeContext for theme state management
+feat(ui): integrate ThemeProvider into App component
+feat(ui): add useAccentColor hook for accent color mgmt
+feat(ui): add Settings panel with theme and accent colors
+feat(ui): add centralized animations.css with keyframes
+feat(ui): add Skeleton loading components
 ```
 
 ### Branch
