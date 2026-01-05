@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useCurrentBoard } from '../hooks/useCurrentBoard'
 import { BOARD_COLORS } from '../types/board'
+import { ViewsSidebar } from './ViewsSidebar'
 import styles from './Sidebar.module.css'
 
 interface SidebarProps {
@@ -87,6 +88,9 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             + New board
           </button>
         </section>
+
+        {/* Views section - only show when a board is selected */}
+        <ViewsSidebar boardId={currentBoard?.id || null} />
       </nav>
 
       {showNewBoard && (
