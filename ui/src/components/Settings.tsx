@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAccentColor } from '../hooks/useAccentColor';
+import { getThemesByAppearance, type ThemeId } from '../themes';
 import styles from './Settings.module.css';
 
 interface SettingsProps {
@@ -26,7 +27,15 @@ const ACCENT_COLORS = [
 ] as const;
 
 export function Settings({ isOpen, onClose }: SettingsProps) {
-  const { theme, setTheme } = useTheme();
+  const {
+    themeMode,
+    setThemeMode,
+    availableThemes,
+    preferredDarkTheme,
+    preferredLightTheme,
+    setPreferredDarkTheme,
+    setPreferredLightTheme,
+  } = useTheme();
   const { accentColor, setAccentColor } = useAccentColor();
   const panelRef = useRef<HTMLDivElement>(null);
   const justOpenedRef = useRef(false);
@@ -61,13 +70,17 @@ export function Settings({ isOpen, onClose }: SettingsProps) {
 
   if (!isOpen) return null;
 
+  // Get themes by appearance for system mode preferences
+  const darkThemes = getThemesByAppearance('dark');
+  const lightThemes = getThemesByAppearance('light');
+
   return (
     <div className={styles.overlay}>
       <div className={styles.panel} ref={panelRef}>
         <header className={styles.header}>
           <h2>Settings</h2>
-          <button 
-            className={styles.closeButton} 
+          <button
+            className={styles.closeButton}
             onClick={onClose}
             aria-label="Close settings"
           >
@@ -80,20 +93,97 @@ export function Settings({ isOpen, onClose }: SettingsProps) {
           <section className={styles.section}>
             <h3>Appearance</h3>
 
-            {/* Theme Selection */}
+            {/* Theme Selection Grid */}
             <div className={styles.row}>
-              <label htmlFor="theme-select">Theme</label>
-              <select
-                id="theme-select"
-                value={theme}
-                onChange={(e) => setTheme(e.target.value as 'system' | 'light' | 'dark')}
-                className={styles.select}
-              >
-                <option value="system">System</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </select>
+              <label>Theme</label>
+              <div className={styles.themeGrid}>
+                {/* System option */}
+                <button
+                  className={`${styles.themeOption} ${
+                    themeMode === 'system' ? styles.selected : ''
+                  }`}
+                  onClick={() => setThemeMode('system')}
+                  title="Follow system preference"
+                >
+                  <div className={styles.themePreview}>
+                    <div
+                      className={styles.themeSwatch}
+                      style={{
+                        background:
+                          'linear-gradient(135deg, #1a1a1a 50%, #ffffff 50%)',
+                      }}
+                    />
+                  </div>
+                  <span className={styles.themeName}>System</span>
+                </button>
+
+                {/* All available themes */}
+                {availableThemes.map((theme) => (
+                  <button
+                    key={theme.id}
+                    className={`${styles.themeOption} ${
+                      themeMode === theme.id ? styles.selected : ''
+                    }`}
+                    onClick={() => setThemeMode(theme.id as ThemeId)}
+                    title={theme.name}
+                  >
+                    <div className={styles.themePreview}>
+                      <div
+                        className={styles.themeSwatch}
+                        style={{ backgroundColor: theme.colors.bgApp }}
+                      >
+                        <div
+                          className={styles.themeAccentDot}
+                          style={{ backgroundColor: theme.colors.accent }}
+                        />
+                      </div>
+                    </div>
+                    <span className={styles.themeName}>{theme.name}</span>
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* System Mode Preferences - only show when system mode is selected */}
+            {themeMode === 'system' && (
+              <>
+                <div className={styles.row}>
+                  <label htmlFor="dark-theme-select">Dark mode theme</label>
+                  <select
+                    id="dark-theme-select"
+                    value={preferredDarkTheme}
+                    onChange={(e) =>
+                      setPreferredDarkTheme(e.target.value as ThemeId)
+                    }
+                    className={styles.select}
+                  >
+                    {darkThemes.map((theme) => (
+                      <option key={theme.id} value={theme.id}>
+                        {theme.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className={styles.row}>
+                  <label htmlFor="light-theme-select">Light mode theme</label>
+                  <select
+                    id="light-theme-select"
+                    value={preferredLightTheme}
+                    onChange={(e) =>
+                      setPreferredLightTheme(e.target.value as ThemeId)
+                    }
+                    className={styles.select}
+                  >
+                    {lightThemes.map((theme) => (
+                      <option key={theme.id} value={theme.id}>
+                        {theme.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
 
             {/* Accent Color Selection */}
             <div className={styles.row}>
@@ -123,7 +213,8 @@ export function Settings({ isOpen, onClose }: SettingsProps) {
           <section className={styles.section}>
             <h3>Keyboard Shortcuts</h3>
             <p className={styles.hint}>
-              Press <kbd className={styles.kbd}>?</kbd> to view all keyboard shortcuts
+              Press <kbd className={styles.kbd}>?</kbd> to view all keyboard
+              shortcuts
             </p>
           </section>
         </div>
