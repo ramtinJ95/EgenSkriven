@@ -184,8 +184,8 @@ function AppContent() {
   }, [selectedTaskId])
 
   const handleCreateTask = useCallback(
-    async (title: string, column: Column) => {
-      const newTask = await createTask(title, column)
+    async (title: string, column: Column, description?: string) => {
+      const newTask = await createTask(title, column, description)
       setIsQuickCreateOpen(false)
       selectTask(newTask.id)
     },
@@ -647,7 +647,6 @@ function AppContent() {
           onTaskClick={handleTaskClick}
           onTaskSelect={handleTaskSelect}
           selectedTaskId={selectedTaskId}
-          multiSelectedIds={multiSelectedIds}
           isSelected={isSelected}
           moveTask={moveTask}
         />

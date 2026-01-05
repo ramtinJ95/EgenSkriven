@@ -1,4 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { 
   COLUMN_NAMES, 
   PRIORITY_NAMES, 
@@ -25,22 +27,47 @@ interface TaskDetailProps {
  * Features:
  * - Close with Esc or click outside
  * - Editable properties via dropdowns (status, priority, type)
+ * - Editable description with Markdown rendering
  * - Display all task metadata
  */
 export function TaskDetail({ task, onClose, onUpdate }: TaskDetailProps) {
   const panelRef = useRef<HTMLDivElement>(null)
+  const [isEditingDescription, setIsEditingDescription] = useState(false)
+  const [descriptionDraft, setDescriptionDraft] = useState('')
+  const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && task) {
+        // If editing description, save and exit edit mode first
+        if (isEditingDescription) {
+          handleDescriptionBlur()
+          return
+        }
         onClose()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [task, onClose])
+  }, [task, onClose, isEditingDescription])
+
+  // Reset edit state when task changes
+  useEffect(() => {
+    setIsEditingDescription(false)
+    setDescriptionDraft(task?.description || '')
+  }, [task?.id])
+
+  // Focus textarea when entering edit mode
+  useEffect(() => {
+    if (isEditingDescription && descriptionTextareaRef.current) {
+      descriptionTextareaRef.current.focus()
+      // Move cursor to end
+      const len = descriptionTextareaRef.current.value.length
+      descriptionTextareaRef.current.setSelectionRange(len, len)
+    }
+  }, [isEditingDescription])
 
   // Handle click outside
   const handleOverlayClick = (e: React.MouseEvent) => {
@@ -49,6 +76,22 @@ export function TaskDetail({ task, onClose, onUpdate }: TaskDetailProps) {
     }
   }
 
+  // Description editing handlers - must be defined before early return to follow hooks rules
+  const handleDescriptionBlur = useCallback(async () => {
+    if (!task) return
+    
+    const trimmedDescription = descriptionDraft.trim()
+    const currentDescription = task.description || ''
+    
+    // Only update if changed
+    if (trimmedDescription !== currentDescription) {
+      await onUpdate(task.id, { description: trimmedDescription || undefined })
+    }
+    
+    setIsEditingDescription(false)
+  }, [task, descriptionDraft, onUpdate])
+
+  // Early return after all hooks are defined
   if (!task) return null
 
   const handleColumnChange = async (newColumn: Column) => {
@@ -61,6 +104,12 @@ export function TaskDetail({ task, onClose, onUpdate }: TaskDetailProps) {
 
   const handleTypeChange = async (newType: TaskType) => {
     await onUpdate(task.id, { type: newType })
+  }
+
+  // Description click handler (defined after early return is OK, it's not a hook)
+  const handleDescriptionClick = () => {
+    setDescriptionDraft(task.description || '')
+    setIsEditingDescription(true)
   }
 
   // Get priority color
@@ -101,13 +150,60 @@ export function TaskDetail({ task, onClose, onUpdate }: TaskDetailProps) {
           <h1 className={styles.title}>{task.title}</h1>
           <span className={styles.id}>{task.id}</span>
 
-          {/* Description */}
-          {task.description && (
-            <div className={styles.description}>
-              <h3 className={styles.sectionTitle}>Description</h3>
-              <p>{task.description}</p>
-            </div>
-          )}
+          {/* Description - editable with Markdown support */}
+          <div className={styles.description}>
+            <h3 className={styles.sectionTitle}>
+              Description
+              {!isEditingDescription && task.description && (
+                <button 
+                  className={styles.editButton}
+                  onClick={handleDescriptionClick}
+                  title="Edit description"
+                >
+                  Edit
+                </button>
+              )}
+            </h3>
+            
+            {isEditingDescription ? (
+              <div className={styles.descriptionEdit}>
+                <textarea
+                  ref={descriptionTextareaRef}
+                  value={descriptionDraft}
+                  onChange={(e) => setDescriptionDraft(e.target.value)}
+                  onBlur={handleDescriptionBlur}
+                  className={styles.descriptionTextarea}
+                  placeholder="Add a description... (supports Markdown)"
+                  rows={6}
+                />
+                <div className={styles.descriptionHint}>
+                  <span>Markdown supported</span>
+                  <span className={styles.charCount}>
+                    {descriptionDraft.length} / 10,000
+                  </span>
+                </div>
+              </div>
+            ) : task.description ? (
+              <div 
+                className={styles.descriptionContent}
+                onClick={handleDescriptionClick}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && handleDescriptionClick()}
+              >
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {task.description}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              <button 
+                className={styles.addDescriptionButton}
+                onClick={handleDescriptionClick}
+              >
+                Click to add description...
+              </button>
+            )}
+          </div>
 
           {/* Properties */}
           <div className={styles.properties}>
