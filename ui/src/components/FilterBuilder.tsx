@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { pb } from '../lib/pb'
 import type { FilterField, FilterOperator } from '../stores/filters'
 import {
@@ -6,6 +6,7 @@ import {
   getOperatorsForField,
   operatorRequiresValue,
 } from '../stores/filters'
+import type { Task } from '../types/task'
 import { COLUMNS, PRIORITIES, TYPES, COLUMN_NAMES, PRIORITY_NAMES, TYPE_NAMES } from '../types/task'
 import styles from './FilterBuilder.module.css'
 
@@ -45,9 +46,10 @@ interface Epic {
 export interface FilterBuilderProps {
   isOpen: boolean
   onClose: () => void
+  tasks: Task[]
 }
 
-export function FilterBuilder({ isOpen, onClose }: FilterBuilderProps) {
+export function FilterBuilder({ isOpen, onClose, tasks }: FilterBuilderProps) {
   const addFilter = useFilterStore((s) => s.addFilter)
   const filters = useFilterStore((s) => s.filters)
   const matchMode = useFilterStore((s) => s.matchMode)
@@ -66,12 +68,18 @@ export function FilterBuilder({ isOpen, onClose }: FilterBuilderProps) {
   const [epicsError, setEpicsError] = useState<string | null>(null)
   const [epicsLoading, setEpicsLoading] = useState(false)
 
-  // Available labels from localStorage or default
-  const [availableLabels] = useState<string[]>(() => {
-    // In a real app, you might fetch these from the backend
-    // For now, use some common labels
-    return ['frontend', 'backend', 'bug', 'feature', 'urgent', 'docs', 'ui', 'api', 'testing']
-  })
+  // Extract unique labels from tasks
+  const availableLabels = useMemo(() => {
+    const labelsSet = new Set<string>()
+    for (const task of tasks) {
+      if (task.labels) {
+        for (const label of task.labels) {
+          labelsSet.add(label)
+        }
+      }
+    }
+    return Array.from(labelsSet).sort()
+  }, [tasks])
 
   // Fetch epics on mount
   useEffect(() => {

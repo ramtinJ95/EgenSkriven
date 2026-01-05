@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useRef } from 'react'
+import { useMemo, useEffect } from 'react'
 import type { Task } from '../types/task'
 import type { Filter } from '../stores/filters'
 import { useFilterStore } from '../stores/filters'
@@ -15,7 +15,6 @@ export function useSearchDebounce(): void {
   const setDebouncedSearchQuery = useFilterStore(
     (state) => state.setDebouncedSearchQuery
   )
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     // Set new timeout to update debounced value

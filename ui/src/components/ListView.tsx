@@ -143,7 +143,7 @@ export function ListView({ tasks, onTaskClick, selectedTaskId }: ListViewProps) 
                     </span>
                   ))}
                   {(task.labels || []).length > 3 && (
-                    <span className={styles.labelMore}>+{task.labels!.length - 3}</span>
+                    <span className={styles.labelMore}>+{(task.labels || []).length - 3}</span>
                   )}
                 </div>
               </td>

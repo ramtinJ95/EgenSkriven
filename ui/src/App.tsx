@@ -623,6 +623,7 @@ function AppContent() {
       <FilterBuilder
         isOpen={isFilterBuilderOpen}
         onClose={() => setIsFilterBuilderOpen(false)}
+        tasks={tasks}
       />
 
       {/* Display Options Menu */}
