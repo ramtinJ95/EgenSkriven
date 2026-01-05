@@ -8,8 +8,9 @@ A local-first kanban task manager with CLI and web UI. Built with agentic workfl
 
 ### Core
 - **Single binary** - Go backend with embedded React UI, no external dependencies
-- **Real-time sync** - CLI changes appear instantly in the web UI via subscriptions
+- **Real-time sync** - CLI changes appear instantly in the web UI via SSE subscriptions
 - **Local-first** - All data stored locally in SQLite via PocketBase
+- **Hybrid mode** - CLI automatically falls back to direct database access when server is unavailable
 
 ### CLI
 - **Full task management** - Add, list, show, move, update, delete tasks
