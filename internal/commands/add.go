@@ -28,6 +28,7 @@ type TaskInput struct {
 	Column      string   `json:"column,omitempty"`
 	Labels      []string `json:"labels,omitempty"`
 	Epic        string   `json:"epic,omitempty"`
+	DueDate     string   `json:"due_date,omitempty"`
 }
 
 func newAddCmd(app *pocketbase.PocketBase) *cobra.Command {
@@ -43,6 +44,7 @@ func newAddCmd(app *pocketbase.PocketBase) *cobra.Command {
 		stdin     bool
 		file      string
 		boardRef  string
+		dueDate   string
 	)
 
 	cmd := &cobra.Command{
@@ -190,6 +192,15 @@ Examples:
 				record.Set("seq", seq)
 			}
 
+			// Handle due date
+			if dueDate != "" {
+				parsedDate, err := parseDate(dueDate)
+				if err != nil {
+					return out.Error(ExitValidation, fmt.Sprintf("invalid due date: %v", err), nil)
+				}
+				record.Set("due_date", parsedDate)
+			}
+
 			// Initialize history
 			history := []map[string]any{
 				{
@@ -248,6 +259,8 @@ Examples:
 		"Read tasks from JSON file")
 	cmd.Flags().StringVarP(&boardRef, "board", "b", "",
 		"Board to create task in (name or prefix)")
+	cmd.Flags().StringVar(&dueDate, "due", "",
+		"Due date (ISO 8601 format: YYYY-MM-DD, or relative: 'tomorrow', 'next week')")
 
 	return cmd
 }
