@@ -15,6 +15,8 @@ interface SidebarProps {
   selectedEpicId?: string | null
   /** Callback when epic filter changes */
   onSelectEpic?: (epicId: string | null) => void
+  /** Callback when epic detail view should be opened */
+  onEpicDetailClick?: (epicId: string) => void
 }
 
 /**
@@ -26,7 +28,7 @@ interface SidebarProps {
  * - New board creation modal
  * - Board color indicators
  */
-export function Sidebar({ collapsed, onToggle, tasks = [], selectedEpicId, onSelectEpic }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, tasks = [], selectedEpicId, onSelectEpic, onEpicDetailClick }: SidebarProps) {
   const { boards, loading, boardsError: error, createBoard, currentBoard, setCurrentBoard } = useCurrentBoard()
   const [showNewBoard, setShowNewBoard] = useState(false)
 
@@ -106,6 +108,7 @@ export function Sidebar({ collapsed, onToggle, tasks = [], selectedEpicId, onSel
             tasks={tasks}
             selectedEpicId={selectedEpicId}
             onSelectEpic={onSelectEpic}
+            onEpicDetailClick={onEpicDetailClick}
           />
         )}
       </nav>

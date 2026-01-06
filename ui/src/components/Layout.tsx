@@ -18,6 +18,8 @@ interface LayoutProps {
   selectedEpicId?: string | null
   /** Callback when epic filter changes */
   onSelectEpic?: (epicId: string | null) => void
+  /** Callback when epic detail view should be opened */
+  onEpicDetailClick?: (epicId: string) => void
 }
 
 const SIDEBAR_COLLAPSED_KEY = 'egenskriven-sidebar-collapsed'
@@ -44,6 +46,7 @@ export function Layout({
   tasks = [],
   selectedEpicId,
   onSelectEpic,
+  onEpicDetailClick,
 }: LayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
@@ -65,6 +68,7 @@ export function Layout({
           tasks={tasks}
           selectedEpicId={selectedEpicId}
           onSelectEpic={onSelectEpic}
+          onEpicDetailClick={onEpicDetailClick}
         />
         <div className={styles.content}>
           <Header onDisplayOptionsClick={onOpenDisplayOptions} onSettingsClick={onOpenSettings} />
