@@ -51,7 +51,8 @@ func parseDate(input string) (string, error) {
 			// For formats without year, use current year
 			// If date is in past, use next year
 			if t.Year() == 0 {
-				t = t.AddDate(now.Year(), 0, 0)
+				// Create a new date with the current year (not add years)
+				t = time.Date(now.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 				if t.Before(now) {
 					t = t.AddDate(1, 0, 0)
 				}

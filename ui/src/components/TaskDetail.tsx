@@ -40,9 +40,12 @@ export function TaskDetail({ task, tasks, onClose, onUpdate, onTaskClick }: Task
 
   // Handle keyboard shortcuts
   useEffect(() => {
+    // Don't add listener when no task is selected
+    if (!task) return
+
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only close on Escape if not inside the MarkdownEditor (which handles its own Escape)
-      if (e.key === 'Escape' && task) {
+      if (e.key === 'Escape') {
         // Check if we're inside an active editor
         const activeElement = document.activeElement
         const isInEditor = activeElement?.closest('[class*="MarkdownEditor"]')
