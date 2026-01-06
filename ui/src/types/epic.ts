@@ -2,12 +2,13 @@ import type { RecordModel } from 'pocketbase'
 
 /**
  * Epic record from PocketBase
- * All fields align with migrations/2_epics.go schema
+ * All fields align with migrations/2_epics.go and 11_epics_board_relation.go schema
  */
 export interface Epic extends RecordModel {
   title: string
   description?: string
   color?: string // Hex color (e.g., "#3B82F6")
+  board: string // Board ID this epic belongs to
 }
 
 /**

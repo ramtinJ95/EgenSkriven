@@ -3,6 +3,7 @@ import { useEpics } from '../hooks/useEpics'
 import styles from './EpicPicker.module.css'
 
 interface EpicPickerProps {
+  boardId?: string              // Board ID to filter epics by
   value: string | null          // Epic ID or null
   onChange: (epicId: string | null) => void
   placeholder?: string
@@ -13,14 +14,15 @@ interface EpicPickerProps {
  *
  * Features:
  * - Dropdown with search filter
+ * - Shows only epics for the current board (board-scoped)
  * - Color indicators for each epic
  * - "No epic" option to clear selection
  * - Checkmark for selected epic
  * - Click outside to close
  * - Escape key to close
  */
-export function EpicPicker({ value, onChange, placeholder = 'Set epic' }: EpicPickerProps) {
-  const { epics, loading } = useEpics()
+export function EpicPicker({ boardId, value, onChange, placeholder = 'Set epic' }: EpicPickerProps) {
+  const { epics, loading } = useEpics(boardId)
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)

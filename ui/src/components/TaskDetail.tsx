@@ -223,6 +223,7 @@ export function TaskDetail({ task, tasks, onClose, onUpdate, onTaskClick }: Task
             <div className={styles.property}>
               <span className={styles.propertyLabel}>Epic</span>
               <EpicPicker
+                boardId={task.board}
                 value={task.epic || null}
                 onChange={handleEpicChange}
                 placeholder="Set epic"
