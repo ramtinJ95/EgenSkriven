@@ -35,6 +35,8 @@ func newListCmd(app *pocketbase.PocketBase) *cobra.Command {
 		dueAfter   string
 		hasDue     bool
 		noDue      bool
+		hasParent  bool
+		noParent   bool
 	)
 
 	cmd := &cobra.Command{
@@ -246,6 +248,24 @@ Examples:
 				))
 			}
 
+			// Validate mutually exclusive parent flags
+			if hasParent && noParent {
+				return out.Error(ExitValidation,
+					"--has-parent and --no-parent are mutually exclusive", nil)
+			}
+
+			// Parent filters (for sub-tasks)
+			if hasParent {
+				filters = append(filters, dbx.NewExp("parent != '' AND parent IS NOT NULL"))
+			}
+
+			if noParent {
+				filters = append(filters, dbx.Or(
+					dbx.NewExp("parent = ''"),
+					dbx.NewExp("parent IS NULL"),
+				))
+			}
+
 			// Execute query using RecordQuery for limit/sort support
 			var tasks []*core.Record
 
@@ -364,6 +384,10 @@ Examples:
 		"Only tasks with due date set")
 	cmd.Flags().BoolVar(&noDue, "no-due", false,
 		"Only tasks without due date")
+	cmd.Flags().BoolVar(&hasParent, "has-parent", false,
+		"Only show sub-tasks (tasks with a parent)")
+	cmd.Flags().BoolVar(&noParent, "no-parent", false,
+		"Only show top-level tasks (exclude sub-tasks)")
 
 	return cmd
 }
