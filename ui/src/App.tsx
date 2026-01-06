@@ -661,9 +661,13 @@ function AppContent() {
       {/* Task Detail Panel */}
       <TaskDetail
         task={isDetailOpen ? selectedTask : null}
+        tasks={tasks}
         onClose={() => setIsDetailOpen(false)}
         onUpdate={async (id, data) => {
           await updateTask(id, data)
+        }}
+        onTaskClick={(task) => {
+          selectTask(task.id)
         }}
       />
 
