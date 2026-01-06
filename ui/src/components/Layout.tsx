@@ -12,6 +12,7 @@ interface LayoutProps {
   onOpenFilterBuilder: () => void
   onOpenDisplayOptions: () => void
   onOpenSettings?: () => void
+  onOpenHelp?: () => void
   /** All tasks (unfiltered) for epic counting in sidebar */
   tasks?: Task[]
   /** Currently selected epic filter */
@@ -43,6 +44,7 @@ export function Layout({
   onOpenFilterBuilder,
   onOpenDisplayOptions,
   onOpenSettings,
+  onOpenHelp,
   tasks = [],
   selectedEpicId,
   onSelectEpic,
@@ -71,7 +73,7 @@ export function Layout({
           onEpicDetailClick={onEpicDetailClick}
         />
         <div className={styles.content}>
-          <Header onDisplayOptionsClick={onOpenDisplayOptions} onSettingsClick={onOpenSettings} />
+          <Header onDisplayOptionsClick={onOpenDisplayOptions} onSettingsClick={onOpenSettings} onHelpClick={onOpenHelp} />
           <FilterBar
             totalTasks={totalTasks}
             filteredTasks={filteredTasks}

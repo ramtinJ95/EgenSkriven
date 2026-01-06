@@ -622,6 +622,7 @@ function AppContent() {
         onOpenFilterBuilder={() => {}}
         onOpenDisplayOptions={() => {}}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenHelp={() => setIsShortcutsHelpOpen(true)}
       >
         <div
           style={{
@@ -644,6 +645,7 @@ function AppContent() {
       onOpenFilterBuilder={() => setIsFilterBuilderOpen(true)}
       onOpenDisplayOptions={() => setIsDisplayOptionsOpen(true)}
       onOpenSettings={() => setIsSettingsOpen(true)}
+      onOpenHelp={() => setIsShortcutsHelpOpen(true)}
       tasks={tasks}
       selectedEpicId={selectedEpicId}
       onSelectEpic={handleSelectEpic}
