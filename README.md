@@ -39,10 +39,27 @@ A local-first kanban task manager with CLI and web UI. Built with agentic workfl
 - **Ready filter** - Find unblocked tasks ready to work on (`--ready`)
 - **Blocking filters** - `--is-blocked` and `--not-blocked` filters
 
+### Due Dates
+- **Task due dates** - Set optional due dates with `--due` flag
+- **Natural language** - Supports "today", "tomorrow", "next week", "next month"
+- **Date formats** - ISO 8601 (YYYY-MM-DD), "Jan 15", "1/15/2025"
+- **Date filters** - `--due-before`, `--due-after`, `--has-due`, `--no-due`
+- **UI highlighting** - Overdue tasks shown in red, due today in orange
+
+### Sub-tasks
+- **Task hierarchies** - Create parent-child relationships with `--parent`
+- **Sub-task filters** - `--has-parent` (sub-tasks only), `--no-parent` (top-level only)
+- **Progress tracking** - Sub-task completion shown in task detail view
+- **Inheritance** - Sub-tasks inherit context from parent task
+
 ### Epics
 - **Epic management** - Group related tasks into epics
+- **Board-scoped** - Epics belong to a specific board (use `--board` flag)
 - **Epic CRUD** - Create, list, show, delete epics via CLI
 - **Task linking** - Link tasks to epics with `--epic` flag
+- **UI features** - Epic picker, sidebar list, detail view with progress
+
+> **Breaking Change**: Epics are now board-scoped instead of global. Existing global epics were removed during migration.
 
 ### Web UI
 - **Kanban board** - Drag and drop tasks between columns
@@ -56,7 +73,11 @@ A local-first kanban task manager with CLI and web UI. Built with agentic workfl
 - **Filter builder** - Advanced filtering with `F` key, supports multiple conditions
 - **Saved views** - Save filter configurations as reusable views with favorites
 - **Shortcuts help** - Press `?` to see all keyboard shortcuts
-- **Sidebar** - Board navigation, saved views, and board creation
+- **Sidebar** - Board navigation, saved views, epic list, and board creation
+- **Markdown editor** - Rich text editing with toolbar and preview mode
+- **Activity log** - Task history with relative timestamps and actor tracking
+- **Date picker** - Calendar picker with shortcuts (Today, Tomorrow, Next Week)
+- **Epic management** - Epic picker, sidebar list, and detail view with progress
 
 ### Theming
 - **Multiple built-in themes** - Dark, Light, Gruvbox Dark, Catppuccin Mocha, Nord, Tokyo Night
@@ -98,6 +119,13 @@ This creates a single `./egenskriven` binary with the UI embedded.
 # Add a task
 ./egenskriven add "Implement dark mode"
 ./egenskriven add "Fix login crash" --type bug --priority urgent
+
+# Add a task with due date
+./egenskriven add "Submit report" --due tomorrow
+./egenskriven add "Quarterly review" --due "2025-01-15"
+
+# Add a sub-task
+./egenskriven add "Write unit tests" --parent abc123
 
 # List tasks
 ./egenskriven list
@@ -150,10 +178,17 @@ This creates a single `./egenskriven` binary with the UI embedded.
 
 | Command | Description |
 |---------|-------------|
-| `epic list` | List all epics |
-| `epic add <title>` | Create a new epic |
+| `epic list` | List all epics (use `--board` to filter) |
+| `epic add <title>` | Create a new epic (use `--board` to specify board) |
 | `epic show <ref>` | Show epic details |
 | `epic delete <ref>` | Delete an epic |
+
+### Export/Import
+
+| Command | Description |
+|---------|-------------|
+| `export` | Export tasks and boards to JSON or CSV |
+| `import <file>` | Import from backup file |
 
 ### Agent Integration
 
@@ -303,6 +338,16 @@ The web UI provides a full-featured kanban board with:
 | `P` | Change priority |
 | `T` | Change type |
 
+**Markdown Editor (in description field):**
+| Key | Action |
+|-----|--------|
+| `Ctrl+B` | Bold |
+| `Ctrl+I` | Italic |
+| `Ctrl+E` | Inline code |
+| `Ctrl+K` | Insert link |
+| `Ctrl+Enter` | Save description |
+| `Escape` | Cancel editing |
+
 **Selection:**
 | Key | Action |
 |-----|--------|
@@ -445,6 +490,16 @@ The `list` command supports powerful filtering:
 ./egenskriven list --is-blocked      # Show blocked tasks
 ./egenskriven list --not-blocked     # Show unblocked tasks
 ./egenskriven list --ready           # Unblocked in todo/backlog
+
+# Due date filters
+./egenskriven list --due-before "2025-01-15"
+./egenskriven list --due-after tomorrow
+./egenskriven list --has-due         # Only tasks with due dates
+./egenskriven list --no-due          # Only tasks without due dates
+
+# Sub-task filters
+./egenskriven list --has-parent      # Show only sub-tasks
+./egenskriven list --no-parent       # Show only top-level tasks
 
 # Epic filter
 ./egenskriven list --epic "Q1 Launch"
@@ -590,6 +645,38 @@ EgenSkriven supports a hybrid mode that allows the CLI to work both when the ser
 | Direct (`--direct`) | No | Faster | No |
 
 > **Note**: Changes made via `--direct` mode are persisted to the database and will be visible in the UI when you refresh or restart the server.
+
+## Export/Import
+
+Backup and migrate your data:
+
+```bash
+# Export all data to JSON
+./egenskriven export --format json > backup.json
+
+# Export tasks only to CSV
+./egenskriven export --format csv > tasks.csv
+
+# Export specific board
+./egenskriven export --board work -o work-backup.json
+
+# Import with merge strategy (skip existing, add new)
+./egenskriven import backup.json
+
+# Import with replace strategy (overwrite existing)
+./egenskriven import backup.json --strategy replace
+
+# Preview import without making changes
+./egenskriven import backup.json --dry-run
+```
+
+**Export formats:**
+- `json` - Full data export (boards, epics, tasks) - suitable for backup/restore
+- `csv` - Tasks only - suitable for spreadsheet analysis
+
+**Import strategies:**
+- `merge` (default) - Skip records that already exist, add new ones
+- `replace` - Overwrite existing records with same ID
 
 ## Blocking Dependencies
 
