@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/spf13/cobra"
@@ -29,6 +30,7 @@ type TaskInput struct {
 	Labels      []string `json:"labels,omitempty"`
 	Epic        string   `json:"epic,omitempty"`
 	DueDate     string   `json:"due_date,omitempty"`
+	Parent      string   `json:"parent,omitempty"`
 }
 
 func newAddCmd(app *pocketbase.PocketBase) *cobra.Command {
@@ -45,6 +47,7 @@ func newAddCmd(app *pocketbase.PocketBase) *cobra.Command {
 		file      string
 		boardRef  string
 		dueDate   string
+		parent    string
 	)
 
 	cmd := &cobra.Command{
@@ -201,6 +204,16 @@ Examples:
 				record.Set("due_date", parsedDate)
 			}
 
+			// Handle parent (sub-task)
+			if parent != "" {
+				// Resolve parent task by ID or short ID
+				parentTask, err := resolveTaskByID(app, parent)
+				if err != nil {
+					return out.Error(ExitValidation, fmt.Sprintf("invalid parent: %v", err), nil)
+				}
+				record.Set("parent", parentTask.Id)
+			}
+
 			// Initialize history
 			history := []map[string]any{
 				{
@@ -261,6 +274,8 @@ Examples:
 		"Board to create task in (name or prefix)")
 	cmd.Flags().StringVar(&dueDate, "due", "",
 		"Due date (ISO 8601 format: YYYY-MM-DD, or relative: 'tomorrow', 'next week')")
+	cmd.Flags().StringVar(&parent, "parent", "",
+		"Parent task ID (creates sub-task)")
 
 	return cmd
 }
@@ -299,6 +314,37 @@ func resolveBoard(app *pocketbase.PocketBase, boardRef string) (*core.Record, er
 
 	// Use first board
 	return boards[0], nil
+}
+
+// resolveTaskByID finds a task by ID or ID prefix
+func resolveTaskByID(app *pocketbase.PocketBase, ref string) (*core.Record, error) {
+	// Try exact ID match
+	record, err := app.FindRecordById("tasks", ref)
+	if err == nil {
+		return record, nil
+	}
+
+	// Try ID prefix match (for short IDs like "abc1234")
+	records, err := app.FindAllRecords("tasks",
+		dbx.NewExp("id LIKE {:prefix}", dbx.Params{"prefix": ref + "%"}),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search tasks: %w", err)
+	}
+
+	switch len(records) {
+	case 0:
+		return nil, fmt.Errorf("no task found with ID: %s", ref)
+	case 1:
+		return records[0], nil
+	default:
+		var matches []string
+		for _, r := range records {
+			matches = append(matches, fmt.Sprintf("[%s] %s", shortID(r.Id), r.GetString("title")))
+		}
+		return nil, fmt.Errorf("ambiguous task ID prefix '%s' matches multiple tasks:\n  %s",
+			ref, strings.Join(matches, "\n  "))
+	}
 }
 
 // addBatch handles batch task creation from stdin or file
