@@ -31,6 +31,10 @@ func newListCmd(app *pocketbase.PocketBase) *cobra.Command {
 		sort       string
 		boardRef   string
 		allBoards  bool
+		dueBefore  string
+		dueAfter   string
+		hasDue     bool
+		noDue      bool
 	)
 
 	cmd := &cobra.Command{
@@ -202,6 +206,46 @@ Examples:
 				}
 			}
 
+			// Validate mutually exclusive due date flags
+			if hasDue && noDue {
+				return out.Error(ExitValidation,
+					"--has-due and --no-due are mutually exclusive", nil)
+			}
+
+			// Due date filters
+			if dueBefore != "" {
+				date, err := parseDate(dueBefore)
+				if err != nil {
+					return out.Error(ExitValidation, fmt.Sprintf("invalid --due-before date: %v", err), nil)
+				}
+				filters = append(filters, dbx.NewExp(
+					"due_date <= {:due_before}",
+					dbx.Params{"due_before": date},
+				))
+			}
+
+			if dueAfter != "" {
+				date, err := parseDate(dueAfter)
+				if err != nil {
+					return out.Error(ExitValidation, fmt.Sprintf("invalid --due-after date: %v", err), nil)
+				}
+				filters = append(filters, dbx.NewExp(
+					"due_date >= {:due_after}",
+					dbx.Params{"due_after": date},
+				))
+			}
+
+			if hasDue {
+				filters = append(filters, dbx.NewExp("due_date != '' AND due_date IS NOT NULL"))
+			}
+
+			if noDue {
+				filters = append(filters, dbx.Or(
+					dbx.NewExp("due_date = ''"),
+					dbx.NewExp("due_date IS NULL"),
+				))
+			}
+
 			// Execute query using RecordQuery for limit/sort support
 			var tasks []*core.Record
 
@@ -312,6 +356,14 @@ Examples:
 		"Filter by board (name or prefix)")
 	cmd.Flags().BoolVar(&allBoards, "all-boards", false,
 		"Show tasks from all boards")
+	cmd.Flags().StringVar(&dueBefore, "due-before", "",
+		"Tasks due before date (inclusive)")
+	cmd.Flags().StringVar(&dueAfter, "due-after", "",
+		"Tasks due after date (inclusive)")
+	cmd.Flags().BoolVar(&hasDue, "has-due", false,
+		"Only tasks with due date set")
+	cmd.Flags().BoolVar(&noDue, "no-due", false,
+		"Only tasks without due date")
 
 	return cmd
 }
