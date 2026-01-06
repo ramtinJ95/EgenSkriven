@@ -59,6 +59,16 @@ function isInputElement(element: Element | null): boolean {
 }
 
 /**
+ * Characters that inherently require Shift to produce on standard keyboards.
+ * For these characters, we should ignore the shiftKey state since the browser
+ * already incorporates it into event.key.
+ */
+const SHIFT_PRODUCED_CHARS = new Set([
+  '?', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+',
+  '{', '}', '|', ':', '"', '<', '>', '~',
+])
+
+/**
  * Check if a keyboard event matches a key combination.
  */
 function matchesCombo(event: KeyboardEvent, combo: KeyCombo): boolean {
@@ -78,8 +88,15 @@ function matchesCombo(event: KeyboardEvent, combo: KeyCombo): boolean {
   if (combo.meta && !metaOrCtrl) return false
   if (!combo.meta && metaOrCtrl && !combo.ctrl) return false
 
-  if (combo.shift && !event.shiftKey) return false
-  if (!combo.shift && event.shiftKey) return false
+  // For characters that require Shift to produce (like ?, !, @, etc.),
+  // the Shift key is part of producing the character itself, not an additional modifier.
+  // The event.key already reflects the shifted character, so we ignore shiftKey for these.
+  const isShiftProducedChar = SHIFT_PRODUCED_CHARS.has(combo.key)
+
+  if (!isShiftProducedChar) {
+    if (combo.shift && !event.shiftKey) return false
+    if (!combo.shift && event.shiftKey) return false
+  }
 
   if (combo.alt && !event.altKey) return false
   if (!combo.alt && event.altKey) return false

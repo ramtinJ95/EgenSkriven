@@ -4,12 +4,13 @@ import styles from './Header.module.css'
 interface HeaderProps {
   onDisplayOptionsClick?: () => void
   onSettingsClick?: () => void
+  onHelpClick?: () => void
 }
 
 /**
  * Application header with search and display options.
  */
-export function Header({ onDisplayOptionsClick, onSettingsClick }: HeaderProps) {
+export function Header({ onDisplayOptionsClick, onSettingsClick, onHelpClick }: HeaderProps) {
   return (
     <header className={styles.header}>
       <div className={styles.title}>
@@ -36,9 +37,13 @@ export function Header({ onDisplayOptionsClick, onSettingsClick }: HeaderProps) 
         >
           <SettingsIcon />
         </button>
-        <span className={styles.shortcut}>
+        <button
+          className={styles.shortcut}
+          onClick={onHelpClick}
+          title="Keyboard shortcuts (?)"
+        >
           <kbd>?</kbd> Help
-        </span>
+        </button>
       </div>
     </header>
   )
