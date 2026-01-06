@@ -3,7 +3,9 @@ package commands
 import (
 	"fmt"
 
+	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
+	"github.com/pocketbase/pocketbase/core"
 	"github.com/spf13/cobra"
 
 	"github.com/ramtinJ95/EgenSkriven/internal/resolver"
@@ -49,7 +51,19 @@ Examples:
 				return out.AmbiguousError(ref, resolution.Matches)
 			}
 
-			out.TaskDetail(resolution.Task)
+			task := resolution.Task
+
+			// Query for sub-tasks where parent = task.Id
+			var subtasks []*core.Record
+			collection, err := app.FindCollectionByNameOrId("tasks")
+			if err == nil {
+				query := app.RecordQuery(collection).
+					AndWhere(dbx.NewExp("parent = {:parent}", dbx.Params{"parent": task.Id})).
+					OrderBy("position ASC")
+				query.All(&subtasks)
+			}
+
+			out.TaskDetailWithSubtasks(task, subtasks)
 			return nil
 		},
 	}

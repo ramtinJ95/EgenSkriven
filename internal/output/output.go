@@ -215,6 +215,84 @@ func (f *Formatter) TaskDetail(task *core.Record) {
 	fmt.Println()
 }
 
+// TaskDetailWithSubtasks outputs detailed information about a task including its sub-tasks.
+func (f *Formatter) TaskDetailWithSubtasks(task *core.Record, subtasks []*core.Record) {
+	if f.JSON {
+		result := taskToMap(task)
+		result["subtasks"] = tasksToMaps(subtasks)
+		result["subtask_count"] = len(subtasks)
+		f.writeJSON(result)
+		return
+	}
+
+	fmt.Printf("\nTask: %s\n", task.Id)
+	fmt.Printf("Title:       %s\n", task.GetString("title"))
+	fmt.Printf("Type:        %s\n", task.GetString("type"))
+	fmt.Printf("Priority:    %s\n", task.GetString("priority"))
+	fmt.Printf("Column:      %s\n", task.GetString("column"))
+	fmt.Printf("Position:    %.0f\n", task.GetFloat("position"))
+
+	// Due date
+	if dueDate := task.GetDateTime("due_date"); !dueDate.IsZero() {
+		fmt.Printf("Due:         %s\n", dueDate.Time().Format("2006-01-02"))
+	}
+
+	// Parent task
+	if parent := task.GetString("parent"); parent != "" {
+		fmt.Printf("Parent:      %s\n", ShortID(parent))
+	}
+
+	// Labels
+	labels := getLabels(task)
+	if len(labels) > 0 {
+		fmt.Printf("Labels:      %s\n", strings.Join(labels, ", "))
+	} else {
+		fmt.Printf("Labels:      -\n")
+	}
+
+	// Blocked by
+	blockedBy := getBlockedBy(task)
+	if len(blockedBy) > 0 {
+		fmt.Printf("Blocked by:  %s\n", strings.Join(blockedBy, ", "))
+	}
+
+	// Created by
+	createdBy := task.GetString("created_by")
+	if agent := task.GetString("created_by_agent"); agent != "" {
+		fmt.Printf("Created by:  %s (%s)\n", createdBy, agent)
+	} else {
+		fmt.Printf("Created by:  %s\n", createdBy)
+	}
+
+	// Timestamps
+	fmt.Printf("Created:     %s\n", formatTime(task.GetDateTime("created").Time()))
+	fmt.Printf("Updated:     %s\n", formatTime(task.GetDateTime("updated").Time()))
+
+	// Description
+	if desc := task.GetString("description"); desc != "" {
+		fmt.Printf("\nDescription:\n  %s\n", strings.ReplaceAll(desc, "\n", "\n  "))
+	}
+
+	// Sub-tasks
+	if len(subtasks) > 0 {
+		fmt.Printf("\nSub-tasks (%d):\n", len(subtasks))
+		for _, st := range subtasks {
+			status := " "
+			if st.GetString("column") == "done" {
+				status = "x"
+			}
+			fmt.Printf("  [%s] [%s] %s (%s)\n",
+				status,
+				ShortID(st.Id),
+				st.GetString("title"),
+				st.GetString("column"),
+			)
+		}
+	}
+
+	fmt.Println()
+}
+
 // Success outputs a success message.
 func (f *Formatter) Success(message string) {
 	if f.Quiet {
