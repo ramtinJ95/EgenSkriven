@@ -23,6 +23,7 @@ import { PeekPreview } from './components/PeekPreview'
 import { FilterBuilder } from './components/FilterBuilder'
 import { DisplayOptions } from './components/DisplayOptions'
 import { Settings } from './components/Settings'
+import { EpicDetail } from './components/EpicDetail'
 import { COLUMNS, type Task, type Column } from './types/task'
 
 /**
@@ -107,6 +108,7 @@ function AppContent() {
   const [isFilterBuilderOpen, setIsFilterBuilderOpen] = useState(false)
   const [isDisplayOptionsOpen, setIsDisplayOptionsOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [epicDetailId, setEpicDetailId] = useState<string | null>(null)
 
   // Property picker states
   const [statusPickerOpen, setStatusPickerOpen] = useState(false)
@@ -789,6 +791,18 @@ function AppContent() {
       <Settings
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {/* Epic Detail View */}
+      <EpicDetail
+        epicId={epicDetailId}
+        tasks={tasks}
+        onClose={() => setEpicDetailId(null)}
+        onTaskClick={(task) => {
+          setEpicDetailId(null)
+          selectTask(task.id)
+          setIsDetailOpen(true)
+        }}
       />
     </Layout>
   )
