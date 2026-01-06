@@ -7,5 +7,5 @@
     "structuredSections": false
   },
   "server": {},
-  "default_board": "PROD"
+  "default_board": "CLITST"
 }
