@@ -17,25 +17,25 @@ export const tokyoNight: Theme = {
     // Backgrounds - Tokyo Night palette
     bgApp: '#1a1b26', // background
     bgSidebar: '#16161e', // background dark
-    bgCard: '#1f2335', // background highlight
-    bgCardHover: '#292e42', // terminal black
-    bgCardSelected: '#33394b', // line highlight
+    bgCard: '#1f2335', // background highlight (Storm dark)
+    bgCardHover: '#292e42', // highlight background / cursor line
+    bgCardSelected: '#283457', // visual selection
     bgInput: '#1a1b26', // background
     bgOverlay: 'rgba(22, 22, 30, 0.8)',
 
     // Text - Tokyo Night palette
     textPrimary: '#c0caf5', // foreground
-    textSecondary: '#9aa5ce', // foreground secondary
+    textSecondary: '#a9b1d6', // dark foreground / sidebar text
     textMuted: '#565f89', // comment
     textDisabled: '#414868', // terminal bright black
 
     // Borders
-    borderSubtle: '#292e42', // terminal black
-    borderDefault: '#33394b', // line highlight
+    borderSubtle: '#292e42', // highlight background
+    borderDefault: '#3b4261', // gutter foreground
 
     // Accent - Tokyo Night blue
     accent: '#7aa2f7', // blue
-    accentHover: '#89b4fa', // lighter blue
+    accentHover: '#8db0ff', // blue bright
     accentMuted: 'rgba(122, 162, 247, 0.2)',
 
     // Shadows

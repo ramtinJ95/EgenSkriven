@@ -88,7 +88,8 @@ export type BuiltinThemeId =
   | 'gruvbox-dark'
   | 'catppuccin-mocha'
   | 'nord'
-  | 'tokyo-night';
+  | 'tokyo-night'
+  | 'purple-dream';
 
 /**
  * Custom themes use string IDs prefixed with 'custom-'

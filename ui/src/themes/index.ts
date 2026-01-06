@@ -12,6 +12,7 @@ import { gruvboxDark } from './builtin/gruvbox-dark';
 import { catppuccinMocha } from './builtin/catppuccin-mocha';
 import { nord } from './builtin/nord';
 import { tokyoNight } from './builtin/tokyo-night';
+import { purpleDream } from './builtin/purple-dream';
 
 // Re-export types
 export type { Theme, ThemeColors, BuiltinThemeId, ThemeId } from './types';
@@ -28,6 +29,7 @@ export const builtinThemes: Record<BuiltinThemeId, Theme> = {
   'catppuccin-mocha': catppuccinMocha,
   nord,
   'tokyo-night': tokyoNight,
+  'purple-dream': purpleDream,
 };
 
 /**
