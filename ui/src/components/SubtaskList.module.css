@@ -1,0 +1,148 @@
+/* SubtaskList Component Styles */
+
+.subtaskList {
+  margin-top: var(--space-4, 16px);
+  padding-top: var(--space-4, 16px);
+  border-top: 1px solid var(--border-subtle, #2a2a2a);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2, 8px);
+}
+
+.title {
+  font-size: var(--text-sm, 12px);
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-secondary, #999999);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.count {
+  font-size: var(--text-xs, 11px);
+  color: var(--text-muted, #666666);
+  font-weight: var(--font-medium, 500);
+}
+
+/* Progress bar */
+.progressBar {
+  height: 4px;
+  background: var(--bg-input, #1f1f1f);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: var(--space-3, 12px);
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--accent, #5e6ad2);
+  border-radius: 2px;
+  transition: width 300ms ease;
+}
+
+/* Subtask list */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 4px);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-2, 8px);
+  border-radius: var(--radius-sm, 4px);
+  transition: background 100ms ease;
+}
+
+.item:hover {
+  background: var(--bg-card-hover, #252525);
+}
+
+.item.completed {
+  opacity: 0.7;
+}
+
+.item.completed .taskTitle {
+  text-decoration: line-through;
+  color: var(--text-muted, #666666);
+}
+
+/* Checkbox button */
+.checkbox {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-sm, 4px);
+  border: 1.5px solid var(--border-default, #333333);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 100ms ease;
+  padding: 0;
+}
+
+.checkbox:hover {
+  border-color: var(--accent, #5e6ad2);
+  background: var(--bg-card-hover, #252525);
+}
+
+.item.completed .checkbox {
+  background: var(--accent, #5e6ad2);
+  border-color: var(--accent, #5e6ad2);
+}
+
+.checkmark {
+  color: white;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.unchecked {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* Task button (clickable area for task details) */
+.taskButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2, 8px);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  min-width: 0;
+}
+
+.taskTitle {
+  flex: 1;
+  font-size: var(--text-sm, 12px);
+  color: var(--text-primary, #f5f5f5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.taskStatus {
+  flex-shrink: 0;
+  font-size: var(--text-xs, 11px);
+  color: var(--text-muted, #666666);
+  padding: 2px 6px;
+  background: var(--bg-input, #1f1f1f);
+  border-radius: var(--radius-sm, 4px);
+}
