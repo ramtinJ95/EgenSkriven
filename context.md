@@ -32,8 +32,32 @@ Phase 8 adds advanced features to EgenSkriven: Epic UI, Due Dates, Sub-tasks, Ma
 16. `feat(cli): add export command with JSON and CSV formats` - Created `internal/commands/export.go`
 17. `feat(cli): add import command with merge/replace strategies` - Created `internal/commands/import.go`
 18. `test(cli): add export and import integration tests` - Created `internal/commands/export_test.go` and `internal/commands/import_test.go`
+19. `feat(ui): add EpicPicker component for task epic assignment` - Created Epic type, useEpics hook, EpicPicker component and styles, integrated into TaskDetail
+20. `feat(ui): add EpicList component for sidebar epic filtering` - Created EpicList.tsx, EpicList.module.css, updated Sidebar.tsx, Layout.tsx, App.tsx
+21. `feat(ui): add EpicDetail view with progress and task list` - Created useEpic.ts hook, EpicDetail.tsx, EpicDetail.module.css, integrated into App.tsx
+22. `feat(ui): add overdue and due-today highlighting to TaskCard` - Updated TaskCard.tsx and TaskCard.module.css
 
-### Files Created
+### Files Created (This Session)
+
+| File | Purpose |
+|------|---------|
+| `ui/src/components/EpicList.tsx` | Sidebar component showing epics with task counts, filtering support |
+| `ui/src/components/EpicList.module.css` | CSS module styles for EpicList |
+| `ui/src/hooks/useEpic.ts` | Hook for single epic CRUD operations with real-time updates |
+| `ui/src/components/EpicDetail.tsx` | Full epic detail view with progress bar, task list by column, edit/delete |
+| `ui/src/components/EpicDetail.module.css` | CSS module styles for EpicDetail |
+
+### Files Modified (This Session)
+
+| File | Changes |
+|------|---------|
+| `ui/src/components/Sidebar.tsx` | Added EpicList integration, new props for tasks/epic filtering |
+| `ui/src/components/Layout.tsx` | Added props to pass tasks and epic filter state to Sidebar |
+| `ui/src/App.tsx` | Added epic filter state, EpicDetail state, handleSelectEpic callback, EpicDetail component |
+| `ui/src/components/TaskCard.tsx` | Added isOverdue/isDueToday logic, OverdueIcon, conditional styling |
+| `ui/src/components/TaskCard.module.css` | Added .overdue and .dueToday styles for due date highlighting |
+
+### All Files Created (Full Phase 8)
 
 | File | Purpose |
 |------|---------|
@@ -44,26 +68,21 @@ Phase 8 adds advanced features to EgenSkriven: Epic UI, Due Dates, Sub-tasks, Ma
 | `internal/commands/show_test.go` | Unit tests for show command sub-task display |
 | `internal/commands/export.go` | CLI command to export tasks/boards/epics to JSON or CSV |
 | `internal/commands/import.go` | CLI command to import data with merge/replace strategies |
-| `internal/commands/export_test.go` | Integration tests for export command (JSON, CSV, board filtering) |
-| `internal/commands/import_test.go` | Integration tests for import command (merge, replace, dry-run) |
+| `internal/commands/export_test.go` | Integration tests for export command |
+| `internal/commands/import_test.go` | Integration tests for import command |
 | `ui/src/components/DatePicker.tsx` | Calendar date picker with month navigation and quick shortcuts |
 | `ui/src/components/DatePicker.module.css` | CSS module styles for DatePicker |
 | `ui/src/components/SubtaskList.tsx` | Component to display sub-tasks with progress bar |
 | `ui/src/components/SubtaskList.module.css` | CSS module styles for SubtaskList |
-
-### Files Modified
-
-| File | Changes |
-|------|---------|
-| `internal/commands/add.go` | Added `--due` flag, `--parent` flag, `TaskInput.DueDate`, `TaskInput.Parent`, `resolveTaskByID()` function |
-| `internal/commands/list.go` | Added `--due-before`, `--due-after`, `--has-due`, `--no-due`, `--has-parent`, `--no-parent` flags |
-| `internal/commands/show.go` | Added sub-task query and display logic using `TaskDetailWithSubtasks` |
-| `internal/commands/root.go` | Registered `newExportCmd` and `newImportCmd` commands |
-| `internal/output/output.go` | Added `TaskDetailWithSubtasks()` method for displaying task with sub-tasks |
-| `ui/src/components/TaskDetail.tsx` | Integrated DatePicker and SubtaskList components, added `tasks` and `onTaskClick` props |
-| `ui/src/components/TaskDetail.test.tsx` | Updated tests to include new required `tasks` prop |
-| `ui/src/App.tsx` | Pass `tasks` array and `onTaskClick` handler to TaskDetail |
-| `ui/src/types/task.ts` | Added `parent?: string` field to Task interface |
+| `ui/src/types/epic.ts` | Epic type definition with EPIC_COLORS constant |
+| `ui/src/hooks/useEpics.ts` | Hook for fetching all epics with real-time updates and CRUD |
+| `ui/src/hooks/useEpic.ts` | Hook for single epic CRUD operations |
+| `ui/src/components/EpicPicker.tsx` | Dropdown component for selecting epic on a task |
+| `ui/src/components/EpicPicker.module.css` | CSS module styles for EpicPicker |
+| `ui/src/components/EpicList.tsx` | Sidebar component for epic filtering with task counts |
+| `ui/src/components/EpicList.module.css` | CSS module styles for EpicList |
+| `ui/src/components/EpicDetail.tsx` | Epic detail view with progress and task list |
+| `ui/src/components/EpicDetail.module.css` | CSS module styles for EpicDetail |
 
 ---
 
@@ -71,54 +90,34 @@ Phase 8 adds advanced features to EgenSkriven: Epic UI, Due Dates, Sub-tasks, Ma
 
 ### Next Task to Work On
 
-**p8-12**: Create EpicPicker.tsx component for task epic assignment
+**p8-20-test**: Test EpicDetail view functionality (using ui-test-engineer)
 
-This is the start of the Epic UI features (8.5, 8.6, 8.7). The recommended order is:
-1. p8-13: Create useEpics hook first (data fetching)
-2. p8-12: Create EpicPicker component
-3. p8-14: Create EpicPicker styles
-4. p8-14-test: Test EpicPicker
+Then continue with:
+- p8-21-test: Test TaskCard overdue highlighting
+- p8-26: Create MarkdownEditor.tsx component
 
-### Remaining High Priority Tasks (2 items)
+### Remaining Tasks (10 items)
 
-| ID | Task |
-|----|------|
-| p8-36 | Final verification: Run all CLI tests |
-| p8-37 | Final verification: Run all UI tests |
-
-### Remaining Medium Priority Tasks (17 items)
-
-| ID | Task | Category |
-|----|------|----------|
-| p8-12 | Create EpicPicker.tsx component for task epic assignment | Epic UI (8.5) |
-| p8-13 | Create useEpics hook in hooks/ for fetching all epics | Epic UI (8.5) |
-| p8-14 | Create EpicPicker.module.css styles | Epic UI (8.5) |
-| p8-14-test | Test EpicPicker component functionality | Epic UI (8.5) |
-| p8-15 | Create EpicList.tsx component for sidebar with task counts | Epic UI (8.6) |
-| p8-16 | Create EpicList.module.css styles | Epic UI (8.6) |
-| p8-17 | Integrate EpicList into Sidebar.tsx | Epic UI (8.6) |
-| p8-17-test | Test EpicList sidebar integration | Epic UI (8.6) |
-| p8-18 | Create EpicDetail.tsx view for epic progress and task list | Epic UI (8.7) |
-| p8-19 | Create useEpic(id) hook for single epic CRUD operations | Epic UI (8.7) |
-| p8-20 | Create EpicDetail.module.css styles | Epic UI (8.7) |
-| p8-20-test | Test EpicDetail view functionality | Epic UI (8.7) |
-| p8-21 | Update TaskCard.tsx - Add overdue highlighting logic | TaskCard (8.8) |
-| p8-21-test | Test TaskCard overdue highlighting | TaskCard (8.8) |
-| p8-26 | Create MarkdownEditor.tsx component with toolbar | MarkdownEditor (8.10) |
-| p8-27 | Create MarkdownEditor.module.css styles | MarkdownEditor (8.10) |
-| p8-28 | Integrate MarkdownEditor into TaskDetail.tsx | MarkdownEditor (8.10) |
-| p8-28-test | Test MarkdownEditor functionality | MarkdownEditor (8.10) |
-| p8-29 | Create ActivityLog.tsx component for task history display | ActivityLog (8.11) |
-| p8-30 | Create ActivityLog.module.css styles | ActivityLog (8.11) |
-| p8-31 | Integrate ActivityLog into TaskDetail.tsx | ActivityLog (8.11) |
-| p8-31-test | Test ActivityLog display | ActivityLog (8.11) |
-| p8-35 | Integrate EpicPicker into TaskDetail.tsx for epic assignment | EpicPicker Integration (8.13) |
+| ID | Task | Category | Status |
+|----|------|----------|--------|
+| p8-20-test | Test EpicDetail view functionality | Epic UI (8.7) | pending |
+| p8-21-test | Test TaskCard overdue highlighting | TaskCard (8.8) | pending |
+| p8-26 | Create MarkdownEditor.tsx component with toolbar | MarkdownEditor (8.10) | pending |
+| p8-27 | Create MarkdownEditor.module.css styles | MarkdownEditor (8.10) | pending |
+| p8-28 | Integrate MarkdownEditor into TaskDetail.tsx | MarkdownEditor (8.10) | pending |
+| p8-28-test | Test MarkdownEditor functionality | MarkdownEditor (8.10) | pending |
+| p8-29 | Create ActivityLog.tsx component for task history | ActivityLog (8.11) | pending |
+| p8-30 | Create ActivityLog.module.css styles | ActivityLog (8.11) | pending |
+| p8-31 | Integrate ActivityLog into TaskDetail.tsx | ActivityLog (8.11) | pending |
+| p8-31-test | Test ActivityLog display | ActivityLog (8.11) | pending |
+| p8-36 | Final Verification: Run all CLI tests | Final | pending |
+| p8-37 | Final Verification: Run all UI tests | Final | pending |
 
 ---
 
 ## Full Todo List (for next session)
 
-Copy this JSON to recreate the todo list:
+Copy this JSON to recreate the todo list using TodoWrite:
 
 ```json
 [
@@ -136,19 +135,20 @@ Copy this JSON to recreate the todo list:
   {"id": "p8-10", "content": "8.4 UI: Create DatePicker.module.css styles (following existing CSS Modules pattern)", "status": "completed", "priority": "high"},
   {"id": "p8-11", "content": "8.4 UI: Integrate DatePicker into TaskDetail.tsx for due_date editing", "status": "completed", "priority": "high"},
   {"id": "p8-11-test", "content": "8.4 TEST: Use ui-test-engineer to test DatePicker component functionality", "status": "completed", "priority": "high"},
-  {"id": "p8-12", "content": "8.5 UI: Create EpicPicker.tsx component for task epic assignment", "status": "pending", "priority": "medium"},
-  {"id": "p8-13", "content": "8.5 UI: Create useEpics hook in hooks/ for fetching all epics with real-time updates", "status": "pending", "priority": "medium"},
-  {"id": "p8-14", "content": "8.5 UI: Create EpicPicker.module.css styles", "status": "pending", "priority": "medium"},
-  {"id": "p8-14-test", "content": "8.5 TEST: Use ui-test-engineer to test EpicPicker component functionality", "status": "pending", "priority": "medium"},
-  {"id": "p8-15", "content": "8.6 UI: Create EpicList.tsx component for sidebar with task counts", "status": "pending", "priority": "medium"},
-  {"id": "p8-16", "content": "8.6 UI: Create EpicList.module.css styles", "status": "pending", "priority": "medium"},
-  {"id": "p8-17", "content": "8.6 UI: Integrate EpicList into Sidebar.tsx", "status": "pending", "priority": "medium"},
-  {"id": "p8-17-test", "content": "8.6 TEST: Use ui-test-engineer to test EpicList sidebar integration", "status": "pending", "priority": "medium"},
-  {"id": "p8-18", "content": "8.7 UI: Create EpicDetail.tsx view for epic progress and task list", "status": "pending", "priority": "medium"},
-  {"id": "p8-19", "content": "8.7 UI: Create useEpic(id) hook for single epic CRUD operations", "status": "pending", "priority": "medium"},
-  {"id": "p8-20", "content": "8.7 UI: Create EpicDetail.module.css styles", "status": "pending", "priority": "medium"},
+  {"id": "p8-13", "content": "8.5 UI: Create useEpics hook in hooks/ for fetching all epics with real-time updates", "status": "completed", "priority": "medium"},
+  {"id": "p8-12", "content": "8.5 UI: Create EpicPicker.tsx component for task epic assignment", "status": "completed", "priority": "medium"},
+  {"id": "p8-14", "content": "8.5 UI: Create EpicPicker.module.css styles", "status": "completed", "priority": "medium"},
+  {"id": "p8-35", "content": "8.5 UI: Integrate EpicPicker into TaskDetail.tsx for epic assignment", "status": "completed", "priority": "medium"},
+  {"id": "p8-14-test", "content": "8.5 TEST: Use ui-test-engineer to test EpicPicker component functionality", "status": "completed", "priority": "medium"},
+  {"id": "p8-15", "content": "8.6 UI: Create EpicList.tsx component for sidebar with task counts", "status": "completed", "priority": "medium"},
+  {"id": "p8-16", "content": "8.6 UI: Create EpicList.module.css styles", "status": "completed", "priority": "medium"},
+  {"id": "p8-17", "content": "8.6 UI: Integrate EpicList into Sidebar.tsx", "status": "completed", "priority": "medium"},
+  {"id": "p8-17-test", "content": "8.6 TEST: Use ui-test-engineer to test EpicList sidebar integration", "status": "completed", "priority": "medium"},
+  {"id": "p8-19", "content": "8.7 UI: Create useEpic(id) hook for single epic CRUD operations", "status": "completed", "priority": "medium"},
+  {"id": "p8-18", "content": "8.7 UI: Create EpicDetail.tsx view for epic progress and task list", "status": "completed", "priority": "medium"},
+  {"id": "p8-20", "content": "8.7 UI: Create EpicDetail.module.css styles", "status": "completed", "priority": "medium"},
   {"id": "p8-20-test", "content": "8.7 TEST: Use ui-test-engineer to test EpicDetail view functionality", "status": "pending", "priority": "medium"},
-  {"id": "p8-21", "content": "8.8 UI: Update TaskCard.tsx - Add overdue highlighting logic for due dates", "status": "pending", "priority": "medium"},
+  {"id": "p8-21", "content": "8.8 UI: Update TaskCard.tsx - Add overdue highlighting logic for due dates", "status": "completed", "priority": "medium"},
   {"id": "p8-21-test", "content": "8.8 TEST: Use ui-test-engineer to test TaskCard overdue highlighting", "status": "pending", "priority": "medium"},
   {"id": "p8-22", "content": "8.9 UI: Create SubtaskList.tsx component for task detail panel", "status": "completed", "priority": "high"},
   {"id": "p8-23", "content": "8.9 UI: Create SubtaskList.module.css styles", "status": "completed", "priority": "high"},
@@ -166,7 +166,6 @@ Copy this JSON to recreate the todo list:
   {"id": "p8-32", "content": "8.12 CLI: Create internal/commands/export.go command with JSON and CSV formats", "status": "completed", "priority": "high"},
   {"id": "p8-33", "content": "8.12 CLI: Create internal/commands/import.go command with merge/replace strategies", "status": "completed", "priority": "high"},
   {"id": "p8-34", "content": "8.12 Tests: Write export_test.go and import_test.go integration tests", "status": "completed", "priority": "high"},
-  {"id": "p8-35", "content": "8.13 UI: Integrate EpicPicker into TaskDetail.tsx for epic assignment", "status": "pending", "priority": "medium"},
   {"id": "p8-36", "content": "Final Verification: Run all CLI tests (go test ./...)", "status": "pending", "priority": "high"},
   {"id": "p8-37", "content": "Final Verification: Run all UI tests (npm test in ui/)", "status": "pending", "priority": "high"}
 ]
@@ -184,9 +183,35 @@ Migrations are numbered sequentially. Existing: 1-8. New: 9 (due_dates), 10 (sub
 
 ### Existing Functionality to Leverage
 - `history` field already exists in tasks (JSON array) - just needs UI display
-- `due_date` already typed in TypeScript and displayed in TaskCard (read-only)
+- `due_date` already typed in TypeScript and displayed in TaskCard (now with overdue highlighting)
 - ReactMarkdown already integrated for description preview
 - Epics collection and CLI commands already exist
+
+### Epic UI Implementation Details
+
+**EpicList (8.6)** - Sidebar epic filtering:
+- `ui/src/components/EpicList.tsx` - Shows all epics with task counts
+- Uses `useEpics()` hook for epic data
+- Computes task counts client-side using `useMemo`
+- Supports "All Tasks", individual epics, and "No Epic" filter
+- Integrates with filter store to add/remove epic filters
+- Props passed through Layout -> Sidebar -> EpicList
+
+**EpicDetail (8.7)** - Full epic view:
+- `ui/src/hooks/useEpic.ts` - Single epic CRUD with real-time updates
+- `ui/src/components/EpicDetail.tsx` - Modal overlay with:
+  - Color bar, title, description
+  - Edit mode with title/description/color picker
+  - Progress bar (completed/total tasks)
+  - Task list grouped by column
+  - Delete with confirmation
+- Integrated into App.tsx with `epicDetailId` state
+
+**TaskCard Overdue (8.8)**:
+- Added `isOverdue` and `isDueToday` computed values
+- OverdueIcon SVG for visual indicator
+- CSS classes `.overdue` (red) and `.dueToday` (orange)
+- Only shows overdue if task is not done
 
 ### Export/Import Command Details
 
@@ -202,11 +227,6 @@ Migrations are numbered sequentially. Existing: 1-8. New: 9 (due_dates), 10 (sub
 - Supports `--dry-run` to preview without making changes
 - Imports boards, epics, and tasks from JSON backup
 - Preserves original IDs for referential integrity
-
-### Export/Import Test Notes
-- PocketBase requires record IDs to be at least 15 characters
-- Test IDs use format like `board1testid001`, `task1testid0001`
-- `out.Error()` calls `os.Exit()` which terminates the test process, so error path tests verify the underlying operations directly
 
 ### Testing Approach
 After each UI feature, use `ui-test-engineer` agent to create/run Playwright tests.
@@ -225,9 +245,6 @@ All commits should be conventional commits, max 70 characters:
 - `test(cli):` or `test(ui):` for tests
 - `fix(ui):` for bug fixes
 
-### Known Issues Found During Testing
-1. **DatePicker database issue**: The `due_date` field migration needs to be applied to the running database instance. The migration file exists but may not be applied if using an existing database.
-
 ---
 
 ## How to Continue
@@ -235,13 +252,12 @@ All commits should be conventional commits, max 70 characters:
 1. Read this context file
 2. Read `docs/phase-8.md` for detailed implementation specs
 3. Use the TodoWrite tool to recreate the todo list from the JSON above
-4. Start with task p8-12 (next pending task: EpicPicker component)
-5. Recommended order for Epic UI:
-   - p8-13 (useEpics hook) -> p8-12 (EpicPicker) -> p8-14 (styles) -> p8-14-test
-   - p8-15 (EpicList) -> p8-16 (styles) -> p8-17 (sidebar integration) -> p8-17-test
-   - p8-19 (useEpic hook) -> p8-18 (EpicDetail) -> p8-20 (styles) -> p8-20-test
-6. After each task, commit with conventional commit format
-7. For UI tasks, run ui-test-engineer after implementation (see `docs/ui-test-instructions.md`)
+4. Next tasks to work on:
+   - p8-20-test: Test EpicDetail (start dev server first!)
+   - p8-21-test: Test TaskCard overdue highlighting
+   - p8-26: Create MarkdownEditor.tsx component
+5. After each feature group, commit with conventional commit format
+6. For UI tests, follow `docs/ui-test-instructions.md`
 
 ---
 
@@ -272,6 +288,9 @@ cd ui && npm test
 # Check dev server status
 curl -s -o /dev/null -w "%{http_code}" http://localhost:5173
 
+# Kill processes on common ports (if needed)
+lsof -ti:5173 | xargs kill -9 2>/dev/null
+
 # Test export command
 ./egenskriven export --format json
 ./egenskriven export --format csv
@@ -284,34 +303,62 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:5173
 
 ## Progress Summary
 
-**Completed**: 22/37 tasks (59%)
-- All CLI due date features (p8-1 through p8-4, p8-2-test)
-- All CLI sub-task features (p8-5 through p8-8, p8-8-test)
-- DatePicker UI component (p8-9 through p8-11-test)
-- SubtaskList UI component (p8-22 through p8-25-test)
-- Export/Import CLI commands with tests (p8-32, p8-33, p8-34)
+**Completed**: 35/47 tasks (74%)
 
-**Remaining High Priority**: 2 tasks (p8-36, p8-37) - Final verification
-**Remaining Medium Priority**: 17 tasks
-- Epic UI (p8-12 through p8-20-test): 9 tasks
-- TaskCard overdue (p8-21, p8-21-test): 2 tasks
-- MarkdownEditor (p8-26 through p8-28-test): 4 tasks
-- ActivityLog (p8-29 through p8-31-test): 4 tasks
-- EpicPicker integration (p8-35): 1 task
+### Completed Features:
+- **8.1 Due Dates Migration** (p8-1): migrations/9_due_dates.go
+- **8.2 Due Dates CLI** (p8-2, p8-3, p8-4, p8-2-test): date_parser.go, --due flag, filter flags, tests
+- **8.3 Sub-tasks Migration & CLI** (p8-5 through p8-8-test): migrations/10_subtasks.go, --parent flag, show command
+- **8.4 DatePicker UI** (p8-9 through p8-11-test): DatePicker component, styles, integration, tested
+- **8.5 EpicPicker UI** (p8-12, p8-13, p8-14, p8-35, p8-14-test): Epic type, useEpics hook, EpicPicker, integration, tested
+- **8.6 EpicList UI** (p8-15, p8-16, p8-17, p8-17-test): EpicList component, styles, sidebar integration, tested
+- **8.7 EpicDetail UI** (p8-18, p8-19, p8-20): useEpic hook, EpicDetail component, styles - NEEDS TESTING
+- **8.8 TaskCard Overdue** (p8-21): Overdue highlighting logic - NEEDS TESTING
+- **8.9 SubtaskList UI** (p8-22 through p8-25-test): SubtaskList component, styles, integration, tested
+- **8.12 Export/Import CLI** (p8-32, p8-33, p8-34): export.go, import.go, tests
+
+### Remaining:
+- **8.7 EpicDetail Test** (p8-20-test): UI test needed - 1 task
+- **8.8 TaskCard Test** (p8-21-test): UI test needed - 1 task
+- **8.10 MarkdownEditor** (p8-26, p8-27, p8-28, p8-28-test): Rich text editing - 4 tasks
+- **8.11 ActivityLog** (p8-29, p8-30, p8-31, p8-31-test): Task history display - 4 tasks
+- **Final Verification** (p8-36, p8-37): Run all tests - 2 tasks
 
 ---
 
-## Recent Session Summary (This Session)
+## Session Summary (2026-01-06)
 
-In this session we:
-1. Recreated the todo list from context.md
-2. Completed p8-34: Created export_test.go and import_test.go integration tests
-   - Tests for JSON and CSV export formats
-   - Tests for board filtering in export
-   - Tests for merge and replace import strategies
-   - Tests for dry-run mode
-   - Tests for helper functions (getExportStringSlice, findExportBoardByNameOrPrefix)
-   - Fixed PocketBase ID length requirement (15+ chars)
-3. All CLI tests pass (`go test ./...`)
+### What Was Done This Session:
 
-**Current State**: All high-priority CLI tasks are complete. The remaining work is primarily UI components for Epic management, TaskCard overdue highlighting, MarkdownEditor, and ActivityLog.
+1. **Recreated todo list** from previous context.md
+
+2. **Completed 8.6 EpicList UI** (sidebar epic filtering):
+   - Created `ui/src/components/EpicList.tsx` with task counts per epic
+   - Created `ui/src/components/EpicList.module.css` matching dark theme
+   - Updated `ui/src/components/Sidebar.tsx` to include EpicList
+   - Updated `ui/src/components/Layout.tsx` to pass tasks and epic props
+   - Updated `ui/src/App.tsx` with epic filter state and handler
+   - Committed: `feat(ui): add EpicList component for sidebar epic filtering`
+
+3. **Completed 8.7 EpicDetail UI** (epic detail view):
+   - Created `ui/src/hooks/useEpic.ts` for single epic CRUD
+   - Created `ui/src/components/EpicDetail.tsx` with progress bar, task list, edit/delete
+   - Created `ui/src/components/EpicDetail.module.css` with full styling
+   - Integrated EpicDetail into App.tsx
+   - Committed: `feat(ui): add EpicDetail view with progress and task list`
+
+4. **Completed 8.8 TaskCard Overdue** (overdue highlighting):
+   - Added `isOverdue` and `isDueToday` computed values to TaskCard.tsx
+   - Added OverdueIcon SVG component
+   - Added `.overdue` and `.dueToday` CSS classes
+   - Committed: `feat(ui): add overdue and due-today highlighting to TaskCard`
+
+### Current State:
+- All implementation for 8.6, 8.7, 8.8 is complete
+- UI tests for EpicDetail (p8-20-test) and TaskCard overdue (p8-21-test) still pending
+- Next implementation work: 8.10 MarkdownEditor
+
+### Git Status:
+- Branch: `implement-phase-8`
+- 4 commits ahead of origin
+- All changes committed
