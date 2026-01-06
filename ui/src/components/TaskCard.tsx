@@ -62,12 +62,10 @@ function TaskCardComponent({ task, isSelected = false, onClick, onSelect, curren
   // Check if task is overdue (due date in the past and not done)
   const isOverdue = (() => {
     if (!task.due_date || task.column === 'done') return false
-    const dueDate = new Date(task.due_date)
-    const today = new Date()
-    // Set both to start of day for comparison
-    dueDate.setHours(0, 0, 0, 0)
-    today.setHours(0, 0, 0, 0)
-    return dueDate < today
+    // Compare timestamps at start of day without mutating Date objects
+    const dueDateStart = new Date(task.due_date).setHours(0, 0, 0, 0)
+    const todayStart = new Date().setHours(0, 0, 0, 0)
+    return dueDateStart < todayStart
   })()
 
   // Check if task is due today

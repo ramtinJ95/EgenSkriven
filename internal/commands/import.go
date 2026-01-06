@@ -273,30 +273,20 @@ func importTasks(app *pocketbase.PocketBase, tasks []ExportTask, strategy string
 			// Record exists
 			if strategy == "replace" {
 				if !dryRun {
+					// Replace strategy: set all fields from import data
+					// Empty values in import data will clear the fields
 					existing.Set("title", t.Title)
 					existing.Set("description", t.Description)
 					existing.Set("type", t.Type)
 					existing.Set("priority", t.Priority)
 					existing.Set("column", t.Column)
 					existing.Set("position", t.Position)
-					if t.Board != "" {
-						existing.Set("board", t.Board)
-					}
-					if t.Epic != "" {
-						existing.Set("epic", t.Epic)
-					}
-					if t.Parent != "" {
-						existing.Set("parent", t.Parent)
-					}
-					if len(t.Labels) > 0 {
-						existing.Set("labels", t.Labels)
-					}
-					if len(t.BlockedBy) > 0 {
-						existing.Set("blocked_by", t.BlockedBy)
-					}
-					if t.DueDate != "" {
-						existing.Set("due_date", t.DueDate)
-					}
+					existing.Set("board", t.Board)          // Clear if empty
+					existing.Set("epic", t.Epic)            // Clear if empty
+					existing.Set("parent", t.Parent)        // Clear if empty
+					existing.Set("labels", t.Labels)        // Clear if nil/empty
+					existing.Set("blocked_by", t.BlockedBy) // Clear if nil/empty
+					existing.Set("due_date", t.DueDate)     // Clear if empty
 					if err := app.Save(existing); err != nil {
 						return fmt.Errorf("failed to update task %s: %w", t.Title, err)
 					}
@@ -318,7 +308,12 @@ func importTasks(app *pocketbase.PocketBase, tasks []ExportTask, strategy string
 			record.Set("priority", t.Priority)
 			record.Set("column", t.Column)
 			record.Set("position", t.Position)
-			record.Set("created_by", "cli") // Set created_by for imported tasks
+			// Preserve original created_by if available, otherwise default to "cli"
+			if t.CreatedBy != "" {
+				record.Set("created_by", t.CreatedBy)
+			} else {
+				record.Set("created_by", "cli")
+			}
 			if t.Board != "" {
 				record.Set("board", t.Board)
 			}

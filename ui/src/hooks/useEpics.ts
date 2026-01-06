@@ -97,6 +97,8 @@ export function useEpics(): UseEpicsReturn {
       })
       .catch((err) => {
         console.error('Failed to subscribe to epic updates:', err)
+        // Surface subscription errors to the component
+        setError(err instanceof Error ? err : new Error('Failed to subscribe to epic updates'))
       })
 
     // Cleanup subscription on unmount

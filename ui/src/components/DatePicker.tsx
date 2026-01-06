@@ -120,8 +120,12 @@ export function DatePicker({ value, onChange, placeholder = 'Set due date' }: Da
 
   // Handle date selection
   const handleSelectDate = (date: Date) => {
-    // Format as ISO date string (YYYY-MM-DD)
-    const isoDate = date.toISOString().split('T')[0]
+    // Format as ISO date string (YYYY-MM-DD) using local date values
+    // Note: Using toISOString() would convert to UTC and could shift the date
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const isoDate = `${year}-${month}-${day}`
     onChange(isoDate)
     setIsOpen(false)
   }

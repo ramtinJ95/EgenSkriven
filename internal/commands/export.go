@@ -57,6 +57,7 @@ type ExportTask struct {
 	Labels      []string `json:"labels,omitempty"`
 	BlockedBy   []string `json:"blocked_by,omitempty"`
 	DueDate     string   `json:"due_date,omitempty"`
+	CreatedBy   string   `json:"created_by,omitempty"`
 	Created     string   `json:"created"`
 	Updated     string   `json:"updated"`
 }
@@ -202,6 +203,7 @@ func exportJSON(app *pocketbase.PocketBase, boardFilter string, writer *os.File,
 			Labels:      getExportStringSlice(t.Get("labels")),
 			BlockedBy:   getExportStringSlice(t.Get("blocked_by")),
 			DueDate:     t.GetString("due_date"),
+			CreatedBy:   t.GetString("created_by"),
 			Created:     t.GetDateTime("created").Time().Format(time.RFC3339),
 			Updated:     t.GetDateTime("updated").Time().Format(time.RFC3339),
 		})
