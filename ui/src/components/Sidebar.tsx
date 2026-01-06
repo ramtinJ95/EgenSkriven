@@ -1,12 +1,20 @@
 import { useState } from 'react'
 import { useCurrentBoard } from '../contexts'
 import { BOARD_COLORS } from '../types/board'
+import type { Task } from '../types/task'
 import { ViewsSidebar } from './ViewsSidebar'
+import { EpicList } from './EpicList'
 import styles from './Sidebar.module.css'
 
 interface SidebarProps {
   collapsed: boolean
   onToggle: () => void
+  /** Tasks for epic count calculation */
+  tasks?: Task[]
+  /** Currently selected epic filter */
+  selectedEpicId?: string | null
+  /** Callback when epic filter changes */
+  onSelectEpic?: (epicId: string | null) => void
 }
 
 /**
@@ -18,7 +26,7 @@ interface SidebarProps {
  * - New board creation modal
  * - Board color indicators
  */
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, tasks = [], selectedEpicId, onSelectEpic }: SidebarProps) {
   const { boards, loading, boardsError: error, createBoard, currentBoard, setCurrentBoard } = useCurrentBoard()
   const [showNewBoard, setShowNewBoard] = useState(false)
 
@@ -91,6 +99,15 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
         {/* Views section - only show when a board is selected */}
         <ViewsSidebar boardId={currentBoard?.id || null} />
+
+        {/* Epics section - only show when a board is selected and handler provided */}
+        {currentBoard && onSelectEpic && (
+          <EpicList
+            tasks={tasks}
+            selectedEpicId={selectedEpicId}
+            onSelectEpic={onSelectEpic}
+          />
+        )}
       </nav>
 
       {showNewBoard && (

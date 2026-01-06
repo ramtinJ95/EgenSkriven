@@ -47,9 +47,49 @@ function AppContent() {
   } = useSelection()
 
   // Filter state and hooks
+  const filters = useFilterStore((s) => s.filters)
+  const addFilter = useFilterStore((s) => s.addFilter)
+  const removeFilter = useFilterStore((s) => s.removeFilter)
   const displayOptions = useFilterStore((s) => s.displayOptions)
   const setDisplayOptions = useFilterStore((s) => s.setDisplayOptions)
   const clearView = useFilterStore((s) => s.clearView)
+
+  // Get current epic filter from filters array
+  const selectedEpicId = useMemo(() => {
+    const epicFilter = filters.find((f) => f.field === 'epic')
+    if (!epicFilter) return null
+    if (epicFilter.operator === 'is_not_set') return 'none'
+    if (epicFilter.operator === 'is' && typeof epicFilter.value === 'string') {
+      return epicFilter.value
+    }
+    return null
+  }, [filters])
+
+  // Handle epic selection from sidebar
+  const handleSelectEpic = useCallback(
+    (epicId: string | null) => {
+      // First, remove any existing epic filter
+      const existingEpicFilter = filters.find((f) => f.field === 'epic')
+      if (existingEpicFilter) {
+        removeFilter(existingEpicFilter.id)
+      }
+
+      // If null (All Tasks), don't add a new filter
+      if (epicId === null) {
+        return
+      }
+
+      // Add new epic filter
+      if (epicId === 'none') {
+        // Filter for tasks without an epic
+        addFilter({ field: 'epic', operator: 'is_not_set', value: null })
+      } else {
+        // Filter for specific epic
+        addFilter({ field: 'epic', operator: 'is', value: epicId })
+      }
+    },
+    [filters, addFilter, removeFilter]
+  )
 
   // Apply search debouncing (updates debouncedSearchQuery in store)
   useSearchDebounce()
@@ -602,6 +642,9 @@ function AppContent() {
       onOpenFilterBuilder={() => setIsFilterBuilderOpen(true)}
       onOpenDisplayOptions={() => setIsDisplayOptionsOpen(true)}
       onOpenSettings={() => setIsSettingsOpen(true)}
+      tasks={tasks}
+      selectedEpicId={selectedEpicId}
+      onSelectEpic={handleSelectEpic}
     >
       {/* Selection count indicator - shows when multiple tasks are selected */}
       {multiSelectedIds.size > 0 && (
