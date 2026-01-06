@@ -23,6 +23,7 @@ describe('TaskDetail', () => {
 
   const defaultProps = {
     task: null as Task | null,
+    tasks: [] as Task[],
     onClose: vi.fn(),
     onUpdate: vi.fn(),
   }
@@ -92,7 +93,7 @@ describe('TaskDetail', () => {
       const user = userEvent.setup()
       const onUpdate = vi.fn().mockResolvedValue(undefined)
 
-      render(<TaskDetail task={mockTask} onClose={vi.fn()} onUpdate={onUpdate} />)
+      render(<TaskDetail task={mockTask} tasks={[]} onClose={vi.fn()} onUpdate={onUpdate} />)
 
       // Find the status select (first combobox - Status)
       const selects = screen.getAllByRole('combobox')
@@ -106,7 +107,7 @@ describe('TaskDetail', () => {
       const user = userEvent.setup()
       const onUpdate = vi.fn().mockResolvedValue(undefined)
 
-      render(<TaskDetail task={mockTask} onClose={vi.fn()} onUpdate={onUpdate} />)
+      render(<TaskDetail task={mockTask} tasks={[]} onClose={vi.fn()} onUpdate={onUpdate} />)
 
       // Find the type select (second combobox - Type)
       const selects = screen.getAllByRole('combobox')
@@ -120,7 +121,7 @@ describe('TaskDetail', () => {
       const user = userEvent.setup()
       const onUpdate = vi.fn().mockResolvedValue(undefined)
 
-      render(<TaskDetail task={mockTask} onClose={vi.fn()} onUpdate={onUpdate} />)
+      render(<TaskDetail task={mockTask} tasks={[]} onClose={vi.fn()} onUpdate={onUpdate} />)
 
       // Find the priority select (third combobox - Priority)
       const selects = screen.getAllByRole('combobox')
@@ -191,7 +192,7 @@ describe('TaskDetail', () => {
       const user = userEvent.setup()
       const onClose = vi.fn()
 
-      render(<TaskDetail task={mockTask} onClose={onClose} onUpdate={vi.fn()} />)
+      render(<TaskDetail task={mockTask} tasks={[]} onClose={onClose} onUpdate={vi.fn()} />)
 
       await user.keyboard('{Escape}')
 
@@ -202,7 +203,7 @@ describe('TaskDetail', () => {
       const user = userEvent.setup()
       const onClose = vi.fn()
 
-      render(<TaskDetail task={null} onClose={onClose} onUpdate={vi.fn()} />)
+      render(<TaskDetail task={null} tasks={[]} onClose={onClose} onUpdate={vi.fn()} />)
 
       await user.keyboard('{Escape}')
 
@@ -217,7 +218,7 @@ describe('TaskDetail', () => {
       const onClose = vi.fn()
 
       const { container } = render(
-        <TaskDetail task={mockTask} onClose={onClose} onUpdate={vi.fn()} />
+        <TaskDetail task={mockTask} tasks={[]} onClose={onClose} onUpdate={vi.fn()} />
       )
 
       const overlay = container.querySelector('[class*="overlay"]') as HTMLElement
@@ -230,7 +231,7 @@ describe('TaskDetail', () => {
       const user = userEvent.setup()
       const onClose = vi.fn()
 
-      render(<TaskDetail task={mockTask} onClose={onClose} onUpdate={vi.fn()} />)
+      render(<TaskDetail task={mockTask} tasks={[]} onClose={onClose} onUpdate={vi.fn()} />)
 
       // Click on the task title (inside the panel)
       await user.click(screen.getByRole('heading', { name: 'Test Task' }))
@@ -242,7 +243,7 @@ describe('TaskDetail', () => {
       const user = userEvent.setup()
       const onClose = vi.fn()
 
-      render(<TaskDetail task={mockTask} onClose={onClose} onUpdate={vi.fn()} />)
+      render(<TaskDetail task={mockTask} tasks={[]} onClose={onClose} onUpdate={vi.fn()} />)
 
       await user.click(screen.getByRole('button', { name: 'Close' }))
 
@@ -275,9 +276,11 @@ describe('TaskDetail', () => {
       expect(screen.getByText('Due Date')).toBeInTheDocument()
     })
 
-    it('does not render due date section when not present', () => {
+    it('renders due date section with placeholder when not set', () => {
       render(<TaskDetail {...defaultProps} task={mockTask} />)
-      expect(screen.queryByText('Due Date')).not.toBeInTheDocument()
+      // Due Date property is always shown (with DatePicker for editing)
+      expect(screen.getByText('Due Date')).toBeInTheDocument()
+      expect(screen.getByText('Set due date')).toBeInTheDocument()
     })
 
     it('renders blocked by when present', () => {

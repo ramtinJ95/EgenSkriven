@@ -14,12 +14,15 @@ import {
   type TaskType,
 } from '../types/task'
 import { DatePicker } from './DatePicker'
+import { SubtaskList } from './SubtaskList'
 import styles from './TaskDetail.module.css'
 
 interface TaskDetailProps {
   task: Task | null
+  tasks: Task[]
   onClose: () => void
   onUpdate: (id: string, data: Partial<Task>) => Promise<void>
+  onTaskClick?: (task: Task) => void
 }
 
 /**
@@ -31,7 +34,7 @@ interface TaskDetailProps {
  * - Editable description with Markdown rendering
  * - Display all task metadata
  */
-export function TaskDetail({ task, onClose, onUpdate }: TaskDetailProps) {
+export function TaskDetail({ task, tasks, onClose, onUpdate, onTaskClick }: TaskDetailProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const [isEditingDescription, setIsEditingDescription] = useState(false)
   const [descriptionDraft, setDescriptionDraft] = useState('')
@@ -109,6 +112,12 @@ export function TaskDetail({ task, onClose, onUpdate }: TaskDetailProps) {
 
   const handleDueDateChange = async (newDueDate: string | null) => {
     await onUpdate(task.id, { due_date: newDueDate || undefined })
+  }
+
+  // Toggle subtask completion (moves between todo and done)
+  const handleToggleSubtaskComplete = async (subtask: Task) => {
+    const newColumn = subtask.column === 'done' ? 'todo' : 'done'
+    await onUpdate(subtask.id, { column: newColumn })
   }
 
   // Description click handler (defined after early return is OK, it's not a hook)
@@ -293,6 +302,14 @@ export function TaskDetail({ task, onClose, onUpdate }: TaskDetailProps) {
               </div>
             )}
           </div>
+
+          {/* Sub-tasks */}
+          <SubtaskList
+            parentId={task.id}
+            tasks={tasks}
+            onTaskClick={onTaskClick}
+            onToggleComplete={handleToggleSubtaskComplete}
+          />
 
           {/* Metadata */}
           <div className={styles.metadata}>
