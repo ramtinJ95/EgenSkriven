@@ -49,6 +49,7 @@ export function DatePicker({ value, onChange, placeholder = 'Set due date' }: Da
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape' && isOpen) {
+        event.stopPropagation()
         setIsOpen(false)
       }
     }
@@ -154,13 +155,20 @@ export function DatePicker({ value, onChange, placeholder = 'Set due date' }: Da
 
   return (
     <div className={styles.datePicker} ref={containerRef}>
-      {/* Trigger button */}
-      <button 
+      {/* Trigger - using div with role="button" to allow nested clear button */}
+      <div 
         className={triggerClasses}
         onClick={() => setIsOpen(!isOpen)}
-        type="button"
+        role="button"
+        tabIndex={0}
         aria-label="Select due date"
         aria-expanded={isOpen}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setIsOpen(!isOpen)
+          }
+        }}
       >
         <span className={styles.icon}>&#128197;</span>
         <span className={styles.value}>{displayValue}</span>
@@ -177,7 +185,7 @@ export function DatePicker({ value, onChange, placeholder = 'Set due date' }: Da
             &times;
           </button>
         )}
-      </button>
+      </div>
 
       {/* Calendar dropdown */}
       {isOpen && (
