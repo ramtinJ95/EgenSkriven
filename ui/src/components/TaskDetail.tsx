@@ -13,6 +13,7 @@ import {
   type Priority,
   type TaskType,
 } from '../types/task'
+import { DatePicker } from './DatePicker'
 import styles from './TaskDetail.module.css'
 
 interface TaskDetailProps {
@@ -104,6 +105,10 @@ export function TaskDetail({ task, onClose, onUpdate }: TaskDetailProps) {
 
   const handleTypeChange = async (newType: TaskType) => {
     await onUpdate(task.id, { type: newType })
+  }
+
+  const handleDueDateChange = async (newDueDate: string | null) => {
+    await onUpdate(task.id, { due_date: newDueDate || undefined })
   }
 
   // Description click handler (defined after early return is OK, it's not a hook)
@@ -266,14 +271,14 @@ export function TaskDetail({ task, onClose, onUpdate }: TaskDetailProps) {
               </div>
             )}
 
-            {task.due_date && formatDate(task.due_date) !== '-' && (
-              <div className={styles.property}>
-                <span className={styles.propertyLabel}>Due Date</span>
-                <span className={styles.propertyValue}>
-                  {formatDate(task.due_date)}
-                </span>
-              </div>
-            )}
+            <div className={styles.property}>
+              <span className={styles.propertyLabel}>Due Date</span>
+              <DatePicker
+                value={task.due_date || null}
+                onChange={handleDueDateChange}
+                placeholder="Set due date"
+              />
+            </div>
 
             {task.blocked_by && task.blocked_by.length > 0 && (
               <div className={styles.property}>
