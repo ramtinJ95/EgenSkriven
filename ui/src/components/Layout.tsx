@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Header } from './Header'
 import { Sidebar } from './Sidebar'
 import { FilterBar } from './FilterBar'
+import type { Task } from '../types/task'
 import styles from './Layout.module.css'
 
 interface LayoutProps {
@@ -11,6 +12,12 @@ interface LayoutProps {
   onOpenFilterBuilder: () => void
   onOpenDisplayOptions: () => void
   onOpenSettings?: () => void
+  /** All tasks (unfiltered) for epic counting in sidebar */
+  tasks?: Task[]
+  /** Currently selected epic filter */
+  selectedEpicId?: string | null
+  /** Callback when epic filter changes */
+  onSelectEpic?: (epicId: string | null) => void
 }
 
 const SIDEBAR_COLLAPSED_KEY = 'egenskriven-sidebar-collapsed'
@@ -34,6 +41,9 @@ export function Layout({
   onOpenFilterBuilder,
   onOpenDisplayOptions,
   onOpenSettings,
+  tasks = [],
+  selectedEpicId,
+  onSelectEpic,
 }: LayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
@@ -49,7 +59,13 @@ export function Layout({
   return (
     <div className={styles.layout}>
       <div className={styles.body}>
-        <Sidebar collapsed={sidebarCollapsed} onToggle={handleToggleSidebar} />
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggle={handleToggleSidebar}
+          tasks={tasks}
+          selectedEpicId={selectedEpicId}
+          onSelectEpic={onSelectEpic}
+        />
         <div className={styles.content}>
           <Header onDisplayOptionsClick={onOpenDisplayOptions} onSettingsClick={onOpenSettings} />
           <FilterBar
