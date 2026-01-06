@@ -15,6 +15,7 @@ import { DatePicker } from './DatePicker'
 import { EpicPicker } from './EpicPicker'
 import { SubtaskList } from './SubtaskList'
 import { MarkdownEditor } from './MarkdownEditor'
+import { ActivityLog } from './ActivityLog'
 import styles from './TaskDetail.module.css'
 
 interface TaskDetailProps {
@@ -271,6 +272,12 @@ export function TaskDetail({ task, tasks, onClose, onUpdate, onTaskClick }: Task
               </div>
             )}
           </div>
+
+          {/* Activity Log */}
+          <ActivityLog
+            history={task.history || []}
+            created={task.created}
+          />
         </div>
       </div>
     </div>
