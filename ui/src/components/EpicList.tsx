@@ -9,8 +9,10 @@ interface EpicListProps {
   tasks: Task[]
   /** Currently selected epic ID */
   selectedEpicId?: string | null
-  /** Callback when an epic is selected */
+  /** Callback when an epic is selected for filtering */
   onSelectEpic: (epicId: string | null) => void
+  /** Callback when epic detail view should be opened */
+  onEpicDetailClick?: (epicId: string) => void
 }
 
 /**
@@ -23,7 +25,7 @@ interface EpicListProps {
  * - "All Epics" option to clear filter
  * - Loading and error states
  */
-export function EpicList({ tasks, selectedEpicId, onSelectEpic }: EpicListProps) {
+export function EpicList({ tasks, selectedEpicId, onSelectEpic, onEpicDetailClick }: EpicListProps) {
   const { epics, loading, error } = useEpics()
 
   // Calculate task counts per epic
@@ -84,7 +86,7 @@ export function EpicList({ tasks, selectedEpicId, onSelectEpic }: EpicListProps)
 
         {/* Epic list */}
         {epics.map((epic) => (
-          <li key={epic.id}>
+          <li key={epic.id} className={styles.epicRow}>
             <button
               className={`${styles.epicItem} ${selectedEpicId === epic.id ? styles.active : ''}`}
               onClick={() => onSelectEpic(epic.id)}
@@ -96,6 +98,19 @@ export function EpicList({ tasks, selectedEpicId, onSelectEpic }: EpicListProps)
               <span className={styles.epicName}>{epic.title}</span>
               <span className={styles.epicCount}>{epicCounts[epic.id] || 0}</span>
             </button>
+            {onEpicDetailClick && (
+              <button
+                className={styles.epicDetailBtn}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEpicDetailClick(epic.id)
+                }}
+                aria-label={`View ${epic.title} details`}
+                title="View epic details"
+              >
+                <DetailIcon />
+              </button>
+            )}
           </li>
         ))}
 
@@ -158,6 +173,26 @@ function NoEpicIcon() {
     >
       <circle cx="8" cy="8" r="6" />
       <path d="M4 4l8 8" />
+    </svg>
+  )
+}
+
+// Icon for epic detail button
+function DetailIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="8" cy="8" r="6" />
+      <path d="M8 6v4" />
+      <circle cx="8" cy="11" r="0.5" fill="currentColor" />
     </svg>
   )
 }

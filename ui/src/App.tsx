@@ -647,6 +647,7 @@ function AppContent() {
       tasks={tasks}
       selectedEpicId={selectedEpicId}
       onSelectEpic={handleSelectEpic}
+      onEpicDetailClick={(epicId) => setEpicDetailId(epicId)}
     >
       {/* Selection count indicator - shows when multiple tasks are selected */}
       {multiSelectedIds.size > 0 && (
