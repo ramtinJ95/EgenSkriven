@@ -14,6 +14,7 @@ import {
   type TaskType,
 } from '../types/task'
 import { DatePicker } from './DatePicker'
+import { EpicPicker } from './EpicPicker'
 import { SubtaskList } from './SubtaskList'
 import styles from './TaskDetail.module.css'
 
@@ -112,6 +113,10 @@ export function TaskDetail({ task, tasks, onClose, onUpdate, onTaskClick }: Task
 
   const handleDueDateChange = async (newDueDate: string | null) => {
     await onUpdate(task.id, { due_date: newDueDate || undefined })
+  }
+
+  const handleEpicChange = async (newEpicId: string | null) => {
+    await onUpdate(task.id, { epic: newEpicId || undefined })
   }
 
   // Toggle subtask completion (moves between todo and done)
@@ -286,6 +291,15 @@ export function TaskDetail({ task, tasks, onClose, onUpdate, onTaskClick }: Task
                 value={task.due_date || null}
                 onChange={handleDueDateChange}
                 placeholder="Set due date"
+              />
+            </div>
+
+            <div className={styles.property}>
+              <span className={styles.propertyLabel}>Epic</span>
+              <EpicPicker
+                value={task.epic || null}
+                onChange={handleEpicChange}
+                placeholder="Set epic"
               />
             </div>
 
