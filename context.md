@@ -22,6 +22,12 @@ Phase 8 adds advanced features to EgenSkriven: Epic UI, Due Dates, Sub-tasks, Ma
 6. `feat(db): add parent field to tasks for sub-tasks` - Created `migrations/10_subtasks.go`
 7. `feat(cli): add --parent flag for creating sub-tasks` - Updated `internal/commands/add.go` with `--parent` flag and `resolveTaskByID` function
 8. `feat(cli): add --has-parent, --no-parent flags to list` - Updated `internal/commands/list.go`
+9. `feat(cli): add sub-task display to show command` - Updated `internal/commands/show.go` and `internal/output/output.go` with `TaskDetailWithSubtasks` method
+10. `test(cli): add show command sub-task display tests` - Created `internal/commands/show_test.go`
+11. `feat(ui): add DatePicker component with calendar and shortcuts` - Created `ui/src/components/DatePicker.tsx` and `DatePicker.module.css`
+12. `feat(ui): integrate DatePicker into TaskDetail for due date editing` - Updated `ui/src/components/TaskDetail.tsx`
+13. `fix(ui): fix DatePicker nested button and escape key propagation` - Fixed HTML nesting issue and event propagation
+14. `feat(ui): add SubtaskList component and parent field to Task type` - Created `ui/src/components/SubtaskList.tsx`, `SubtaskList.module.css`, updated `ui/src/types/task.ts`
 
 ### Files Created
 
@@ -31,6 +37,11 @@ Phase 8 adds advanced features to EgenSkriven: Epic UI, Due Dates, Sub-tasks, Ma
 | `migrations/10_subtasks.go` | Adds `parent` RelationField (self-reference) to tasks |
 | `internal/commands/date_parser.go` | Date parsing utility supporting ISO 8601 and relative dates |
 | `internal/commands/date_parser_test.go` | Unit tests for date parser |
+| `internal/commands/show_test.go` | Unit tests for show command sub-task display |
+| `ui/src/components/DatePicker.tsx` | Calendar date picker with month navigation and quick shortcuts |
+| `ui/src/components/DatePicker.module.css` | CSS module styles for DatePicker |
+| `ui/src/components/SubtaskList.tsx` | Component to display sub-tasks with progress bar |
+| `ui/src/components/SubtaskList.module.css` | CSS module styles for SubtaskList |
 
 ### Files Modified
 
@@ -38,12 +49,44 @@ Phase 8 adds advanced features to EgenSkriven: Epic UI, Due Dates, Sub-tasks, Ma
 |------|---------|
 | `internal/commands/add.go` | Added `--due` flag, `--parent` flag, `TaskInput.DueDate`, `TaskInput.Parent`, `resolveTaskByID()` function |
 | `internal/commands/list.go` | Added `--due-before`, `--due-after`, `--has-due`, `--no-due`, `--has-parent`, `--no-parent` flags |
+| `internal/commands/show.go` | Added sub-task query and display logic using `TaskDetailWithSubtasks` |
+| `internal/output/output.go` | Added `TaskDetailWithSubtasks()` method for displaying task with sub-tasks |
+| `ui/src/components/TaskDetail.tsx` | Integrated DatePicker component for due_date editing |
+| `ui/src/types/task.ts` | Added `parent?: string` field to Task interface |
 
 ---
 
 ## What Remains To Be Done
 
-### Full Todo List (for next session)
+### Next Task to Work On
+
+**p8-25**: Integrate SubtaskList into TaskDetail.tsx
+
+This involves:
+1. Import SubtaskList component into TaskDetail.tsx
+2. Add SubtaskList after the properties section
+3. Pass the tasks array and parent ID
+4. Wire up onTaskClick and onToggleComplete handlers
+
+### Remaining High Priority Tasks (7 items)
+
+| ID | Task |
+|----|------|
+| p8-25 | Integrate SubtaskList into TaskDetail.tsx |
+| p8-25-test | UI test for SubtaskList |
+| p8-32 | Create export.go command |
+| p8-33 | Create import.go command |
+| p8-34 | Write import/export tests |
+| p8-36 | Final verification: Run all CLI tests |
+| p8-37 | Final verification: Run all UI tests |
+
+### Remaining Medium Priority Tasks (19 items)
+
+Epic-related UI (p8-12 through p8-20-test), TaskCard overdue highlighting (p8-21, p8-21-test), MarkdownEditor (p8-26 through p8-28-test), ActivityLog (p8-29 through p8-31-test), EpicPicker integration (p8-35).
+
+---
+
+## Full Todo List (for next session)
 
 Copy this JSON to recreate the todo list:
 
@@ -57,11 +100,12 @@ Copy this JSON to recreate the todo list:
   {"id": "p8-5", "content": "8.3 Migration: Create migrations/10_subtasks.go - Add parent RelationField to tasks (self-reference)", "status": "completed", "priority": "high"},
   {"id": "p8-6", "content": "8.3 CLI: Add --parent flag to add.go for creating sub-tasks", "status": "completed", "priority": "high"},
   {"id": "p8-7", "content": "8.3 CLI: Add --has-parent, --no-parent flags to list.go", "status": "completed", "priority": "high"},
-  {"id": "p8-8", "content": "8.3 CLI: Update show.go to display sub-tasks of a parent task", "status": "pending", "priority": "high"},
-  {"id": "p8-9", "content": "8.4 UI: Create DatePicker.tsx component with calendar, navigation, quick shortcuts", "status": "pending", "priority": "high"},
-  {"id": "p8-10", "content": "8.4 UI: Create DatePicker.module.css styles (following existing CSS Modules pattern)", "status": "pending", "priority": "high"},
-  {"id": "p8-11", "content": "8.4 UI: Integrate DatePicker into TaskDetail.tsx for due_date editing", "status": "pending", "priority": "high"},
-  {"id": "p8-11-test", "content": "8.4 TEST: Use ui-test-engineer to test DatePicker component functionality", "status": "pending", "priority": "high"},
+  {"id": "p8-8", "content": "8.3 CLI: Update show.go to display sub-tasks of a parent task", "status": "completed", "priority": "high"},
+  {"id": "p8-8-test", "content": "8.3 Tests: Write show_test.go for sub-task display functionality", "status": "completed", "priority": "high"},
+  {"id": "p8-9", "content": "8.4 UI: Create DatePicker.tsx component with calendar, navigation, quick shortcuts", "status": "completed", "priority": "high"},
+  {"id": "p8-10", "content": "8.4 UI: Create DatePicker.module.css styles (following existing CSS Modules pattern)", "status": "completed", "priority": "high"},
+  {"id": "p8-11", "content": "8.4 UI: Integrate DatePicker into TaskDetail.tsx for due_date editing", "status": "completed", "priority": "high"},
+  {"id": "p8-11-test", "content": "8.4 TEST: Use ui-test-engineer to test DatePicker component functionality", "status": "completed", "priority": "high"},
   {"id": "p8-12", "content": "8.5 UI: Create EpicPicker.tsx component for task epic assignment", "status": "pending", "priority": "medium"},
   {"id": "p8-13", "content": "8.5 UI: Create useEpics hook in hooks/ for fetching all epics with real-time updates", "status": "pending", "priority": "medium"},
   {"id": "p8-14", "content": "8.5 UI: Create EpicPicker.module.css styles", "status": "pending", "priority": "medium"},
@@ -76,9 +120,9 @@ Copy this JSON to recreate the todo list:
   {"id": "p8-20-test", "content": "8.7 TEST: Use ui-test-engineer to test EpicDetail view functionality", "status": "pending", "priority": "medium"},
   {"id": "p8-21", "content": "8.8 UI: Update TaskCard.tsx - Add overdue highlighting logic for due dates", "status": "pending", "priority": "medium"},
   {"id": "p8-21-test", "content": "8.8 TEST: Use ui-test-engineer to test TaskCard overdue highlighting", "status": "pending", "priority": "medium"},
-  {"id": "p8-22", "content": "8.9 UI: Create SubtaskList.tsx component for task detail panel", "status": "pending", "priority": "high"},
-  {"id": "p8-23", "content": "8.9 UI: Create SubtaskList.module.css styles", "status": "pending", "priority": "high"},
-  {"id": "p8-24", "content": "8.9 UI: Update Task type in types/task.ts to include parent?: string field", "status": "pending", "priority": "high"},
+  {"id": "p8-22", "content": "8.9 UI: Create SubtaskList.tsx component for task detail panel", "status": "completed", "priority": "high"},
+  {"id": "p8-23", "content": "8.9 UI: Create SubtaskList.module.css styles", "status": "completed", "priority": "high"},
+  {"id": "p8-24", "content": "8.9 UI: Update Task type in types/task.ts to include parent?: string field", "status": "completed", "priority": "high"},
   {"id": "p8-25", "content": "8.9 UI: Integrate SubtaskList into TaskDetail.tsx", "status": "pending", "priority": "high"},
   {"id": "p8-25-test", "content": "8.9 TEST: Use ui-test-engineer to test SubtaskList component functionality", "status": "pending", "priority": "high"},
   {"id": "p8-26", "content": "8.10 UI: Create MarkdownEditor.tsx component with toolbar, keyboard shortcuts", "status": "pending", "priority": "medium"},
@@ -97,33 +141,6 @@ Copy this JSON to recreate the todo list:
   {"id": "p8-37", "content": "Final Verification: Run all UI tests (npm test in ui/)", "status": "pending", "priority": "high"}
 ]
 ```
-
-### Next Task to Work On
-
-**p8-8**: Update `show.go` to display sub-tasks of a parent task
-
-This involves:
-1. Reading `internal/commands/show.go`
-2. After displaying task details, fetching sub-tasks where `parent = task.Id`
-3. Displaying them in a "Sub-tasks:" section
-
-### Remaining High Priority Tasks (9 items)
-
-| ID | Task |
-|----|------|
-| p8-8 | Update show.go to display sub-tasks |
-| p8-9 | Create DatePicker.tsx component |
-| p8-10 | Create DatePicker.module.css styles |
-| p8-11 | Integrate DatePicker into TaskDetail.tsx |
-| p8-11-test | UI test for DatePicker |
-| p8-22-25 | SubtaskList component (4 tasks) |
-| p8-32 | Create export.go command |
-| p8-33 | Create import.go command |
-| p8-34 | Write import/export tests |
-
-### Remaining Medium Priority Tasks (19 items)
-
-Epic-related UI (p8-12 through p8-20-test), TaskCard overdue highlighting (p8-21, p8-21-test), MarkdownEditor (p8-26 through p8-28-test), ActivityLog (p8-29 through p8-31-test), EpicPicker integration (p8-35).
 
 ---
 
@@ -144,12 +161,22 @@ Migrations are numbered sequentially. Existing: 1-8. New: 9 (due_dates), 10 (sub
 ### Testing Approach
 After each UI feature, use `ui-test-engineer` agent to create/run Playwright tests.
 
+**IMPORTANT**: Before calling ui-test-engineer:
+1. Start the dev server first: `cd ui && npm run dev &`
+2. Wait for server to be ready (check port 5173, 5174, etc.)
+3. Include the correct URL in the test prompt
+4. Follow the template in `docs/ui-test-instructions.md`
+
 ### Commit Convention
 All commits should be conventional commits, max 70 characters:
 - `feat(cli):` for CLI features
 - `feat(db):` for migrations
 - `feat(ui):` for UI features
 - `test(cli):` or `test(ui):` for tests
+- `fix(ui):` for bug fixes
+
+### Known Issues Found During Testing
+1. **DatePicker database issue**: The `due_date` field migration needs to be applied to the running database instance. The migration file exists but may not be applied if using an existing database.
 
 ---
 
@@ -158,9 +185,9 @@ All commits should be conventional commits, max 70 characters:
 1. Read this context file
 2. Read `docs/phase-8.md` for detailed implementation specs
 3. Use the TodoWrite tool to recreate the todo list from the JSON above
-4. Start with task p8-8 (next pending high-priority task)
+4. Start with task p8-25 (next pending high-priority task: integrate SubtaskList into TaskDetail)
 5. After each task, commit with conventional commit format
-6. For UI tasks, run ui-test-engineer after implementation
+6. For UI tasks, run ui-test-engineer after implementation (see `docs/ui-test-instructions.md`)
 
 ---
 
@@ -174,8 +201,30 @@ cd /home/ramtinj/personal-workspace/EgenSkriven && go build ./...
 go test ./internal/commands/... -v
 
 # Run specific test
-go test ./internal/commands/... -run TestParseDate -v
+go test ./internal/commands/... -run TestShowCommand -v
+
+# UI development (from ui/ directory)
+cd ui && npm run dev
+
+# UI build
+cd ui && npm run build
 
 # UI tests (from ui/ directory)
 cd ui && npm test
+
+# Check dev server status
+curl -s -o /dev/null -w "%{http_code}" http://localhost:5173
 ```
+
+---
+
+## Progress Summary
+
+**Completed**: 17/37 tasks (46%)
+- All CLI due date features (p8-1 through p8-4, p8-2-test)
+- All CLI sub-task features (p8-5 through p8-8, p8-8-test)
+- DatePicker UI component (p8-9 through p8-11-test)
+- SubtaskList UI component (p8-22 through p8-24)
+
+**Remaining High Priority**: 7 tasks
+**Remaining Medium Priority**: 19 tasks
