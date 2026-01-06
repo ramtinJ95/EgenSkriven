@@ -38,6 +38,7 @@ export interface Task extends RecordModel {
   blocked_by?: string[]       // Array of task IDs that block this task
   due_date?: string           // Optional due date
   parent?: string             // Parent task ID for sub-tasks
+  epic?: string               // Epic ID (relation to epics collection)
   created_by: CreatedBy
   created_by_agent?: string   // Agent identifier (e.g., "claude", "opencode")
   history?: HistoryEntry[]    // Activity tracking array
