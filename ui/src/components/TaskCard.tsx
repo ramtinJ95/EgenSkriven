@@ -59,6 +59,29 @@ function TaskCardComponent({ task, isSelected = false, onClick, onSelect, curren
 
   const priority = getPriorityIndicator(task.priority)
 
+  // Check if task is overdue (due date in the past and not done)
+  const isOverdue = (() => {
+    if (!task.due_date || task.column === 'done') return false
+    const dueDate = new Date(task.due_date)
+    const today = new Date()
+    // Set both to start of day for comparison
+    dueDate.setHours(0, 0, 0, 0)
+    today.setHours(0, 0, 0, 0)
+    return dueDate < today
+  })()
+
+  // Check if task is due today
+  const isDueToday = (() => {
+    if (!task.due_date || task.column === 'done') return false
+    const dueDate = new Date(task.due_date)
+    const today = new Date()
+    return (
+      dueDate.getFullYear() === today.getFullYear() &&
+      dueDate.getMonth() === today.getMonth() &&
+      dueDate.getDate() === today.getDate()
+    )
+  })()
+
   // Handle click to open detail panel
   // Only trigger if not dragging (to avoid opening panel after drag)
   const handleClick = () => {
@@ -134,7 +157,11 @@ function TaskCardComponent({ task, isSelected = false, onClick, onSelect, curren
           </span>
         )}
         {task.due_date && (
-          <span className={styles.dueDate}>
+          <span 
+            className={`${styles.dueDate} ${isOverdue ? styles.overdue : ''} ${isDueToday ? styles.dueToday : ''}`}
+            title={isOverdue ? 'Overdue' : isDueToday ? 'Due today' : undefined}
+          >
+            {isOverdue && <OverdueIcon />}
             {new Date(task.due_date).toLocaleDateString('en-US', { 
               month: 'short', 
               day: 'numeric' 
@@ -154,6 +181,34 @@ function TaskCardComponent({ task, isSelected = false, onClick, onSelect, curren
         </span>
       </div>
     </div>
+  )
+}
+
+// Small warning icon for overdue tasks
+function OverdueIcon() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ marginRight: '4px' }}
+    >
+      <path
+        d="M8 5v4M8 11h.01"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <circle
+        cx="8"
+        cy="8"
+        r="6"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+    </svg>
   )
 }
 

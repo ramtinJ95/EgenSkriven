@@ -111,8 +111,20 @@
 }
 
 .dueDate {
+  display: flex;
+  align-items: center;
   font-size: var(--text-xs);
   color: var(--text-secondary);
+}
+
+.dueDate.overdue {
+  color: var(--priority-urgent);
+  font-weight: var(--font-medium);
+}
+
+.dueDate.dueToday {
+  color: var(--priority-high);
+  font-weight: var(--font-medium);
 }
 
 .type {
