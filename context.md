@@ -28,6 +28,9 @@ Phase 8 adds advanced features to EgenSkriven: Epic UI, Due Dates, Sub-tasks, Ma
 12. `feat(ui): integrate DatePicker into TaskDetail for due date editing` - Updated `ui/src/components/TaskDetail.tsx`
 13. `fix(ui): fix DatePicker nested button and escape key propagation` - Fixed HTML nesting issue and event propagation
 14. `feat(ui): add SubtaskList component and parent field to Task type` - Created `ui/src/components/SubtaskList.tsx`, `SubtaskList.module.css`, updated `ui/src/types/task.ts`
+15. `feat(ui): integrate SubtaskList into TaskDetail panel` - Updated `ui/src/components/TaskDetail.tsx` and `ui/src/App.tsx` to pass tasks array and handlers
+16. `feat(cli): add export command with JSON and CSV formats` - Created `internal/commands/export.go`
+17. `feat(cli): add import command with merge/replace strategies` - Created `internal/commands/import.go`
 
 ### Files Created
 
@@ -38,6 +41,8 @@ Phase 8 adds advanced features to EgenSkriven: Epic UI, Due Dates, Sub-tasks, Ma
 | `internal/commands/date_parser.go` | Date parsing utility supporting ISO 8601 and relative dates |
 | `internal/commands/date_parser_test.go` | Unit tests for date parser |
 | `internal/commands/show_test.go` | Unit tests for show command sub-task display |
+| `internal/commands/export.go` | CLI command to export tasks/boards/epics to JSON or CSV |
+| `internal/commands/import.go` | CLI command to import data with merge/replace strategies |
 | `ui/src/components/DatePicker.tsx` | Calendar date picker with month navigation and quick shortcuts |
 | `ui/src/components/DatePicker.module.css` | CSS module styles for DatePicker |
 | `ui/src/components/SubtaskList.tsx` | Component to display sub-tasks with progress bar |
@@ -50,8 +55,11 @@ Phase 8 adds advanced features to EgenSkriven: Epic UI, Due Dates, Sub-tasks, Ma
 | `internal/commands/add.go` | Added `--due` flag, `--parent` flag, `TaskInput.DueDate`, `TaskInput.Parent`, `resolveTaskByID()` function |
 | `internal/commands/list.go` | Added `--due-before`, `--due-after`, `--has-due`, `--no-due`, `--has-parent`, `--no-parent` flags |
 | `internal/commands/show.go` | Added sub-task query and display logic using `TaskDetailWithSubtasks` |
+| `internal/commands/root.go` | Registered `newExportCmd` and `newImportCmd` commands |
 | `internal/output/output.go` | Added `TaskDetailWithSubtasks()` method for displaying task with sub-tasks |
-| `ui/src/components/TaskDetail.tsx` | Integrated DatePicker component for due_date editing |
+| `ui/src/components/TaskDetail.tsx` | Integrated DatePicker and SubtaskList components, added `tasks` and `onTaskClick` props |
+| `ui/src/components/TaskDetail.test.tsx` | Updated tests to include new required `tasks` prop |
+| `ui/src/App.tsx` | Pass `tasks` array and `onTaskClick` handler to TaskDetail |
 | `ui/src/types/task.ts` | Added `parent?: string` field to Task interface |
 
 ---
@@ -60,23 +68,20 @@ Phase 8 adds advanced features to EgenSkriven: Epic UI, Due Dates, Sub-tasks, Ma
 
 ### Next Task to Work On
 
-**p8-25**: Integrate SubtaskList into TaskDetail.tsx
+**p8-34**: Write export_test.go and import_test.go integration tests
 
 This involves:
-1. Import SubtaskList component into TaskDetail.tsx
-2. Add SubtaskList after the properties section
-3. Pass the tasks array and parent ID
-4. Wire up onTaskClick and onToggleComplete handlers
+1. Create test file `internal/commands/export_test.go`
+2. Create test file `internal/commands/import_test.go`
+3. Test JSON and CSV export formats
+4. Test merge and replace import strategies
+5. Test dry-run mode
 
-### Remaining High Priority Tasks (7 items)
+### Remaining High Priority Tasks (4 items)
 
 | ID | Task |
 |----|------|
-| p8-25 | Integrate SubtaskList into TaskDetail.tsx |
-| p8-25-test | UI test for SubtaskList |
-| p8-32 | Create export.go command |
-| p8-33 | Create import.go command |
-| p8-34 | Write import/export tests |
+| p8-34 | Write export_test.go and import_test.go integration tests |
 | p8-36 | Final verification: Run all CLI tests |
 | p8-37 | Final verification: Run all UI tests |
 
@@ -123,8 +128,8 @@ Copy this JSON to recreate the todo list:
   {"id": "p8-22", "content": "8.9 UI: Create SubtaskList.tsx component for task detail panel", "status": "completed", "priority": "high"},
   {"id": "p8-23", "content": "8.9 UI: Create SubtaskList.module.css styles", "status": "completed", "priority": "high"},
   {"id": "p8-24", "content": "8.9 UI: Update Task type in types/task.ts to include parent?: string field", "status": "completed", "priority": "high"},
-  {"id": "p8-25", "content": "8.9 UI: Integrate SubtaskList into TaskDetail.tsx", "status": "pending", "priority": "high"},
-  {"id": "p8-25-test", "content": "8.9 TEST: Use ui-test-engineer to test SubtaskList component functionality", "status": "pending", "priority": "high"},
+  {"id": "p8-25", "content": "8.9 UI: Integrate SubtaskList into TaskDetail.tsx", "status": "completed", "priority": "high"},
+  {"id": "p8-25-test", "content": "8.9 TEST: Use ui-test-engineer to test SubtaskList component functionality", "status": "completed", "priority": "high"},
   {"id": "p8-26", "content": "8.10 UI: Create MarkdownEditor.tsx component with toolbar, keyboard shortcuts", "status": "pending", "priority": "medium"},
   {"id": "p8-27", "content": "8.10 UI: Create MarkdownEditor.module.css styles", "status": "pending", "priority": "medium"},
   {"id": "p8-28", "content": "8.10 UI: Integrate MarkdownEditor into TaskDetail.tsx for description editing", "status": "pending", "priority": "medium"},
@@ -133,8 +138,8 @@ Copy this JSON to recreate the todo list:
   {"id": "p8-30", "content": "8.11 UI: Create ActivityLog.module.css styles", "status": "pending", "priority": "medium"},
   {"id": "p8-31", "content": "8.11 UI: Integrate ActivityLog into TaskDetail.tsx", "status": "pending", "priority": "medium"},
   {"id": "p8-31-test", "content": "8.11 TEST: Use ui-test-engineer to test ActivityLog display", "status": "pending", "priority": "medium"},
-  {"id": "p8-32", "content": "8.12 CLI: Create internal/commands/export.go command with JSON and CSV formats", "status": "pending", "priority": "high"},
-  {"id": "p8-33", "content": "8.12 CLI: Create internal/commands/import.go command with merge/replace strategies", "status": "pending", "priority": "high"},
+  {"id": "p8-32", "content": "8.12 CLI: Create internal/commands/export.go command with JSON and CSV formats", "status": "completed", "priority": "high"},
+  {"id": "p8-33", "content": "8.12 CLI: Create internal/commands/import.go command with merge/replace strategies", "status": "completed", "priority": "high"},
   {"id": "p8-34", "content": "8.12 Tests: Write export_test.go and import_test.go integration tests", "status": "pending", "priority": "high"},
   {"id": "p8-35", "content": "8.13 UI: Integrate EpicPicker into TaskDetail.tsx for epic assignment", "status": "pending", "priority": "medium"},
   {"id": "p8-36", "content": "Final Verification: Run all CLI tests (go test ./...)", "status": "pending", "priority": "high"},
@@ -157,6 +162,21 @@ Migrations are numbered sequentially. Existing: 1-8. New: 9 (due_dates), 10 (sub
 - `due_date` already typed in TypeScript and displayed in TaskCard (read-only)
 - ReactMarkdown already integrated for description preview
 - Epics collection and CLI commands already exist
+
+### Export/Import Command Details
+
+**Export Command** (`internal/commands/export.go`):
+- Supports JSON and CSV formats (`--format json` or `--format csv`)
+- Can filter by board (`--board <name>`)
+- Can output to file (`--output <file>`) or stdout
+- JSON includes boards, epics, and tasks with full metadata
+- CSV exports only tasks in flat table format
+
+**Import Command** (`internal/commands/import.go`):
+- Two strategies: `merge` (skip existing, default) and `replace` (overwrite)
+- Supports `--dry-run` to preview without making changes
+- Imports boards, epics, and tasks from JSON backup
+- Preserves original IDs for referential integrity
 
 ### Testing Approach
 After each UI feature, use `ui-test-engineer` agent to create/run Playwright tests.
@@ -185,7 +205,7 @@ All commits should be conventional commits, max 70 characters:
 1. Read this context file
 2. Read `docs/phase-8.md` for detailed implementation specs
 3. Use the TodoWrite tool to recreate the todo list from the JSON above
-4. Start with task p8-25 (next pending high-priority task: integrate SubtaskList into TaskDetail)
+4. Start with task p8-34 (next pending high-priority task: write export/import tests)
 5. After each task, commit with conventional commit format
 6. For UI tasks, run ui-test-engineer after implementation (see `docs/ui-test-instructions.md`)
 
@@ -214,17 +234,47 @@ cd ui && npm test
 
 # Check dev server status
 curl -s -o /dev/null -w "%{http_code}" http://localhost:5173
+
+# Test export command
+./egenskriven export --format json
+./egenskriven export --format csv
+
+# Test import command (dry-run)
+./egenskriven import backup.json --dry-run
 ```
 
 ---
 
 ## Progress Summary
 
-**Completed**: 17/37 tasks (46%)
+**Completed**: 21/37 tasks (57%)
 - All CLI due date features (p8-1 through p8-4, p8-2-test)
 - All CLI sub-task features (p8-5 through p8-8, p8-8-test)
 - DatePicker UI component (p8-9 through p8-11-test)
-- SubtaskList UI component (p8-22 through p8-24)
+- SubtaskList UI component (p8-22 through p8-25-test)
+- Export/Import CLI commands (p8-32, p8-33)
 
-**Remaining High Priority**: 7 tasks
-**Remaining Medium Priority**: 19 tasks
+**Remaining High Priority**: 3 tasks (p8-34, p8-36, p8-37)
+**Remaining Medium Priority**: 13 tasks (Epic UI, TaskCard, MarkdownEditor, ActivityLog)
+
+---
+
+## Recent Session Summary (This Session)
+
+In this session we:
+1. Recreated the todo list from context.md
+2. Completed p8-25: Integrated SubtaskList into TaskDetail.tsx
+   - Added `tasks` and `onTaskClick` props to TaskDetail
+   - Updated App.tsx to pass the tasks array
+   - Fixed tests to include new required props
+3. Ran ui-test-engineer to verify SubtaskList functionality (p8-25-test) - PASSED
+4. Completed p8-32: Created export.go command
+   - JSON format exports boards, epics, tasks
+   - CSV format exports tasks only
+   - Supports board filtering and output file
+5. Completed p8-33: Created import.go command
+   - Merge strategy (skip existing) and Replace strategy (overwrite)
+   - Dry-run mode for previewing changes
+   - Imports boards, epics, tasks with preserved IDs
+
+All builds pass, all UI tests pass (352 tests).
