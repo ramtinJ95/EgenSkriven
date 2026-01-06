@@ -144,35 +144,77 @@ function AppContent() {
   }, [filteredTasks])
 
   // Navigation helpers
+  // j/k navigate within the current column only
   const navigateToNextTask = useCallback(() => {
+    // Determine current column
+    const currentColumn: Column = selectedTask?.column || (focusedColumn as Column) || COLUMNS[0]
+    const tasksInColumn = tasksByColumn[currentColumn] || []
+    
+    // Sort by position within the column
+    const sortedColumnTasks = [...tasksInColumn].sort((a, b) => a.position - b.position)
+    
     if (!selectedTaskId) {
-      if (sortedTaskIds.length > 0) {
-        selectTask(sortedTaskIds[0])
+      // No task selected, select first task in the column
+      if (sortedColumnTasks.length > 0) {
+        selectTask(sortedColumnTasks[0].id)
+        setFocusedColumn(currentColumn)
       }
       return
     }
 
-    const currentIndex = sortedTaskIds.indexOf(selectedTaskId)
-    if (currentIndex < sortedTaskIds.length - 1) {
-      selectTask(sortedTaskIds[currentIndex + 1])
+    // Find current task index within the column
+    const currentIndex = sortedColumnTasks.findIndex(t => t.id === selectedTaskId)
+    if (currentIndex === -1) {
+      // Selected task not in current column, select first task in column
+      if (sortedColumnTasks.length > 0) {
+        selectTask(sortedColumnTasks[0].id)
+      }
+      return
     }
-  }, [selectedTaskId, sortedTaskIds, selectTask])
+    
+    // Move to next task in the same column
+    if (currentIndex < sortedColumnTasks.length - 1) {
+      selectTask(sortedColumnTasks[currentIndex + 1].id)
+    }
+    // If at the last task, stay there (don't wrap or change columns)
+  }, [selectedTaskId, selectedTask, focusedColumn, tasksByColumn, selectTask, setFocusedColumn])
 
   const navigateToPrevTask = useCallback(() => {
+    // Determine current column
+    const currentColumn: Column = selectedTask?.column || (focusedColumn as Column) || COLUMNS[0]
+    const tasksInColumn = tasksByColumn[currentColumn] || []
+    
+    // Sort by position within the column
+    const sortedColumnTasks = [...tasksInColumn].sort((a, b) => a.position - b.position)
+    
     if (!selectedTaskId) {
-      if (sortedTaskIds.length > 0) {
-        selectTask(sortedTaskIds[sortedTaskIds.length - 1])
+      // No task selected, select last task in the column
+      if (sortedColumnTasks.length > 0) {
+        selectTask(sortedColumnTasks[sortedColumnTasks.length - 1].id)
+        setFocusedColumn(currentColumn)
       }
       return
     }
 
-    const currentIndex = sortedTaskIds.indexOf(selectedTaskId)
-    if (currentIndex > 0) {
-      selectTask(sortedTaskIds[currentIndex - 1])
+    // Find current task index within the column
+    const currentIndex = sortedColumnTasks.findIndex(t => t.id === selectedTaskId)
+    if (currentIndex === -1) {
+      // Selected task not in current column, select last task in column
+      if (sortedColumnTasks.length > 0) {
+        selectTask(sortedColumnTasks[sortedColumnTasks.length - 1].id)
+      }
+      return
     }
-  }, [selectedTaskId, sortedTaskIds, selectTask])
+    
+    // Move to previous task in the same column
+    if (currentIndex > 0) {
+      selectTask(sortedColumnTasks[currentIndex - 1].id)
+    }
+    // If at the first task, stay there (don't wrap or change columns)
+  }, [selectedTaskId, selectedTask, focusedColumn, tasksByColumn, selectTask, setFocusedColumn])
 
-  // Column navigation helpers
+  // Column navigation helpers (h/l)
+  // Always moves to another column and selects the first (top) task in that column
   const navigateToNextColumn = useCallback(() => {
     // Find current column
     const currentColumn: Column = selectedTask?.column || (focusedColumn as Column) || COLUMNS[0]
@@ -184,7 +226,9 @@ function AppContent() {
       const tasksInColumn = tasksByColumn[nextColumn]
       if (tasksInColumn.length > 0) {
         setFocusedColumn(nextColumn)
-        selectTask(tasksInColumn[0].id)
+        // Sort by position and select the first (top) task
+        const sortedTasks = [...tasksInColumn].sort((a, b) => a.position - b.position)
+        selectTask(sortedTasks[0].id)
         return
       }
     }
@@ -192,8 +236,9 @@ function AppContent() {
     // (for visual column focus even if empty)
     if (currentIndex < COLUMNS.length - 1) {
       setFocusedColumn(COLUMNS[currentIndex + 1])
+      clearSelection()
     }
-  }, [selectedTask, focusedColumn, tasksByColumn, setFocusedColumn, selectTask])
+  }, [selectedTask, focusedColumn, tasksByColumn, setFocusedColumn, selectTask, clearSelection])
 
   const navigateToPrevColumn = useCallback(() => {
     // Find current column
@@ -206,7 +251,9 @@ function AppContent() {
       const tasksInColumn = tasksByColumn[prevColumn]
       if (tasksInColumn.length > 0) {
         setFocusedColumn(prevColumn)
-        selectTask(tasksInColumn[0].id)
+        // Sort by position and select the first (top) task
+        const sortedTasks = [...tasksInColumn].sort((a, b) => a.position - b.position)
+        selectTask(sortedTasks[0].id)
         return
       }
     }
@@ -214,8 +261,9 @@ function AppContent() {
     // (for visual column focus even if empty)
     if (currentIndex > 0) {
       setFocusedColumn(COLUMNS[currentIndex - 1])
+      clearSelection()
     }
-  }, [selectedTask, focusedColumn, tasksByColumn, setFocusedColumn, selectTask])
+  }, [selectedTask, focusedColumn, tasksByColumn, setFocusedColumn, selectTask, clearSelection])
 
   // Action handlers
   const openTaskDetail = useCallback(() => {
