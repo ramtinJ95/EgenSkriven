@@ -31,6 +31,7 @@ Phase 8 adds advanced features to EgenSkriven: Epic UI, Due Dates, Sub-tasks, Ma
 15. `feat(ui): integrate SubtaskList into TaskDetail panel` - Updated `ui/src/components/TaskDetail.tsx` and `ui/src/App.tsx` to pass tasks array and handlers
 16. `feat(cli): add export command with JSON and CSV formats` - Created `internal/commands/export.go`
 17. `feat(cli): add import command with merge/replace strategies` - Created `internal/commands/import.go`
+18. `test(cli): add export and import integration tests` - Created `internal/commands/export_test.go` and `internal/commands/import_test.go`
 
 ### Files Created
 
@@ -43,6 +44,8 @@ Phase 8 adds advanced features to EgenSkriven: Epic UI, Due Dates, Sub-tasks, Ma
 | `internal/commands/show_test.go` | Unit tests for show command sub-task display |
 | `internal/commands/export.go` | CLI command to export tasks/boards/epics to JSON or CSV |
 | `internal/commands/import.go` | CLI command to import data with merge/replace strategies |
+| `internal/commands/export_test.go` | Integration tests for export command (JSON, CSV, board filtering) |
+| `internal/commands/import_test.go` | Integration tests for import command (merge, replace, dry-run) |
 | `ui/src/components/DatePicker.tsx` | Calendar date picker with month navigation and quick shortcuts |
 | `ui/src/components/DatePicker.module.css` | CSS module styles for DatePicker |
 | `ui/src/components/SubtaskList.tsx` | Component to display sub-tasks with progress bar |
@@ -68,26 +71,48 @@ Phase 8 adds advanced features to EgenSkriven: Epic UI, Due Dates, Sub-tasks, Ma
 
 ### Next Task to Work On
 
-**p8-34**: Write export_test.go and import_test.go integration tests
+**p8-12**: Create EpicPicker.tsx component for task epic assignment
 
-This involves:
-1. Create test file `internal/commands/export_test.go`
-2. Create test file `internal/commands/import_test.go`
-3. Test JSON and CSV export formats
-4. Test merge and replace import strategies
-5. Test dry-run mode
+This is the start of the Epic UI features (8.5, 8.6, 8.7). The recommended order is:
+1. p8-13: Create useEpics hook first (data fetching)
+2. p8-12: Create EpicPicker component
+3. p8-14: Create EpicPicker styles
+4. p8-14-test: Test EpicPicker
 
-### Remaining High Priority Tasks (4 items)
+### Remaining High Priority Tasks (2 items)
 
 | ID | Task |
 |----|------|
-| p8-34 | Write export_test.go and import_test.go integration tests |
 | p8-36 | Final verification: Run all CLI tests |
 | p8-37 | Final verification: Run all UI tests |
 
-### Remaining Medium Priority Tasks (19 items)
+### Remaining Medium Priority Tasks (17 items)
 
-Epic-related UI (p8-12 through p8-20-test), TaskCard overdue highlighting (p8-21, p8-21-test), MarkdownEditor (p8-26 through p8-28-test), ActivityLog (p8-29 through p8-31-test), EpicPicker integration (p8-35).
+| ID | Task | Category |
+|----|------|----------|
+| p8-12 | Create EpicPicker.tsx component for task epic assignment | Epic UI (8.5) |
+| p8-13 | Create useEpics hook in hooks/ for fetching all epics | Epic UI (8.5) |
+| p8-14 | Create EpicPicker.module.css styles | Epic UI (8.5) |
+| p8-14-test | Test EpicPicker component functionality | Epic UI (8.5) |
+| p8-15 | Create EpicList.tsx component for sidebar with task counts | Epic UI (8.6) |
+| p8-16 | Create EpicList.module.css styles | Epic UI (8.6) |
+| p8-17 | Integrate EpicList into Sidebar.tsx | Epic UI (8.6) |
+| p8-17-test | Test EpicList sidebar integration | Epic UI (8.6) |
+| p8-18 | Create EpicDetail.tsx view for epic progress and task list | Epic UI (8.7) |
+| p8-19 | Create useEpic(id) hook for single epic CRUD operations | Epic UI (8.7) |
+| p8-20 | Create EpicDetail.module.css styles | Epic UI (8.7) |
+| p8-20-test | Test EpicDetail view functionality | Epic UI (8.7) |
+| p8-21 | Update TaskCard.tsx - Add overdue highlighting logic | TaskCard (8.8) |
+| p8-21-test | Test TaskCard overdue highlighting | TaskCard (8.8) |
+| p8-26 | Create MarkdownEditor.tsx component with toolbar | MarkdownEditor (8.10) |
+| p8-27 | Create MarkdownEditor.module.css styles | MarkdownEditor (8.10) |
+| p8-28 | Integrate MarkdownEditor into TaskDetail.tsx | MarkdownEditor (8.10) |
+| p8-28-test | Test MarkdownEditor functionality | MarkdownEditor (8.10) |
+| p8-29 | Create ActivityLog.tsx component for task history display | ActivityLog (8.11) |
+| p8-30 | Create ActivityLog.module.css styles | ActivityLog (8.11) |
+| p8-31 | Integrate ActivityLog into TaskDetail.tsx | ActivityLog (8.11) |
+| p8-31-test | Test ActivityLog display | ActivityLog (8.11) |
+| p8-35 | Integrate EpicPicker into TaskDetail.tsx for epic assignment | EpicPicker Integration (8.13) |
 
 ---
 
@@ -140,7 +165,7 @@ Copy this JSON to recreate the todo list:
   {"id": "p8-31-test", "content": "8.11 TEST: Use ui-test-engineer to test ActivityLog display", "status": "pending", "priority": "medium"},
   {"id": "p8-32", "content": "8.12 CLI: Create internal/commands/export.go command with JSON and CSV formats", "status": "completed", "priority": "high"},
   {"id": "p8-33", "content": "8.12 CLI: Create internal/commands/import.go command with merge/replace strategies", "status": "completed", "priority": "high"},
-  {"id": "p8-34", "content": "8.12 Tests: Write export_test.go and import_test.go integration tests", "status": "pending", "priority": "high"},
+  {"id": "p8-34", "content": "8.12 Tests: Write export_test.go and import_test.go integration tests", "status": "completed", "priority": "high"},
   {"id": "p8-35", "content": "8.13 UI: Integrate EpicPicker into TaskDetail.tsx for epic assignment", "status": "pending", "priority": "medium"},
   {"id": "p8-36", "content": "Final Verification: Run all CLI tests (go test ./...)", "status": "pending", "priority": "high"},
   {"id": "p8-37", "content": "Final Verification: Run all UI tests (npm test in ui/)", "status": "pending", "priority": "high"}
@@ -178,6 +203,11 @@ Migrations are numbered sequentially. Existing: 1-8. New: 9 (due_dates), 10 (sub
 - Imports boards, epics, and tasks from JSON backup
 - Preserves original IDs for referential integrity
 
+### Export/Import Test Notes
+- PocketBase requires record IDs to be at least 15 characters
+- Test IDs use format like `board1testid001`, `task1testid0001`
+- `out.Error()` calls `os.Exit()` which terminates the test process, so error path tests verify the underlying operations directly
+
 ### Testing Approach
 After each UI feature, use `ui-test-engineer` agent to create/run Playwright tests.
 
@@ -205,9 +235,13 @@ All commits should be conventional commits, max 70 characters:
 1. Read this context file
 2. Read `docs/phase-8.md` for detailed implementation specs
 3. Use the TodoWrite tool to recreate the todo list from the JSON above
-4. Start with task p8-34 (next pending high-priority task: write export/import tests)
-5. After each task, commit with conventional commit format
-6. For UI tasks, run ui-test-engineer after implementation (see `docs/ui-test-instructions.md`)
+4. Start with task p8-12 (next pending task: EpicPicker component)
+5. Recommended order for Epic UI:
+   - p8-13 (useEpics hook) -> p8-12 (EpicPicker) -> p8-14 (styles) -> p8-14-test
+   - p8-15 (EpicList) -> p8-16 (styles) -> p8-17 (sidebar integration) -> p8-17-test
+   - p8-19 (useEpic hook) -> p8-18 (EpicDetail) -> p8-20 (styles) -> p8-20-test
+6. After each task, commit with conventional commit format
+7. For UI tasks, run ui-test-engineer after implementation (see `docs/ui-test-instructions.md`)
 
 ---
 
@@ -219,6 +253,9 @@ cd /home/ramtinj/personal-workspace/EgenSkriven && go build ./...
 
 # Run Go tests
 go test ./internal/commands/... -v
+
+# Run all Go tests
+go test ./...
 
 # Run specific test
 go test ./internal/commands/... -run TestShowCommand -v
@@ -247,15 +284,20 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:5173
 
 ## Progress Summary
 
-**Completed**: 21/37 tasks (57%)
+**Completed**: 22/37 tasks (59%)
 - All CLI due date features (p8-1 through p8-4, p8-2-test)
 - All CLI sub-task features (p8-5 through p8-8, p8-8-test)
 - DatePicker UI component (p8-9 through p8-11-test)
 - SubtaskList UI component (p8-22 through p8-25-test)
-- Export/Import CLI commands (p8-32, p8-33)
+- Export/Import CLI commands with tests (p8-32, p8-33, p8-34)
 
-**Remaining High Priority**: 3 tasks (p8-34, p8-36, p8-37)
-**Remaining Medium Priority**: 13 tasks (Epic UI, TaskCard, MarkdownEditor, ActivityLog)
+**Remaining High Priority**: 2 tasks (p8-36, p8-37) - Final verification
+**Remaining Medium Priority**: 17 tasks
+- Epic UI (p8-12 through p8-20-test): 9 tasks
+- TaskCard overdue (p8-21, p8-21-test): 2 tasks
+- MarkdownEditor (p8-26 through p8-28-test): 4 tasks
+- ActivityLog (p8-29 through p8-31-test): 4 tasks
+- EpicPicker integration (p8-35): 1 task
 
 ---
 
@@ -263,18 +305,13 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:5173
 
 In this session we:
 1. Recreated the todo list from context.md
-2. Completed p8-25: Integrated SubtaskList into TaskDetail.tsx
-   - Added `tasks` and `onTaskClick` props to TaskDetail
-   - Updated App.tsx to pass the tasks array
-   - Fixed tests to include new required props
-3. Ran ui-test-engineer to verify SubtaskList functionality (p8-25-test) - PASSED
-4. Completed p8-32: Created export.go command
-   - JSON format exports boards, epics, tasks
-   - CSV format exports tasks only
-   - Supports board filtering and output file
-5. Completed p8-33: Created import.go command
-   - Merge strategy (skip existing) and Replace strategy (overwrite)
-   - Dry-run mode for previewing changes
-   - Imports boards, epics, tasks with preserved IDs
+2. Completed p8-34: Created export_test.go and import_test.go integration tests
+   - Tests for JSON and CSV export formats
+   - Tests for board filtering in export
+   - Tests for merge and replace import strategies
+   - Tests for dry-run mode
+   - Tests for helper functions (getExportStringSlice, findExportBoardByNameOrPrefix)
+   - Fixed PocketBase ID length requirement (15+ chars)
+3. All CLI tests pass (`go test ./...`)
 
-All builds pass, all UI tests pass (352 tests).
+**Current State**: All high-priority CLI tasks are complete. The remaining work is primarily UI components for Epic management, TaskCard overdue highlighting, MarkdownEditor, and ActivityLog.
