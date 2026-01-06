@@ -5,6 +5,8 @@ import { EPIC_COLORS } from '../types/epic'
 import styles from './EpicList.module.css'
 
 interface EpicListProps {
+  /** Current board ID to filter epics by */
+  boardId?: string
   /** All tasks to calculate counts from */
   tasks: Task[]
   /** Currently selected epic ID */
@@ -19,14 +21,14 @@ interface EpicListProps {
  * EpicList component for sidebar.
  *
  * Features:
- * - Lists all epics with color indicators
+ * - Lists epics for the current board only (board-scoped)
  * - Shows task count per epic
  * - Supports selecting an epic to filter tasks
- * - "All Epics" option to clear filter
+ * - "All Tasks" option to clear filter
  * - Loading and error states
  */
-export function EpicList({ tasks, selectedEpicId, onSelectEpic, onEpicDetailClick }: EpicListProps) {
-  const { epics, loading, error } = useEpics()
+export function EpicList({ boardId, tasks, selectedEpicId, onSelectEpic, onEpicDetailClick }: EpicListProps) {
+  const { epics, loading, error } = useEpics(boardId)
 
   // Calculate task counts per epic
   const epicCounts = useMemo(() => {

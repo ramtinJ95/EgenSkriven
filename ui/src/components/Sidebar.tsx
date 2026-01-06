@@ -105,6 +105,7 @@ export function Sidebar({ collapsed, onToggle, tasks = [], selectedEpicId, onSel
         {/* Epics section - only show when a board is selected and handler provided */}
         {currentBoard && onSelectEpic && (
           <EpicList
+            boardId={currentBoard.id}
             tasks={tasks}
             selectedEpicId={selectedEpicId}
             onSelectEpic={onSelectEpic}

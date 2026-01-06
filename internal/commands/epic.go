@@ -10,6 +10,9 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/spf13/cobra"
+
+	"github.com/ramtinJ95/EgenSkriven/internal/board"
+	"github.com/ramtinJ95/EgenSkriven/internal/config"
 )
 
 func newEpicCmd(app *pocketbase.PocketBase) *cobra.Command {
@@ -19,6 +22,7 @@ func newEpicCmd(app *pocketbase.PocketBase) *cobra.Command {
 		Long: `Manage epics for grouping related tasks.
 
 Epics are larger initiatives that contain multiple tasks.
+Each epic belongs to a specific board.
 Examples: "Q1 Launch", "Auth Refactor", "Performance Sprint"`,
 	}
 
@@ -34,11 +38,14 @@ Examples: "Q1 Launch", "Auth Refactor", "Performance Sprint"`,
 // ========== Epic List ==========
 
 func newEpicListCmd(app *pocketbase.PocketBase) *cobra.Command {
+	var boardRef string
+
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List all epics",
-		Long:  `List all epics with their task counts.`,
+		Short: "List epics for the current board",
+		Long:  `List all epics for the current board with their task counts.`,
 		Example: `  egenskriven epic list
+  egenskriven epic list --board WRK
   egenskriven epic list --json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := getFormatter()
@@ -47,13 +54,24 @@ func newEpicListCmd(app *pocketbase.PocketBase) *cobra.Command {
 				return out.Error(ExitGeneralError, fmt.Sprintf("failed to bootstrap: %v", err), nil)
 			}
 
-			// Find all epics
-			records, err := app.FindAllRecords("epics")
+			// Resolve board
+			boardRecord, err := resolveBoardForEpic(app, boardRef)
+			if err != nil {
+				return out.Error(ExitValidation, fmt.Sprintf("invalid board: %v", err), nil)
+			}
+
+			// Find epics for this board
+			records, err := app.FindAllRecords("epics",
+				dbx.NewExp("board = {:boardId}", dbx.Params{"boardId": boardRecord.Id}),
+			)
 			if err != nil {
 				return out.ErrorWithSuggestion(ExitGeneralError,
 					fmt.Sprintf("failed to list epics: %v", err),
 					"Run 'egenskriven serve' first to initialize the database", nil)
 			}
+
+			boardName := boardRecord.GetString("name")
+			boardPrefix := boardRecord.GetString("prefix")
 
 			// Output
 			if out.JSON {
@@ -65,25 +83,31 @@ func newEpicListCmd(app *pocketbase.PocketBase) *cobra.Command {
 						"title":       record.GetString("title"),
 						"description": record.GetString("description"),
 						"color":       record.GetString("color"),
+						"board":       record.GetString("board"),
 						"task_count":  taskCount,
 						"created":     record.GetDateTime("created").String(),
 						"updated":     record.GetDateTime("updated").String(),
 					})
 				}
 				return json.NewEncoder(os.Stdout).Encode(map[string]any{
-					"epics": epics,
-					"count": len(epics),
+					"epics":        epics,
+					"count":        len(epics),
+					"board":        boardRecord.Id,
+					"board_name":   boardName,
+					"board_prefix": boardPrefix,
 				})
 			}
 
 			// Human-readable output
+			fmt.Printf("EPICS (%s)\n", boardName)
+			fmt.Println(strings.Repeat("-", 40))
+
 			if len(records) == 0 {
-				fmt.Println("No epics found. Create one with: egenskriven epic add \"Epic title\"")
+				fmt.Printf("No epics found for board '%s'.\n", boardName)
+				fmt.Printf("Create one with: egenskriven epic add \"Epic title\"\n")
 				return nil
 			}
 
-			fmt.Println("EPICS")
-			fmt.Println(strings.Repeat("-", 40))
 			for _, record := range records {
 				taskCount := getEpicTaskCount(app, record.Id)
 				colorIndicator := ""
@@ -99,6 +123,8 @@ func newEpicListCmd(app *pocketbase.PocketBase) *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringVarP(&boardRef, "board", "b", "", "Board name or prefix (uses default if not specified)")
+
 	return cmd
 }
 
@@ -108,6 +134,7 @@ func newEpicAddCmd(app *pocketbase.PocketBase) *cobra.Command {
 	var (
 		color       string
 		description string
+		boardRef    string
 	)
 
 	cmd := &cobra.Command{
@@ -115,11 +142,12 @@ func newEpicAddCmd(app *pocketbase.PocketBase) *cobra.Command {
 		Short: "Create a new epic",
 		Long: `Create a new epic to group related tasks.
 
-Epics can have a color for visual identification in the UI.
+Epics belong to a specific board and can have a color for visual identification.
 Color must be a valid hex code (e.g., #3B82F6).`,
 		Example: `  egenskriven epic add "Q1 Launch"
   egenskriven epic add "Auth Refactor" --color "#22C55E"
-  egenskriven epic add "Tech Debt" --description "Clean up legacy code"`,
+  egenskriven epic add "Tech Debt" --description "Clean up legacy code"
+  egenskriven epic add "Feature Sprint" --board WRK`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := getFormatter()
@@ -136,6 +164,12 @@ Color must be a valid hex code (e.g., #3B82F6).`,
 					fmt.Sprintf("invalid color format '%s' (must be hex like #3B82F6)", color), nil)
 			}
 
+			// Resolve board
+			boardRecord, err := resolveBoardForEpic(app, boardRef)
+			if err != nil {
+				return out.Error(ExitValidation, fmt.Sprintf("invalid board: %v", err), nil)
+			}
+
 			// Find epics collection
 			collection, err := app.FindCollectionByNameOrId("epics")
 			if err != nil {
@@ -147,6 +181,7 @@ Color must be a valid hex code (e.g., #3B82F6).`,
 			// Create record
 			record := core.NewRecord(collection)
 			record.Set("title", title)
+			record.Set("board", boardRecord.Id)
 			if description != "" {
 				record.Set("description", description)
 			}
@@ -158,6 +193,8 @@ Color must be a valid hex code (e.g., #3B82F6).`,
 				return out.Error(ExitGeneralError, fmt.Sprintf("failed to create epic: %v", err), nil)
 			}
 
+			boardName := boardRecord.GetString("name")
+
 			// Output
 			if out.JSON {
 				return json.NewEncoder(os.Stdout).Encode(map[string]any{
@@ -165,6 +202,8 @@ Color must be a valid hex code (e.g., #3B82F6).`,
 					"title":       record.GetString("title"),
 					"description": record.GetString("description"),
 					"color":       record.GetString("color"),
+					"board":       record.GetString("board"),
+					"board_name":  boardName,
 					"task_count":  0,
 					"created":     record.GetDateTime("created").String(),
 				})
@@ -174,7 +213,7 @@ Color must be a valid hex code (e.g., #3B82F6).`,
 			if color != "" {
 				colorDisplay = fmt.Sprintf(" %s", color)
 			}
-			fmt.Printf("Created epic: %s%s [%s]\n", title, colorDisplay, shortID(record.Id))
+			fmt.Printf("Created epic: %s%s [%s] (board: %s)\n", title, colorDisplay, shortID(record.Id), boardName)
 
 			return nil
 		},
@@ -182,6 +221,7 @@ Color must be a valid hex code (e.g., #3B82F6).`,
 
 	cmd.Flags().StringVarP(&color, "color", "c", "", "Epic color (hex, e.g., #3B82F6)")
 	cmd.Flags().StringVarP(&description, "description", "d", "", "Epic description")
+	cmd.Flags().StringVarP(&boardRef, "board", "b", "", "Board name or prefix (uses default if not specified)")
 
 	return cmd
 }
@@ -217,6 +257,17 @@ You can reference an epic by:
 					"Use 'egenskriven epic list' to see available epics", nil)
 			}
 
+			// Get board info
+			boardID := record.GetString("board")
+			var boardName, boardPrefix string
+			if boardID != "" {
+				boardRecord, err := app.FindRecordById("boards", boardID)
+				if err == nil {
+					boardName = boardRecord.GetString("name")
+					boardPrefix = boardRecord.GetString("prefix")
+				}
+			}
+
 			// Get linked tasks
 			linkedTasks, err := app.FindAllRecords("tasks",
 				dbx.NewExp("epic = {:epicId}", dbx.Params{"epicId": record.Id}),
@@ -239,13 +290,16 @@ You can reference an epic by:
 
 				return json.NewEncoder(os.Stdout).Encode(map[string]any{
 					"epic": map[string]any{
-						"id":          record.Id,
-						"title":       record.GetString("title"),
-						"description": record.GetString("description"),
-						"color":       record.GetString("color"),
-						"task_count":  len(linkedTasks),
-						"created":     record.GetDateTime("created").String(),
-						"updated":     record.GetDateTime("updated").String(),
+						"id":           record.Id,
+						"title":        record.GetString("title"),
+						"description":  record.GetString("description"),
+						"color":        record.GetString("color"),
+						"board":        boardID,
+						"board_name":   boardName,
+						"board_prefix": boardPrefix,
+						"task_count":   len(linkedTasks),
+						"created":      record.GetDateTime("created").String(),
+						"updated":      record.GetDateTime("updated").String(),
 					},
 					"tasks": tasks,
 				})
@@ -254,6 +308,9 @@ You can reference an epic by:
 			// Human-readable output
 			fmt.Printf("Epic: %s\n", record.Id)
 			fmt.Printf("Title:       %s\n", record.GetString("title"))
+			if boardName != "" {
+				fmt.Printf("Board:       %s (%s)\n", boardName, boardPrefix)
+			}
 			if color := record.GetString("color"); color != "" {
 				fmt.Printf("Color:       %s\n", color)
 			}
@@ -363,6 +420,33 @@ Use --force to skip the confirmation prompt.`,
 }
 
 // ========== Helper Functions ==========
+
+// resolveBoardForEpic resolves a board reference, using default if not specified
+func resolveBoardForEpic(app *pocketbase.PocketBase, boardRef string) (*core.Record, error) {
+	// If explicit board reference provided, use it
+	if boardRef != "" {
+		return board.GetByNameOrPrefix(app, boardRef)
+	}
+
+	// Check config for default board
+	cfg, _ := config.LoadProjectConfig()
+	if cfg != nil && cfg.DefaultBoard != "" {
+		record, err := board.GetByNameOrPrefix(app, cfg.DefaultBoard)
+		if err == nil {
+			return record, nil
+		}
+		// Default board not found, fall through
+	}
+
+	// Get existing boards
+	boards, err := board.GetAll(app)
+	if err != nil || len(boards) == 0 {
+		return nil, fmt.Errorf("no boards exist - create one with 'egenskriven board add'")
+	}
+
+	// Use first board
+	return boards[0], nil
+}
 
 // resolveEpic finds an epic by ID, ID prefix, or title
 func resolveEpic(app *pocketbase.PocketBase, ref string) (*core.Record, error) {
