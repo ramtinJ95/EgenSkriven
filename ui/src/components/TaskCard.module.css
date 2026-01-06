@@ -25,24 +25,7 @@
   box-shadow: 0 0 0 2px var(--accent-muted, rgba(var(--accent-rgb, 59, 130, 246), 0.2));
 }
 
-/* Selection indicator - checkbox shown when selected */
-.card.selected::before {
-  content: '✓';
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 18px;
-  height: 18px;
-  background-color: var(--accent);
-  color: white;
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
+
 
 .card:focus {
   outline: none;
