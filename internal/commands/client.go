@@ -108,6 +108,7 @@ type TaskData struct {
 	Epic           string   `json:"epic,omitempty"`
 	Board          string   `json:"board,omitempty"`
 	Seq            int      `json:"seq,omitempty"`
+	Parent         string   `json:"parent,omitempty"`
 	History        []any    `json:"history,omitempty"`
 }
 
