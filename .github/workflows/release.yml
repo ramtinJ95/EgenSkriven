@@ -56,57 +56,11 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      # Build all platforms
+      # Build all platforms using Makefile (DRY - single source of truth for LDFLAGS)
       - name: Build Binaries
         env:
           VERSION: ${{ steps.version.outputs.VERSION }}
-          BUILD_DATE: ${{ github.event.repository.updated_at }}
-          GIT_COMMIT: ${{ github.sha }}
-        run: |
-          mkdir -p dist
-
-          # Define ldflags
-          LDFLAGS="-X github.com/ramtinJ95/EgenSkriven/internal/commands.Version=${VERSION} -X github.com/ramtinJ95/EgenSkriven/internal/commands.BuildDate=${BUILD_DATE} -X github.com/ramtinJ95/EgenSkriven/internal/commands.GitCommit=${GIT_COMMIT:0:7}"
-
-          # macOS (Apple Silicon)
-          echo "Building darwin/arm64..."
-          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build \
-            -ldflags "${LDFLAGS}" \
-            -o dist/egenskriven-darwin-arm64 \
-            ./cmd/egenskriven
-
-          # macOS (Intel)
-          echo "Building darwin/amd64..."
-          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build \
-            -ldflags "${LDFLAGS}" \
-            -o dist/egenskriven-darwin-amd64 \
-            ./cmd/egenskriven
-
-          # Linux (amd64)
-          echo "Building linux/amd64..."
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-            -ldflags "${LDFLAGS}" \
-            -o dist/egenskriven-linux-amd64 \
-            ./cmd/egenskriven
-
-          # Linux (arm64)
-          echo "Building linux/arm64..."
-          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
-            -ldflags "${LDFLAGS}" \
-            -o dist/egenskriven-linux-arm64 \
-            ./cmd/egenskriven
-
-          # Windows (amd64)
-          echo "Building windows/amd64..."
-          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build \
-            -ldflags "${LDFLAGS}" \
-            -o dist/egenskriven-windows-amd64.exe \
-            ./cmd/egenskriven
-
-          # Generate checksums
-          cd dist
-          sha256sum * > checksums.txt
-          cat checksums.txt
+        run: make release
 
       # Create GitHub Release
       - name: Create Release

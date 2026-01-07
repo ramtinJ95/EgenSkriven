@@ -188,7 +188,13 @@ release-windows:
 		./cmd/egenskriven
 
 # Generate checksums for all binaries (cross-platform compatible)
+# Uses sha256sum on Linux, shasum on macOS
 checksums:
 	@echo "Generating checksums..."
-	cd dist && shasum -a 256 * > checksums.txt
+	@cd dist && \
+		if command -v sha256sum >/dev/null 2>&1; then \
+			sha256sum * > checksums.txt; \
+		else \
+			shasum -a 256 * > checksums.txt; \
+		fi
 	@cat dist/checksums.txt
