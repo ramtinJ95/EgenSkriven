@@ -385,6 +385,13 @@ EgenSkriven provides a skills system for AI agents that support on-demand instru
 
 #### Install Skills
 
+Skills are installed to both Claude Code and OpenCode directories automatically:
+
+| Location | Claude Code | OpenCode |
+|----------|-------------|----------|
+| Global | `~/.claude/skills/` | `~/.config/opencode/skill/` |
+| Project | `.claude/skills/` | `.opencode/skill/` |
+
 ```bash
 # Interactive installation
 egenskriven skill install
@@ -475,9 +482,9 @@ If you were using only the `prime` command before:
 - Some agents show available skills in their tool descriptions
 
 **Permission errors during install:**
-- Global install requires write access to `~/.claude/skills/`
+- Global install requires write access to `~/.claude/skills/` and `~/.config/opencode/skill/`
 - Try project install (`--project`) if global fails
-- Check directory permissions: `ls -la ~/.claude/`
+- Check directory permissions: `ls -la ~/.claude/` and `ls -la ~/.config/opencode/`
 
 **Updating skills after EgenSkriven upgrade:**
 - Run `egenskriven skill install --force` to update embedded skills
