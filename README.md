@@ -219,6 +219,9 @@ This creates a single `./egenskriven` binary with the UI embedded.
 | `prime` | Output agent instructions |
 | `context` | Show project state summary |
 | `suggest` | Suggest next task to work on |
+| `skill install` | Install skills for AI agents |
+| `skill uninstall` | Remove installed skills |
+| `skill status` | Show skill installation status |
 
 ### Global Flags
 
@@ -354,6 +357,75 @@ egenskriven prime --agent claude
 ```
 
 This injects task tracking instructions into Claude's context.
+
+### Skills System
+
+EgenSkriven provides a skills system for AI agents that support on-demand instruction loading. Skills are more token-efficient than always-on instructions.
+
+#### Install Skills
+
+```bash
+# Interactive installation
+egenskriven skill install
+
+# Install globally (all projects)
+egenskriven skill install --global
+
+# Install to current project only
+egenskriven skill install --project
+
+# Update existing skills
+egenskriven skill install --force
+```
+
+#### Available Skills
+
+| Skill | Description | When Agent Loads |
+|-------|-------------|------------------|
+| `egenskriven` | Core commands and task management | User mentions tasks, kanban, boards |
+| `egenskriven-workflows` | Workflow modes and agent behaviors | Configuring workflow/agent modes |
+| `egenskriven-advanced` | Epics, dependencies, sub-tasks, batch ops | Complex task relationships |
+
+#### Check Installation Status
+
+```bash
+egenskriven skill status
+```
+
+#### Uninstall Skills
+
+```bash
+# Remove from all locations
+egenskriven skill uninstall
+
+# Remove from specific location
+egenskriven skill uninstall --global
+egenskriven skill uninstall --project
+```
+
+### AGENTS.md
+
+EgenSkriven includes an `AGENTS.md` file that provides minimal always-loaded context for AI agents. This file is automatically read by agents supporting the AGENTS.md standard (Claude Code, OpenCode, Cursor, Codex, etc.).
+
+**Customize AGENTS.md for your project:**
+
+1. **Workflow mode**: Change "light" to "strict" or "minimal" in the Workflow section
+2. **Quick commands**: Add project-specific common operations
+3. **Board info**: If using multiple boards, mention the default board
+4. **Project conventions**: Add any project-specific task naming or labeling conventions
+
+The AGENTS.md file points agents to the skills system for detailed documentation, keeping always-loaded context minimal.
+
+### Skills vs Prime Command
+
+| Feature | Skills | Prime |
+|---------|--------|-------|
+| Token efficiency | High (on-demand) | Medium (~1-2k always) |
+| Agent support | Claude Code, OpenCode | Any agent with hooks |
+| Loading | Agent decides | Hook-injected |
+| Best for | Modern agents | Legacy/hook workflows |
+
+Use both together: Skills provide on-demand detail, prime provides hook-based injection.
 
 ## Web UI
 
