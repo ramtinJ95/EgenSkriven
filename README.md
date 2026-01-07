@@ -86,14 +86,31 @@ A local-first kanban task manager with CLI and web UI. Built with agentic workfl
 - **Accent colors** - 8 preset accent colors or use theme's default
 - **Real-time preview** - Theme changes apply instantly
 
-## Quick Start
+## Installation
 
-### Prerequisites
+### Quick Install (macOS/Linux)
 
+```bash
+curl -fsSL https://raw.githubusercontent.com/ramtinJ95/EgenSkriven/main/install.sh | sh
+```
+
+### Manual Download
+
+Download the latest release for your platform from [Releases](https://github.com/ramtinJ95/EgenSkriven/releases):
+
+| Platform | Binary |
+|----------|--------|
+| macOS (Apple Silicon) | `egenskriven-darwin-arm64` |
+| macOS (Intel) | `egenskriven-darwin-amd64` |
+| Linux (64-bit) | `egenskriven-linux-amd64` |
+| Linux (ARM64) | `egenskriven-linux-arm64` |
+| Windows (64-bit) | `egenskriven-windows-amd64.exe` |
+
+### Build from Source
+
+**Prerequisites:**
 - Go 1.21+
 - Node.js 18+ (for building UI)
-
-### Build
 
 ```bash
 git clone https://github.com/ramtinJ95/EgenSkriven
@@ -102,6 +119,8 @@ make build
 ```
 
 This creates a single `./egenskriven` binary with the UI embedded.
+
+## Quick Start
 
 ### Run
 
@@ -163,6 +182,8 @@ This creates a single `./egenskriven` binary with the UI embedded.
 | `update <ref>` | Update task properties |
 | `delete <ref>` | Delete a task |
 | `version` | Show version info |
+| `completion <shell>` | Generate shell completions |
+| `self-upgrade` | Upgrade to latest version |
 
 ### Board Management
 
@@ -205,6 +226,47 @@ This creates a single `./egenskriven` binary with the UI embedded.
 - `--quiet`, `-q` - Suppress non-essential output
 - `--verbose`, `-v` - Show detailed output including connection method
 - `--direct` - Skip HTTP API, use direct database access (faster, works offline)
+
+### Shell Completions
+
+Enable tab completion for your shell:
+
+```bash
+# Bash (Linux)
+egenskriven completion bash > /etc/bash_completion.d/egenskriven
+
+# Bash (macOS with bash-completion@2)
+egenskriven completion bash > $(brew --prefix)/etc/bash_completion.d/egenskriven
+
+# Zsh
+egenskriven completion zsh > "${fpath[1]}/_egenskriven"
+
+# Fish
+egenskriven completion fish > ~/.config/fish/completions/egenskriven.fish
+
+# PowerShell
+egenskriven completion powershell >> $PROFILE
+```
+
+Restart your shell or source the completion file after installing.
+
+### Self-Upgrade
+
+Update EgenSkriven to the latest version:
+
+```bash
+# Check for updates and install if available
+egenskriven self-upgrade
+
+# Only check for updates (don't install)
+egenskriven self-upgrade --check
+
+# Force reinstall current version
+egenskriven self-upgrade --force
+
+# JSON output for scripting
+egenskriven self-upgrade --check --json
+```
 
 ### Task Reference
 
