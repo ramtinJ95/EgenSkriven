@@ -17,6 +17,7 @@ import (
 	"github.com/ramtinJ95/EgenSkriven/internal/board"
 	"github.com/ramtinJ95/EgenSkriven/internal/config"
 	"github.com/ramtinJ95/EgenSkriven/internal/output"
+	"github.com/ramtinJ95/EgenSkriven/internal/resolver"
 )
 
 // TaskInput represents a task for batch creation
@@ -206,9 +207,12 @@ Examples:
 
 			// Handle parent (sub-task)
 			if parent != "" {
-				// Resolve parent task by ID or short ID
-				parentTask, err := resolveTaskByID(app, parent)
+				// Resolve parent task using full resolver (supports display IDs like TST-4)
+				parentTask, err := resolver.MustResolve(app, parent)
 				if err != nil {
+					if ambErr, ok := err.(*resolver.AmbiguousError); ok {
+						return out.AmbiguousError(parent, ambErr.Matches)
+					}
 					return out.Error(ExitValidation, fmt.Sprintf("invalid parent: %v", err), nil)
 				}
 				record.Set("parent", parentTask.Id)
