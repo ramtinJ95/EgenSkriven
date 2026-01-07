@@ -441,13 +441,19 @@ Checks both Claude Code and OpenCode locations (global and project).`,
 	}
 }
 
-// extractDescription extracts the description from YAML frontmatter
+// extractDescription extracts the description from YAML frontmatter.
+// Handles both single-line and multi-line YAML descriptions (using | or >).
 func extractDescription(content string) string {
 	lines := strings.Split(content, "\n")
 	inFrontmatter := false
+	inDescription := false
+	var descLines []string
 
 	for _, line := range lines {
-		if strings.TrimSpace(line) == "---" {
+		trimmed := strings.TrimSpace(line)
+
+		// Check for frontmatter boundaries
+		if trimmed == "---" {
 			if inFrontmatter {
 				break
 			}
@@ -455,10 +461,40 @@ func extractDescription(content string) string {
 			continue
 		}
 
-		if inFrontmatter && strings.HasPrefix(line, "description:") {
-			desc := strings.TrimPrefix(line, "description:")
-			return strings.TrimSpace(desc)
+		if !inFrontmatter {
+			continue
 		}
+
+		// Check if we're starting the description field
+		if strings.HasPrefix(line, "description:") {
+			value := strings.TrimPrefix(line, "description:")
+			value = strings.TrimSpace(value)
+
+			// Check for multi-line indicators (| or >)
+			if value == "|" || value == ">" || value == "|+" || value == ">+" ||
+				value == "|-" || value == ">-" {
+				inDescription = true
+				continue
+			}
+
+			// Single-line description
+			return value
+		}
+
+		// If we're in a multi-line description, collect indented lines
+		if inDescription {
+			// Multi-line content is indented; non-indented line ends it
+			if len(line) > 0 && (line[0] == ' ' || line[0] == '\t') {
+				descLines = append(descLines, strings.TrimSpace(line))
+			} else if trimmed != "" {
+				// Hit a new field, stop collecting
+				break
+			}
+		}
+	}
+
+	if len(descLines) > 0 {
+		return strings.Join(descLines, " ")
 	}
 
 	return ""
