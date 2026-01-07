@@ -52,7 +52,7 @@ Available skills:
 	return cmd
 }
 
-// getGlobalSkillPath returns the global skills directory path
+// getGlobalSkillPath returns the global skills directory path for Claude Code
 func getGlobalSkillPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -61,9 +61,23 @@ func getGlobalSkillPath() (string, error) {
 	return filepath.Join(home, ".claude", "skills"), nil
 }
 
-// getProjectSkillPath returns the project skills directory path
+// getGlobalOpenCodeSkillPath returns the global skills directory path for OpenCode
+func getGlobalOpenCodeSkillPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("could not determine home directory: %w", err)
+	}
+	return filepath.Join(home, ".config", "opencode", "skill"), nil
+}
+
+// getProjectSkillPath returns the project skills directory path for Claude Code
 func getProjectSkillPath() string {
 	return filepath.Join(".claude", "skills")
+}
+
+// getProjectOpenCodeSkillPath returns the project skills directory path for OpenCode
+func getProjectOpenCodeSkillPath() string {
+	return filepath.Join(".opencode", "skill")
 }
 
 // skillNames is the list of skills to install
@@ -90,21 +104,15 @@ Skills can be installed globally (available in all projects) or locally
 (only in the current project). Global installation is recommended for
 personal use; project installation is better for shared repositories.
 
-Installation locations:
-  Global:  ~/.claude/skills/
-  Project: .claude/skills/
-
-Both Claude Code and OpenCode read from these locations.`,
+Installation locations (installs to both Claude Code and OpenCode directories):
+  Global:  ~/.claude/skills/ and ~/.config/opencode/skill/
+  Project: .claude/skills/ and .opencode/skill/`,
 		Example: `  egenskriven skill install          # Interactive prompt
   egenskriven skill install --global  # Install globally
   egenskriven skill install --project # Install to current project
   egenskriven skill install --force   # Overwrite existing skills`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := getFormatter()
-
-			// Determine installation path
-			var installPath string
-			var err error
 
 			if global && project {
 				return fmt.Errorf("cannot use both --global and --project")
@@ -139,52 +147,67 @@ Both Claude Code and OpenCode read from these locations.`,
 				}
 			}
 
+			// Collect installation paths for both Claude Code and OpenCode
+			var installPaths []string
 			if global {
-				installPath, err = getGlobalSkillPath()
+				claudePath, err := getGlobalSkillPath()
 				if err != nil {
 					return err
 				}
-			} else {
-				installPath = getProjectSkillPath()
-			}
+				installPaths = append(installPaths, claudePath)
 
-			if !out.JSON {
-				fmt.Printf("\nInstalling skills to %s...\n\n", installPath)
-			}
-
-			// Install each skill
-			installed := make([]string, 0, len(skillNames))
-			for _, skillName := range skillNames {
-				skillDir := filepath.Join(installPath, skillName)
-				skillFile := filepath.Join(skillDir, "SKILL.md")
-
-				// Check if skill already exists
-				if _, err := os.Stat(skillFile); err == nil && !force {
-					if !out.JSON {
-						fmt.Printf("  Skipped: %s (already exists, use --force to overwrite)\n", skillName)
-					}
-					continue
-				}
-
-				// Create skill directory
-				if err := os.MkdirAll(skillDir, 0755); err != nil {
-					return fmt.Errorf("failed to create directory %s: %w", skillDir, err)
-				}
-
-				// Read embedded skill content
-				content, err := embeddedSkills.ReadFile(filepath.Join("skills", skillName, "SKILL.md"))
+				opencodePath, err := getGlobalOpenCodeSkillPath()
 				if err != nil {
-					return fmt.Errorf("failed to read embedded skill %s: %w", skillName, err)
+					return err
 				}
+				installPaths = append(installPaths, opencodePath)
+			} else {
+				installPaths = append(installPaths, getProjectSkillPath())
+				installPaths = append(installPaths, getProjectOpenCodeSkillPath())
+			}
 
-				// Write skill file
-				if err := os.WriteFile(skillFile, content, 0644); err != nil {
-					return fmt.Errorf("failed to write skill file %s: %w", skillFile, err)
-				}
-
-				installed = append(installed, skillFile)
+			// Install each skill to all target paths
+			installed := make([]string, 0, len(skillNames)*len(installPaths))
+			for _, installPath := range installPaths {
 				if !out.JSON {
-					fmt.Printf("  Created: %s\n", skillFile)
+					fmt.Printf("Installing skills to %s...\n", installPath)
+				}
+
+				for _, skillName := range skillNames {
+					skillDir := filepath.Join(installPath, skillName)
+					skillFile := filepath.Join(skillDir, "SKILL.md")
+
+					// Check if skill already exists
+					if _, err := os.Stat(skillFile); err == nil && !force {
+						if !out.JSON {
+							fmt.Printf("  Skipped: %s (already exists, use --force to overwrite)\n", skillName)
+						}
+						continue
+					}
+
+					// Create skill directory
+					if err := os.MkdirAll(skillDir, 0755); err != nil {
+						return fmt.Errorf("failed to create directory %s: %w", skillDir, err)
+					}
+
+					// Read embedded skill content
+					content, err := embeddedSkills.ReadFile(filepath.Join("skills", skillName, "SKILL.md"))
+					if err != nil {
+						return fmt.Errorf("failed to read embedded skill %s: %w", skillName, err)
+					}
+
+					// Write skill file
+					if err := os.WriteFile(skillFile, content, 0644); err != nil {
+						return fmt.Errorf("failed to write skill file %s: %w", skillFile, err)
+					}
+
+					installed = append(installed, skillFile)
+					if !out.JSON {
+						fmt.Printf("  Created: %s\n", skillFile)
+					}
+				}
+				if !out.JSON {
+					fmt.Println()
 				}
 			}
 
@@ -196,7 +219,7 @@ Both Claude Code and OpenCode read from these locations.`,
 				return json.NewEncoder(os.Stdout).Encode(map[string]interface{}{
 					"installed": installed,
 					"location":  location,
-					"path":      installPath,
+					"paths":     installPaths,
 					"count":     len(installed),
 				})
 			}
@@ -255,27 +278,10 @@ Use --global or --project to target a specific location.`,
 				project = true
 			}
 
-			if global {
-				globalPath, err := getGlobalSkillPath()
-				if err == nil {
-					for _, skillName := range skillNames {
-						skillDir := filepath.Join(globalPath, skillName)
-						if _, err := os.Stat(skillDir); err == nil {
-							if err := os.RemoveAll(skillDir); err == nil {
-								removed = append(removed, skillDir)
-								if !out.JSON {
-									fmt.Printf("Removed: %s\n", skillDir)
-								}
-							}
-						}
-					}
-				}
-			}
-
-			if project {
-				projectPath := getProjectSkillPath()
+			// Helper to remove skills from a path
+			removeFromPath := func(basePath string) {
 				for _, skillName := range skillNames {
-					skillDir := filepath.Join(projectPath, skillName)
+					skillDir := filepath.Join(basePath, skillName)
 					if _, err := os.Stat(skillDir); err == nil {
 						if err := os.RemoveAll(skillDir); err == nil {
 							removed = append(removed, skillDir)
@@ -285,6 +291,24 @@ Use --global or --project to target a specific location.`,
 						}
 					}
 				}
+			}
+
+			if global {
+				// Claude Code global
+				if globalPath, err := getGlobalSkillPath(); err == nil {
+					removeFromPath(globalPath)
+				}
+				// OpenCode global
+				if opencodePath, err := getGlobalOpenCodeSkillPath(); err == nil {
+					removeFromPath(opencodePath)
+				}
+			}
+
+			if project {
+				// Claude Code project
+				removeFromPath(getProjectSkillPath())
+				// OpenCode project
+				removeFromPath(getProjectOpenCodeSkillPath())
 			}
 
 			if out.JSON {
@@ -317,7 +341,7 @@ func newSkillStatusCmd() *cobra.Command {
 		Short: "Show installation status of EgenSkriven skills",
 		Long: `Show which EgenSkriven skills are installed and where.
 
-Checks both global (~/.claude/skills/) and project (.claude/skills/) locations.`,
+Checks both Claude Code and OpenCode locations (global and project).`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := getFormatter()
 
@@ -327,9 +351,6 @@ Checks both global (~/.claude/skills/) and project (.claude/skills/) locations.`
 				Skills    []SkillInfo `json:"skills"`
 				Available bool        `json:"available"`
 			}
-
-			globalPath, _ := getGlobalSkillPath()
-			projectPath := getProjectSkillPath()
 
 			checkLocation := func(basePath string) LocationStatus {
 				status := LocationStatus{
@@ -364,13 +385,21 @@ Checks both global (~/.claude/skills/) and project (.claude/skills/) locations.`
 				return status
 			}
 
-			globalStatus := checkLocation(globalPath)
-			projectStatus := checkLocation(projectPath)
+			// Check all locations
+			claudeGlobalPath, _ := getGlobalSkillPath()
+			opencodeGlobalPath, _ := getGlobalOpenCodeSkillPath()
+
+			claudeGlobalStatus := checkLocation(claudeGlobalPath)
+			opencodeGlobalStatus := checkLocation(opencodeGlobalPath)
+			claudeProjectStatus := checkLocation(getProjectSkillPath())
+			opencodeProjectStatus := checkLocation(getProjectOpenCodeSkillPath())
 
 			if out.JSON {
 				return json.NewEncoder(os.Stdout).Encode(map[string]interface{}{
-					"global":  globalStatus,
-					"project": projectStatus,
+					"claude_global":    claudeGlobalStatus,
+					"opencode_global":  opencodeGlobalStatus,
+					"claude_project":   claudeProjectStatus,
+					"opencode_project": opencodeProjectStatus,
 				})
 			}
 
@@ -396,10 +425,14 @@ Checks both global (~/.claude/skills/) and project (.claude/skills/) locations.`
 				fmt.Println()
 			}
 
-			printStatus("Global", globalStatus)
-			printStatus("Project", projectStatus)
+			printStatus("Claude Code Global", claudeGlobalStatus)
+			printStatus("OpenCode Global", opencodeGlobalStatus)
+			printStatus("Claude Code Project", claudeProjectStatus)
+			printStatus("OpenCode Project", opencodeProjectStatus)
 
-			if !globalStatus.Available && !projectStatus.Available {
+			anyAvailable := claudeGlobalStatus.Available || opencodeGlobalStatus.Available ||
+				claudeProjectStatus.Available || opencodeProjectStatus.Available
+			if !anyAvailable {
 				fmt.Println("No skills installed. Run: egenskriven skill install")
 			}
 
