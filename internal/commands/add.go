@@ -785,6 +785,7 @@ func recordToTaskData(record *core.Record) TaskData {
 		Epic:           record.GetString("epic"),
 		Board:          record.GetString("board"),
 		Seq:            record.GetInt("seq"),
+		Parent:         record.GetString("parent"),
 		History:        history,
 	}
 }
