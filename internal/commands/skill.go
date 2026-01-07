@@ -4,7 +4,6 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -501,19 +500,4 @@ func extractDescription(content string) string {
 	}
 
 	return ""
-}
-
-// ListEmbeddedSkills returns the list of embedded skill names (for testing)
-func ListEmbeddedSkills() ([]string, error) {
-	var skills []string
-	err := fs.WalkDir(embeddedSkills, "skills", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() && path != "skills" {
-			skills = append(skills, filepath.Base(path))
-		}
-		return nil
-	})
-	return skills, err
 }
