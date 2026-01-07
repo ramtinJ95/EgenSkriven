@@ -96,10 +96,42 @@ get_install_dir() {
 install_binary() {
     BINARY_NAME="egenskriven-${PLATFORM}"
     DOWNLOAD_URL="https://github.com/ramtinJ95/EgenSkriven/releases/download/${VERSION}/${BINARY_NAME}"
+    CHECKSUMS_URL="https://github.com/ramtinJ95/EgenSkriven/releases/download/${VERSION}/checksums.txt"
     TMP_FILE=$(mktemp)
+    TMP_CHECKSUMS=$(mktemp)
 
     info "Downloading $BINARY_NAME..."
     curl -fsSL "$DOWNLOAD_URL" -o "$TMP_FILE" || error "Download failed. Check your internet connection."
+
+    # Download and verify checksum
+    info "Verifying checksum..."
+    if curl -fsSL "$CHECKSUMS_URL" -o "$TMP_CHECKSUMS" 2>/dev/null; then
+        EXPECTED_HASH=$(grep "$BINARY_NAME" "$TMP_CHECKSUMS" | awk '{print $1}')
+        if [ -n "$EXPECTED_HASH" ]; then
+            # Use shasum on macOS, sha256sum on Linux
+            if command -v sha256sum >/dev/null 2>&1; then
+                ACTUAL_HASH=$(sha256sum "$TMP_FILE" | awk '{print $1}')
+            elif command -v shasum >/dev/null 2>&1; then
+                ACTUAL_HASH=$(shasum -a 256 "$TMP_FILE" | awk '{print $1}')
+            else
+                warn "No checksum tool available, skipping verification"
+                ACTUAL_HASH=""
+            fi
+
+            if [ -n "$ACTUAL_HASH" ]; then
+                if [ "$EXPECTED_HASH" != "$ACTUAL_HASH" ]; then
+                    rm -f "$TMP_FILE" "$TMP_CHECKSUMS"
+                    error "Checksum verification failed! The downloaded file may be corrupted or tampered with."
+                fi
+                success "Checksum verified"
+            fi
+        else
+            warn "Could not find checksum for $BINARY_NAME, skipping verification"
+        fi
+    else
+        warn "Could not download checksums, skipping verification"
+    fi
+    rm -f "$TMP_CHECKSUMS"
 
     info "Installing to $INSTALL_DIR/egenskriven..."
     mv "$TMP_FILE" "$INSTALL_DIR/egenskriven"
