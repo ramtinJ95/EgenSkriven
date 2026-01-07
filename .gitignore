@@ -14,7 +14,7 @@ pb_data_*/
 # Build outputs
 # -----------------------------------------------------------------------------
 # Compiled binary (built with 'make build')
-egenskriven
+/egenskriven
 
 # Cross-platform release builds
 dist/
