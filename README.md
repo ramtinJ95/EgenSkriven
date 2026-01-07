@@ -427,6 +427,28 @@ The AGENTS.md file points agents to the skills system for detailed documentation
 
 Use both together: Skills provide on-demand detail, prime provides hook-based injection.
 
+### Skills Troubleshooting
+
+**Skills not discovered by agent:**
+1. Verify installation with `egenskriven skill status`
+2. Check the agent is reading from the correct location (global vs project)
+3. Restart the agent after installing skills
+4. Ensure skill files have correct YAML frontmatter with `name` and `description`
+
+**Skills installed but not loading:**
+- Agent loads skills on-demand based on keywords in conversation
+- Mention "task", "kanban", "egenskriven" to trigger skill loading
+- Some agents show available skills in their tool descriptions
+
+**Permission errors during install:**
+- Global install requires write access to `~/.claude/skills/`
+- Try project install (`--project`) if global fails
+- Check directory permissions: `ls -la ~/.claude/`
+
+**Updating skills after EgenSkriven upgrade:**
+- Run `egenskriven skill install --force` to update embedded skills
+- This overwrites existing skill files with the latest versions
+
 ## Web UI
 
 The web UI provides a full-featured kanban board with:
