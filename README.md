@@ -349,14 +349,35 @@ The `prime` command outputs formatted instructions that tell the agent how to us
 
 ### Example: Claude Code Hook
 
-Add to your Claude Code configuration:
+Add to your Claude Code settings (`.claude/settings.json`):
 
-```bash
-# On session start
-egenskriven prime --agent claude
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "egenskriven prime --agent claude" }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          { "type": "command", "command": "egenskriven prime --agent claude" }
+        ]
+      }
+    ]
+  }
+}
 ```
 
-This injects task tracking instructions into Claude's context.
+This injects task tracking instructions into Claude's context at session start and before context compaction.
+
+**Recommended setup (skills + prime):**
+1. Install skills globally: `egenskriven skill install --global`
+2. Add the prime hook above for guaranteed context injection
+3. Skills provide on-demand detailed instructions, prime provides baseline context
 
 ### Skills System
 
@@ -426,6 +447,19 @@ The AGENTS.md file points agents to the skills system for detailed documentation
 | Best for | Modern agents | Legacy/hook workflows |
 
 Use both together: Skills provide on-demand detail, prime provides hook-based injection.
+
+### Migrating from Prime-Only to Skills
+
+If you were using only the `prime` command before:
+
+1. **Install skills**: `egenskriven skill install --global`
+2. **Keep your prime hook**: The prime command continues to work alongside skills
+3. **Benefits of adding skills**:
+   - On-demand loading reduces context usage
+   - More detailed instructions when needed
+   - Agent can load specific skill based on task type
+
+**No changes required to existing setups** - skills are additive, not a replacement.
 
 ### Skills Troubleshooting
 
