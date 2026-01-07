@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -84,8 +85,9 @@ func runSelfUpgrade(checkOnly, force bool) error {
 	latestVersion := strings.TrimPrefix(release.TagName, "v")
 	currentVersion := strings.TrimPrefix(Version, "v")
 
-	// 2. Compare versions
-	updateAvailable := latestVersion != currentVersion && currentVersion != "dev"
+	// 2. Compare versions using semver comparison
+	// Only consider update available if latest is actually newer (not equal or older)
+	updateAvailable := currentVersion != "dev" && isNewerVersion(latestVersion, currentVersion)
 
 	// Handle JSON output
 	if formatter.JSON {
@@ -142,7 +144,7 @@ func runSelfUpgrade(checkOnly, force bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to download update: %w", err)
 	}
-	defer os.Remove(tmpFile) // Clean up on failure
+	defer os.Remove(tmpFile) // Clean up temp file (no-op if already moved)
 
 	// 7. Get current executable path
 	execPath, err := os.Executable()
@@ -265,9 +267,72 @@ func copyFile(src, dst string) error {
 
 	_, err = io.Copy(destFile, sourceFile)
 	if err != nil {
+		// Clean up partial file on copy failure
+		os.Remove(dst)
 		return err
 	}
 
 	// Preserve executable permission
-	return os.Chmod(dst, 0755)
+	if err := os.Chmod(dst, 0755); err != nil {
+		// Clean up on chmod failure
+		os.Remove(dst)
+		return err
+	}
+	return nil
+}
+
+// isNewerVersion returns true if version a is newer than version b.
+// Versions should be in semver format (e.g., "1.2.3" or "1.2.3-beta").
+// Pre-release versions (containing "-") are considered older than release versions.
+func isNewerVersion(a, b string) bool {
+	// Parse version parts, stripping any pre-release suffix for comparison
+	aParts, aPrerelease := parseVersion(a)
+	bParts, bPrerelease := parseVersion(b)
+
+	// Compare major.minor.patch
+	for i := 0; i < 3; i++ {
+		aVal, bVal := 0, 0
+		if i < len(aParts) {
+			aVal = aParts[i]
+		}
+		if i < len(bParts) {
+			bVal = bParts[i]
+		}
+
+		if aVal > bVal {
+			return true
+		}
+		if aVal < bVal {
+			return false
+		}
+	}
+
+	// Same version numbers - check pre-release
+	// A release version is newer than a pre-release of the same version
+	if bPrerelease != "" && aPrerelease == "" {
+		return true
+	}
+
+	return false
+}
+
+// parseVersion parses a semver string into numeric parts and pre-release suffix.
+// Returns ([]int{major, minor, patch}, prerelease)
+func parseVersion(v string) ([]int, string) {
+	prerelease := ""
+	if idx := strings.Index(v, "-"); idx != -1 {
+		prerelease = v[idx+1:]
+		v = v[:idx]
+	}
+
+	parts := strings.Split(v, ".")
+	result := make([]int, len(parts))
+	for i, p := range parts {
+		val, err := strconv.Atoi(p)
+		if err != nil {
+			val = 0
+		}
+		result[i] = val
+	}
+	return result, prerelease
 }
