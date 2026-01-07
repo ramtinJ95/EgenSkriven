@@ -12,6 +12,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// embeddedSkills contains the skill files that are embedded into the binary.
+// The source of truth for skill content is internal/commands/skills/*.
+// The .claude/skills/ directory in the repo is for local development/testing
+// but the embedded files here are what gets distributed to users.
+//
 //go:embed skills/*
 var embeddedSkills embed.FS
 
