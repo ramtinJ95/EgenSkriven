@@ -120,7 +120,36 @@ Examples:
 			// Update blocked_by
 			if len(blockedBy) > 0 || len(removeBlockedBy) > 0 {
 				oldBlockedBy := getTaskBlockedBy(task)
-				newBlockedBy := updateBlockedBy(task.Id, oldBlockedBy, blockedBy, removeBlockedBy)
+
+				// Resolve all blocking task references to full IDs (supports display IDs like TST-4)
+				resolvedBlockedBy := make([]string, 0, len(blockedBy))
+				for _, ref := range blockedBy {
+					blockingTask, err := resolver.MustResolve(app, ref)
+					if err != nil {
+						if ambErr, ok := err.(*resolver.AmbiguousError); ok {
+							return out.AmbiguousError(ref, ambErr.Matches)
+						}
+						return out.Error(ExitNotFound,
+							fmt.Sprintf("blocking task not found: %s", ref), nil)
+					}
+					resolvedBlockedBy = append(resolvedBlockedBy, blockingTask.Id)
+				}
+
+				// Resolve removeBlockedBy references too
+				resolvedRemoveBlockedBy := make([]string, 0, len(removeBlockedBy))
+				for _, ref := range removeBlockedBy {
+					blockingTask, err := resolver.MustResolve(app, ref)
+					if err != nil {
+						if ambErr, ok := err.(*resolver.AmbiguousError); ok {
+							return out.AmbiguousError(ref, ambErr.Matches)
+						}
+						return out.Error(ExitNotFound,
+							fmt.Sprintf("blocking task not found: %s", ref), nil)
+					}
+					resolvedRemoveBlockedBy = append(resolvedRemoveBlockedBy, blockingTask.Id)
+				}
+
+				newBlockedBy := updateBlockedBy(task.Id, oldBlockedBy, resolvedBlockedBy, resolvedRemoveBlockedBy)
 
 				// Validate that all blocking tasks exist and check for cycles
 				for _, blockingID := range newBlockedBy {
