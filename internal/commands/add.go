@@ -752,13 +752,8 @@ func recordToTaskData(record *core.Record) TaskData {
 		}
 	}
 
-	// Get blocked_by as string slice
-	var blockedBy []string
-	if rawBlocked := record.Get("blocked_by"); rawBlocked != nil {
-		if b, ok := rawBlocked.([]string); ok {
-			blockedBy = b
-		}
-	}
+	// Get blocked_by as string slice (use getTaskBlockedBy for proper type handling)
+	blockedBy := getTaskBlockedBy(record)
 
 	// Get history
 	var history []any
