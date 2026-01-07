@@ -10,7 +10,8 @@
 #   make dev-ui       - Start React dev server
 #   make dev-all      - Start both React and Go dev servers
 
-.PHONY: dev build run clean test test-coverage tidy help build-ui dev-ui test-ui clean-ui dev-all
+.PHONY: dev build run clean test test-coverage tidy help build-ui dev-ui test-ui clean-ui dev-all \
+        release clean-dist release-darwin release-linux release-windows checksums
 
 # Version info (can be overridden: make build VERSION=1.0.0)
 VERSION ?= dev
@@ -39,6 +40,10 @@ help:
 	@echo "  make test-ui       - Run UI tests"
 	@echo "  make clean-ui      - Remove UI build artifacts"
 	@echo "  make dev-all       - Start both React and Go dev servers"
+	@echo ""
+	@echo "Release commands:"
+	@echo "  make release       - Build binaries for all platforms"
+	@echo "  make clean-dist    - Clean dist directory"
 
 # Development: run with hot reload using Air
 # Requires: go install github.com/air-verse/air@latest
@@ -130,3 +135,60 @@ dev-all:
 	@echo "  React: http://localhost:5173 (with proxy to :8090)"
 	@echo "  Go:    http://localhost:8090"
 	@$(MAKE) -j2 dev-ui dev
+
+# =============================================================================
+# Release Targets
+# =============================================================================
+
+# Build binaries for all platforms
+# Usage: make release
+# Creates binaries in dist/ directory
+release: clean-dist build-ui release-darwin release-linux release-windows checksums
+	@echo "Release builds complete. Binaries in dist/"
+	@ls -lh dist/
+
+# Clean dist directory before release build
+clean-dist:
+	@echo "Cleaning dist directory..."
+	rm -rf dist/
+	mkdir -p dist/
+
+# macOS builds (Apple Silicon and Intel)
+release-darwin:
+	@echo "Building for macOS (arm64)..."
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build \
+		-ldflags "$(LDFLAGS)" \
+		-o dist/egenskriven-darwin-arm64 \
+		./cmd/egenskriven
+	@echo "Building for macOS (amd64)..."
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build \
+		-ldflags "$(LDFLAGS)" \
+		-o dist/egenskriven-darwin-amd64 \
+		./cmd/egenskriven
+
+# Linux builds (amd64 and arm64)
+release-linux:
+	@echo "Building for Linux (amd64)..."
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+		-ldflags "$(LDFLAGS)" \
+		-o dist/egenskriven-linux-amd64 \
+		./cmd/egenskriven
+	@echo "Building for Linux (arm64)..."
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
+		-ldflags "$(LDFLAGS)" \
+		-o dist/egenskriven-linux-arm64 \
+		./cmd/egenskriven
+
+# Windows build
+release-windows:
+	@echo "Building for Windows (amd64)..."
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build \
+		-ldflags "$(LDFLAGS)" \
+		-o dist/egenskriven-windows-amd64.exe \
+		./cmd/egenskriven
+
+# Generate checksums for all binaries (cross-platform compatible)
+checksums:
+	@echo "Generating checksums..."
+	cd dist && shasum -a 256 * > checksums.txt
+	@cat dist/checksums.txt
