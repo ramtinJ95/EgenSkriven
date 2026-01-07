@@ -283,7 +283,10 @@ Use --global or --project to target a specific location.`,
 				for _, skillName := range skillNames {
 					skillDir := filepath.Join(basePath, skillName)
 					if _, err := os.Stat(skillDir); err == nil {
-						if err := os.RemoveAll(skillDir); err == nil {
+						if err := os.RemoveAll(skillDir); err != nil {
+							// Log warning but continue with other skills
+							warnLog("failed to remove %s: %v", skillDir, err)
+						} else {
 							removed = append(removed, skillDir)
 							if !out.JSON {
 								fmt.Printf("Removed: %s\n", skillDir)
