@@ -16,6 +16,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
+## [0.1.1] - 2026-01-07
+
+### Added
+- **CLI**: OpenCode skill directory support for seamless integration
+- **CLI**: New `skill` command with install/uninstall/status subcommands
+- **Skills**: Core `egenskriven` skill file for AI agents
+- **Skills**: `egenskriven-workflows` skill file documenting workflow modes
+- **Skills**: `egenskriven-advanced` skill file for epics, dependencies, and batch operations
+- **Docs**: AGENTS.md template for AI agent integration
+- **Docs**: Skills system documentation
+- **Docs**: Skills troubleshooting guide
+- **Docs**: Migration guide and updated hook examples
+
+### Changed
+- Embedded skills are now the source of truth for skill content
+- JSON mode defaults to global scope
+
+### Fixed
+- Handle multi-line YAML descriptions in skill files
+- Log warning when skill removal fails instead of silent failure
+
+### Removed
+- Unused `ListEmbeddedSkills` function
+
 ## [0.1.0] - 2026-01-07
 
 ### Added
