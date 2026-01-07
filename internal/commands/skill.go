@@ -105,11 +105,14 @@ personal use; project installation is better for shared repositories.
 
 Installation locations (installs to both Claude Code and OpenCode directories):
   Global:  ~/.claude/skills/ and ~/.config/opencode/skill/
-  Project: .claude/skills/ and .opencode/skill/`,
+  Project: .claude/skills/ and .opencode/skill/
+
+Note: In JSON mode (--json) without --global or --project, defaults to global.`,
 		Example: `  egenskriven skill install          # Interactive prompt
   egenskriven skill install --global  # Install globally
   egenskriven skill install --project # Install to current project
-  egenskriven skill install --force   # Overwrite existing skills`,
+  egenskriven skill install --force   # Overwrite existing skills
+  egenskriven skill install --json    # JSON output (defaults to global)`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := getFormatter()
 
