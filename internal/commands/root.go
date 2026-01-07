@@ -61,6 +61,7 @@ func Register(app *pocketbase.PocketBase) {
 
 	// Phase 9 commands
 	app.RootCmd.AddCommand(newCompletionCmd(app.RootCmd))
+	app.RootCmd.AddCommand(newSelfUpgradeCmd())
 }
 
 // getFormatter creates a new output formatter with current flag values.
