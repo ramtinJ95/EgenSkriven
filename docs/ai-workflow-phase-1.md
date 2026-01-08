@@ -2,7 +2,7 @@
 
 > **Parent Document**: [ai-workflow-plan.md](./ai-workflow-plan.md)  
 > **Phase**: 1 of 7  
-> **Status**: Not Started  
+> **Status**: In Progress  
 > **Estimated Effort**: 3-4 days  
 > **Prerequisites**: [Phase 0](./ai-workflow-phase-0.md) completed
 
@@ -1272,9 +1272,9 @@ Before considering this phase complete:
 - [ ] `egenskriven comments --json` outputs valid JSON
 - [ ] `egenskriven comments` shows helpful message when no comments
 
-- [ ] `egenskriven list --need-input` shows only blocked tasks
-- [ ] `egenskriven list --need-input` works with other filters
-- [ ] `egenskriven list --need-input --json` outputs valid JSON
+- [x] `egenskriven list --need-input` shows only blocked tasks
+- [x] `egenskriven list --need-input` works with other filters
+- [x] `egenskriven list --need-input --json` outputs valid JSON
 
 ### Integration Tests
 
