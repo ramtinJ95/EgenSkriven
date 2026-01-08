@@ -117,7 +117,7 @@ egenskriven session unlink WRK-1 --status completed
 
 | ID | Task | File | Priority | Status |
 |----|------|------|----------|--------|
-| 2.6 | Display session info in task show command | `internal/commands/show.go` | Medium | [ ] |
+| 2.6 | Display session info in task show command | `internal/output/output.go` | Medium | [x] |
 
 **Verification**:
 ```bash
