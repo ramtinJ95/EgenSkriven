@@ -13,6 +13,7 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/spf13/cobra"
 
+	"github.com/ramtinJ95/EgenSkriven/internal/output"
 	"github.com/ramtinJ95/EgenSkriven/internal/resolver"
 )
 
@@ -125,11 +126,14 @@ or a file path (for some tools).`,
 				// Check for existing session
 				existingSessionData := task.Get("agent_session")
 				if existingSessionData != nil && existingSessionData != "" {
-					oldSession, _ := parseSessionData(existingSessionData)
+					oldSession, _ := output.ParseAgentSession(existingSessionData)
 					if oldSession != nil {
 						// Mark old session as abandoned in history
 						if oldRef, ok := oldSession["ref"].(string); ok {
-							markSessionStatus(txApp, task.Id, oldRef, "abandoned", now)
+							if err := markSessionStatus(txApp, task.Id, oldRef, "abandoned", now); err != nil {
+								// Log but don't fail - old session status is non-critical
+								warnLog("could not mark old session as abandoned: %v", err)
+							}
 						}
 					}
 				}
@@ -194,7 +198,7 @@ or a file path (for some tools).`,
 
 			fmt.Printf("Session linked to %s\n", displayId)
 			fmt.Printf("  Tool: %s\n", tool)
-			fmt.Printf("  Ref:  %s\n", truncateSessionRef(ref, 40))
+			fmt.Printf("  Ref:  %s\n", output.TruncateMiddle(ref, 40))
 			return nil
 		},
 	}
@@ -262,7 +266,7 @@ and when it was linked.`,
 			}
 
 			// Parse session data - handle both direct map and JSON string
-			session, err := parseSessionData(sessionData)
+			session, err := output.ParseAgentSession(sessionData)
 			if err != nil {
 				return out.Error(ExitGeneralError, fmt.Sprintf("invalid session data: %v", err), nil)
 			}
@@ -411,7 +415,7 @@ This helps track which tools have worked on a task over time.`,
 				statusIcon := getSessionStatusIcon(status)
 
 				fmt.Printf("%d. %s %s (%s)\n", i+1, statusIcon, tool, status)
-				fmt.Printf("   Ref: %s\n", truncateSessionRef(ref, 50))
+				fmt.Printf("   Ref: %s\n", output.TruncateMiddle(ref, 50))
 				fmt.Printf("   Started: %s\n", formatRelativeTime(created))
 
 				if status != "active" {
@@ -481,7 +485,7 @@ Use this when you want to disconnect a session without linking a new one.`,
 				return out.Error(ExitValidation, fmt.Sprintf("no session linked to %s", displayId), nil)
 			}
 
-			session, err := parseSessionData(sessionData)
+			session, err := output.ParseAgentSession(sessionData)
 			if err != nil {
 				return out.Error(ExitGeneralError, fmt.Sprintf("invalid session data: %v", err), nil)
 			}
@@ -494,7 +498,10 @@ Use this when you want to disconnect a session without linking a new one.`,
 			err = app.RunInTransaction(func(txApp core.App) error {
 				// Update session in history table
 				if ref, ok := session["ref"].(string); ok {
-					markSessionStatus(txApp, task.Id, ref, status, now)
+					if err := markSessionStatus(txApp, task.Id, ref, status, now); err != nil {
+						// Log but don't fail - session status update is non-critical
+						warnLog("could not update session status: %v", err)
+					}
 				}
 
 				// Clear agent_session on task
@@ -538,79 +545,6 @@ Use this when you want to disconnect a session without linking a new one.`,
 
 // ========== Helper Functions ==========
 
-// parseSessionData converts various session data formats to map[string]any
-func parseSessionData(data any) (map[string]any, error) {
-	if data == nil {
-		return nil, nil
-	}
-
-	// Handle map[string]any directly
-	if m, ok := data.(map[string]any); ok {
-		return m, nil
-	}
-
-	// Handle map[string]interface{} (common from PocketBase)
-	if m, ok := data.(map[string]interface{}); ok {
-		result := make(map[string]any, len(m))
-		for k, v := range m {
-			result[k] = v
-		}
-		return result, nil
-	}
-
-	// Handle JSON string
-	if s, ok := data.(string); ok {
-		if s == "" || s == "null" {
-			return nil, nil
-		}
-		var result map[string]any
-		if err := json.Unmarshal([]byte(s), &result); err != nil {
-			return nil, fmt.Errorf("failed to parse session JSON: %w", err)
-		}
-		return result, nil
-	}
-
-	// Handle types.JSONRaw and []byte (PocketBase JSON field types)
-	if b, ok := data.([]byte); ok {
-		if len(b) == 0 || string(b) == "null" {
-			return nil, nil
-		}
-		var result map[string]any
-		if err := json.Unmarshal(b, &result); err != nil {
-			return nil, fmt.Errorf("failed to parse session JSON bytes: %w", err)
-		}
-		return result, nil
-	}
-
-	// Try to handle any type that implements json.RawMessage-like behavior
-	// by converting to string first
-	if stringer, ok := data.(fmt.Stringer); ok {
-		s := stringer.String()
-		if s == "" || s == "null" {
-			return nil, nil
-		}
-		var result map[string]any
-		if err := json.Unmarshal([]byte(s), &result); err != nil {
-			return nil, fmt.Errorf("failed to parse session from stringer: %w", err)
-		}
-		return result, nil
-	}
-
-	// Last resort: try JSON marshal then unmarshal
-	jsonBytes, err := json.Marshal(data)
-	if err != nil {
-		return nil, fmt.Errorf("unexpected session data type: %T", data)
-	}
-	if string(jsonBytes) == "null" || string(jsonBytes) == "" {
-		return nil, nil
-	}
-	var result map[string]any
-	if err := json.Unmarshal(jsonBytes, &result); err != nil {
-		return nil, fmt.Errorf("failed to re-parse session JSON: %w", err)
-	}
-	return result, nil
-}
-
 // determineRefType guesses if ref is a UUID or path
 func determineRefType(ref string) string {
 	// If it starts with / or . or contains path separators, treat as path
@@ -621,8 +555,9 @@ func determineRefType(ref string) string {
 	return "uuid"
 }
 
-// markSessionStatus updates a session's status in the history table
-func markSessionStatus(app core.App, taskId, externalRef, status string, endTime time.Time) {
+// markSessionStatus updates a session's status in the history table.
+// Returns an error if the save fails, allowing callers to decide how to handle it.
+func markSessionStatus(app core.App, taskId, externalRef, status string, endTime time.Time) error {
 	// Find the session record
 	records, err := app.FindRecordsByFilter(
 		"sessions",
@@ -634,23 +569,17 @@ func markSessionStatus(app core.App, taskId, externalRef, status string, endTime
 	)
 	if err != nil || len(records) == 0 {
 		// Session not found in history, that's okay
-		return
+		return nil
 	}
 
 	record := records[0]
 	record.Set("status", status)
 	record.Set("ended_at", endTime)
 
-	app.Save(record)
-}
-
-// truncateSessionRef truncates a string in the middle if too long
-func truncateSessionRef(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
+	if err := app.Save(record); err != nil {
+		return fmt.Errorf("failed to update session status: %w", err)
 	}
-	half := (maxLen - 3) / 2
-	return s[:half] + "..." + s[len(s)-half:]
+	return nil
 }
 
 // containsString checks if slice contains string

@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/stretchr/testify/assert"
@@ -194,10 +195,11 @@ func TestCommentsListing_LimitComments(t *testing.T) {
 	// Query with limit
 	records, err := app.FindRecordsByFilter(
 		"comments",
-		"task = '"+task.Id+"'",
+		"task = {:taskId}",
 		"+created",
 		2, // Limit to 2
 		0,
+		dbx.Params{"taskId": task.Id},
 	)
 	require.NoError(t, err)
 
@@ -407,13 +409,13 @@ func TestCommentsListing_FilterBySince(t *testing.T) {
 	createCommentsTestComment(t, app, task.Id, "Comment 2", "human", "user")
 
 	// Query with since filter
-	filter := "task = '" + task.Id + "' && created > '" + sinceTime + "'"
 	records, err := app.FindRecordsByFilter(
 		"comments",
-		filter,
+		"task = {:taskId} && created > {:sinceTime}",
 		"+created",
 		0,
 		0,
+		dbx.Params{"taskId": task.Id, "sinceTime": sinceTime},
 	)
 	require.NoError(t, err)
 

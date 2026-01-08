@@ -123,6 +123,12 @@ Examples:
 
 // copyDatabaseFile copies the database file to a backup location
 func copyDatabaseFile(src, dst string) error {
+	// Get source file info first to ensure we can preserve permissions
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+
 	sourceFile, err := os.Open(src)
 	if err != nil {
 		return err
@@ -143,10 +149,6 @@ func copyDatabaseFile(src, dst string) error {
 	}
 
 	// Preserve original file permissions
-	srcInfo, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
 	if err := os.Chmod(dst, srcInfo.Mode()); err != nil {
 		// Non-fatal, just warn
 		warnLog("could not preserve file permissions: %v", err)

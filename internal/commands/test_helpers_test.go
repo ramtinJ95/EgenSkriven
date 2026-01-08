@@ -3,6 +3,7 @@ package commands
 import (
 	"testing"
 
+	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/stretchr/testify/require"
@@ -158,10 +159,11 @@ func GetCommentsForTask(t *testing.T, app *pocketbase.PocketBase, taskId string)
 
 	records, err := app.FindRecordsByFilter(
 		"comments",
-		"task = '"+taskId+"'",
+		"task = {:taskId}",
 		"", // No sorting - simplifies test setup
 		0,
 		0,
+		dbx.Params{"taskId": taskId},
 	)
 	require.NoError(t, err)
 	return records
@@ -174,10 +176,11 @@ func GetCommentsForTaskSorted(t *testing.T, app *pocketbase.PocketBase, taskId s
 
 	records, err := app.FindRecordsByFilter(
 		"comments",
-		"task = '"+taskId+"'",
+		"task = {:taskId}",
 		"+created", // Sort by creation time ascending
 		0,
 		0,
+		dbx.Params{"taskId": taskId},
 	)
 	require.NoError(t, err)
 	return records

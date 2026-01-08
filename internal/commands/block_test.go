@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/stretchr/testify/assert"
@@ -45,24 +46,6 @@ func getHistoryFromTask(t *testing.T, task *core.Record) []map[string]any {
 	}
 
 	return []map[string]any{}
-}
-
-// setupTasksCollectionWithNeedInput creates tasks collection with need_input column for block tests.
-// Deprecated: Use SetupTasksCollection from test_helpers_test.go instead.
-func setupTasksCollectionWithNeedInput(t *testing.T, app *pocketbase.PocketBase) {
-	SetupTasksCollection(t, app)
-}
-
-// setupCommentsCollection creates comments collection for block tests.
-// Deprecated: Use SetupCommentsCollection from test_helpers_test.go instead.
-func setupCommentsCollection(t *testing.T, app *pocketbase.PocketBase) {
-	SetupCommentsCollection(t, app)
-}
-
-// createBlockTestTask creates a task for block command testing.
-// Deprecated: Use CreateTestTask from test_helpers_test.go instead.
-func createBlockTestTask(t *testing.T, app *pocketbase.PocketBase, title string, column string) *core.Record {
-	return CreateTestTask(t, app, title, column)
 }
 
 // simulateBlockTask simulates what the block command does:
@@ -137,11 +120,11 @@ func simulateBlockTaskWithComment(t *testing.T, app *pocketbase.PocketBase, task
 
 func TestBlockCommand_HistoryIsUpdatedCorrectly(t *testing.T) {
 	app := testutil.NewTestApp(t)
-	setupTasksCollectionWithNeedInput(t, app)
-	setupCommentsCollection(t, app)
+	SetupTasksCollection(t, app)
+	SetupCommentsCollection(t, app)
 
 	// Create a test task in todo
-	task := createBlockTestTask(t, app, "Test Task", "todo")
+	task := CreateTestTask(t, app, "Test Task", "todo")
 	initialHistoryLen := 0
 
 	// Simulate blocking the task
@@ -185,11 +168,11 @@ func TestBlockCommand_HistoryIsUpdatedCorrectly(t *testing.T) {
 
 func TestBlockCommand_HistoryFromInProgress(t *testing.T) {
 	app := testutil.NewTestApp(t)
-	setupTasksCollectionWithNeedInput(t, app)
-	setupCommentsCollection(t, app)
+	SetupTasksCollection(t, app)
+	SetupCommentsCollection(t, app)
 
 	// Create a test task in in_progress
-	task := createBlockTestTask(t, app, "In Progress Task", "in_progress")
+	task := CreateTestTask(t, app, "In Progress Task", "in_progress")
 
 	// Simulate blocking the task
 	question := "Need clarification on requirements"
@@ -215,11 +198,11 @@ func TestBlockCommand_HistoryFromInProgress(t *testing.T) {
 func TestBlockCommand_HistoryBlockedEntryStructure(t *testing.T) {
 	// This test verifies the complete structure of the blocked history entry
 	app := testutil.NewTestApp(t)
-	setupTasksCollectionWithNeedInput(t, app)
-	setupCommentsCollection(t, app)
+	SetupTasksCollection(t, app)
+	SetupCommentsCollection(t, app)
 
 	// Create a test task in review column
-	task := createBlockTestTask(t, app, "Review Task", "review")
+	task := CreateTestTask(t, app, "Review Task", "review")
 
 	// Block it with a specific question
 	question := "Should we refactor this module before proceeding?"
@@ -255,8 +238,8 @@ func TestBlockCommand_HistoryBlockedEntryStructure(t *testing.T) {
 
 func TestBlockCommand_HistoryWithDifferentAgents(t *testing.T) {
 	app := testutil.NewTestApp(t)
-	setupTasksCollectionWithNeedInput(t, app)
-	setupCommentsCollection(t, app)
+	SetupTasksCollection(t, app)
+	SetupCommentsCollection(t, app)
 
 	tests := []struct {
 		name      string
@@ -270,7 +253,7 @@ func TestBlockCommand_HistoryWithDifferentAgents(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			task := createBlockTestTask(t, app, "Test for "+tt.name, "todo")
+			task := CreateTestTask(t, app, "Test for "+tt.name, "todo")
 
 			agentToUse := tt.agentName
 			if agentToUse == "" {
@@ -295,11 +278,11 @@ func TestBlockCommand_HistoryWithDifferentAgents(t *testing.T) {
 // This is an integration test that verifies all components work together.
 func TestFullWorkflow_CreateBlockCommentList(t *testing.T) {
 	app := testutil.NewTestApp(t)
-	setupTasksCollectionWithNeedInput(t, app)
-	setupCommentsCollection(t, app)
+	SetupTasksCollection(t, app)
+	SetupCommentsCollection(t, app)
 
 	// Step 1: Create a task in todo state
-	task := createBlockTestTask(t, app, "Implement authentication", "todo")
+	task := CreateTestTask(t, app, "Implement authentication", "todo")
 	require.NotEmpty(t, task.Id, "task should have an ID")
 	assert.Equal(t, "todo", task.GetString("column"), "task should start in todo column")
 
@@ -317,9 +300,10 @@ func TestFullWorkflow_CreateBlockCommentList(t *testing.T) {
 	// Verify blocking created a comment
 	comments, err := app.FindRecordsByFilter(
 		"comments",
-		"task = '"+task.Id+"'",
+		"task = {:taskId}",
 		"", // No sorting in tests - collection lacks autodate fields
 		0, 0,
+		dbx.Params{"taskId": task.Id},
 	)
 	require.NoError(t, err, "should be able to fetch comments")
 	require.Len(t, comments, 1, "blocking should create exactly one comment")
@@ -349,9 +333,10 @@ func TestFullWorkflow_CreateBlockCommentList(t *testing.T) {
 	// Step 4: Verify all comments can be listed (simulates comments command)
 	allComments, err := app.FindRecordsByFilter(
 		"comments",
-		"task = '"+task.Id+"'",
+		"task = {:taskId}",
 		"", // No sorting in tests - collection lacks autodate fields
 		0, 0,
+		dbx.Params{"taskId": task.Id},
 	)
 	require.NoError(t, err, "should be able to list all comments")
 	require.Len(t, allComments, 2, "should have 2 comments total")
@@ -388,11 +373,11 @@ func TestFullWorkflow_CreateBlockCommentList(t *testing.T) {
 // the task column change is rolled back (atomicity test).
 func TestAtomicBlock_RollbackOnCommentFailure(t *testing.T) {
 	app := testutil.NewTestApp(t)
-	setupTasksCollectionWithNeedInput(t, app)
+	SetupTasksCollection(t, app)
 	// Intentionally NOT setting up comments collection to simulate failure
 
 	// Create a task
-	task := createBlockTestTask(t, app, "Test atomic rollback", "in_progress")
+	task := CreateTestTask(t, app, "Test atomic rollback", "in_progress")
 	originalColumn := task.GetString("column")
 	require.Equal(t, "in_progress", originalColumn)
 
@@ -445,11 +430,11 @@ func TestAtomicBlock_RollbackOnCommentFailure(t *testing.T) {
 // TestBlockCommand_FailsIfAlreadyBlocked verifies that blocking an already blocked task fails gracefully
 func TestBlockCommand_FailsIfAlreadyBlocked(t *testing.T) {
 	app := testutil.NewTestApp(t)
-	setupTasksCollectionWithNeedInput(t, app)
-	setupCommentsCollection(t, app)
+	SetupTasksCollection(t, app)
+	SetupCommentsCollection(t, app)
 
 	// Create a task already in need_input
-	task := createBlockTestTask(t, app, "Already blocked task", "need_input")
+	task := CreateTestTask(t, app, "Already blocked task", "need_input")
 
 	// Verify the task is in need_input
 	assert.Equal(t, "need_input", task.GetString("column"))
@@ -471,11 +456,11 @@ func TestBlockCommand_FailsIfAlreadyBlocked(t *testing.T) {
 // TestBlockCommand_FailsIfTaskIsDone verifies that blocking a completed task fails gracefully
 func TestBlockCommand_FailsIfTaskIsDone(t *testing.T) {
 	app := testutil.NewTestApp(t)
-	setupTasksCollectionWithNeedInput(t, app)
-	setupCommentsCollection(t, app)
+	SetupTasksCollection(t, app)
+	SetupCommentsCollection(t, app)
 
 	// Create a task in done column
-	task := createBlockTestTask(t, app, "Completed task", "done")
+	task := CreateTestTask(t, app, "Completed task", "done")
 
 	// Verify the task is done
 	assert.Equal(t, "done", task.GetString("column"))
@@ -493,11 +478,11 @@ func TestBlockCommand_FailsIfTaskIsDone(t *testing.T) {
 // TestBlockCommand_StdinInput verifies that the block command can read question from stdin
 func TestBlockCommand_StdinInput(t *testing.T) {
 	app := testutil.NewTestApp(t)
-	setupTasksCollectionWithNeedInput(t, app)
-	setupCommentsCollection(t, app)
+	SetupTasksCollection(t, app)
+	SetupCommentsCollection(t, app)
 
 	// Create a task
-	task := createBlockTestTask(t, app, "Task for stdin test", "todo")
+	task := CreateTestTask(t, app, "Task for stdin test", "todo")
 
 	// Simulate reading from stdin and blocking
 	stdinQuestion := "This is a question from stdin\nWith multiple lines\nAnd detailed context"
@@ -514,7 +499,7 @@ func TestBlockCommand_StdinInput(t *testing.T) {
 	assert.Equal(t, "need_input", task.GetString("column"))
 
 	// Verify comment was created with full stdin content
-	comments, err := app.FindRecordsByFilter("comments", "task = '"+task.Id+"'", "", 0, 0)
+	comments, err := app.FindRecordsByFilter("comments", "task = {:taskId}", "", 0, 0, dbx.Params{"taskId": task.Id})
 	require.NoError(t, err)
 	require.Len(t, comments, 1)
 	assert.Equal(t, stdinQuestion, comments[0].GetString("content"), "comment should contain full stdin content")
@@ -523,11 +508,11 @@ func TestBlockCommand_StdinInput(t *testing.T) {
 // TestBlockCommand_JSONOutput verifies that the block command produces valid JSON output
 func TestBlockCommand_JSONOutput(t *testing.T) {
 	app := testutil.NewTestApp(t)
-	setupTasksCollectionWithNeedInput(t, app)
-	setupCommentsCollection(t, app)
+	SetupTasksCollection(t, app)
+	SetupCommentsCollection(t, app)
 
 	// Create a task
-	task := createBlockTestTask(t, app, "Task for JSON test", "in_progress")
+	task := CreateTestTask(t, app, "Task for JSON test", "in_progress")
 
 	// Execute block operation
 	question := "What approach should I use?"
@@ -538,7 +523,7 @@ func TestBlockCommand_JSONOutput(t *testing.T) {
 	task, err := app.FindRecordById("tasks", task.Id)
 	require.NoError(t, err)
 
-	comments, err := app.FindRecordsByFilter("comments", "task = '"+task.Id+"'", "", 0, 0)
+	comments, err := app.FindRecordsByFilter("comments", "task = {:taskId}", "", 0, 0, dbx.Params{"taskId": task.Id})
 	require.NoError(t, err)
 	require.Len(t, comments, 1)
 

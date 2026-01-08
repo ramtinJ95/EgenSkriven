@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/ramtinJ95/EgenSkriven/internal/output"
 	"github.com/ramtinJ95/EgenSkriven/internal/testutil"
 )
 
@@ -137,10 +139,11 @@ func GetSessionsForTask(t *testing.T, app *pocketbase.PocketBase, taskId string)
 
 	records, err := app.FindRecordsByFilter(
 		"sessions",
-		"task = '"+taskId+"'",
+		"task = {:taskId}",
 		"-created",
 		0,
 		0,
+		dbx.Params{"taskId": taskId},
 	)
 	require.NoError(t, err)
 	return records
@@ -241,7 +244,7 @@ func TestSessionLink_CreatesSessionOnTask(t *testing.T) {
 	sessionData := task.Get("agent_session")
 	require.NotNil(t, sessionData, "agent_session should be set")
 
-	session, err := parseSessionData(sessionData)
+	session, err := output.ParseAgentSession(sessionData)
 	require.NoError(t, err)
 	require.NotNil(t, session)
 
@@ -312,7 +315,7 @@ func TestSessionLink_ReplacesExistingSession(t *testing.T) {
 
 	// Verify current session is session-2
 	sessionData := task.Get("agent_session")
-	session, _ := parseSessionData(sessionData)
+	session, _ := output.ParseAgentSession(sessionData)
 	assert.Equal(t, "session-2", session["ref"])
 	assert.Equal(t, "claude-code", session["tool"])
 
@@ -372,7 +375,7 @@ func TestSessionLink_PathTypeRef(t *testing.T) {
 	task, _ = app.FindRecordById("tasks", task.Id)
 
 	sessionData := task.Get("agent_session")
-	session, _ := parseSessionData(sessionData)
+	session, _ := output.ParseAgentSession(sessionData)
 
 	assert.Equal(t, pathRef, session["ref"])
 	assert.Equal(t, "path", session["ref_type"], "ref_type should be 'path' for path references")
@@ -387,9 +390,9 @@ func TestSessionShow_NoSessionLinked(t *testing.T) {
 
 	task := CreateSessionTestTask(t, app, "Task Without Session", "todo")
 
-	// Verify task has no session (parseSessionData handles empty/nil properly)
+	// Verify task has no session (output.ParseAgentSession handles empty/nil properly)
 	sessionData := task.Get("agent_session")
-	session, err := parseSessionData(sessionData)
+	session, err := output.ParseAgentSession(sessionData)
 	assert.NoError(t, err)
 	assert.Nil(t, session, "task should not have a session")
 }
@@ -412,7 +415,7 @@ func TestSessionShow_DisplaysSessionDetails(t *testing.T) {
 
 	// Verify session details can be retrieved
 	sessionData := task.Get("agent_session")
-	session, err := parseSessionData(sessionData)
+	session, err := output.ParseAgentSession(sessionData)
 	require.NoError(t, err)
 	require.NotNil(t, session)
 
@@ -533,8 +536,8 @@ func TestSessionUnlink_ClearsAgentSession(t *testing.T) {
 	// Re-fetch and verify session is cleared
 	task, _ = app.FindRecordById("tasks", task.Id)
 	sessionData = task.Get("agent_session")
-	// parseSessionData handles empty/nil properly - returns nil for empty JSON
-	session, err := parseSessionData(sessionData)
+	// output.ParseAgentSession handles empty/nil properly - returns nil for empty JSON
+	session, err := output.ParseAgentSession(sessionData)
 	assert.NoError(t, err)
 	assert.Nil(t, session, "agent_session should be cleared")
 }
@@ -558,16 +561,16 @@ func TestSessionUnlink_ValidStatuses(t *testing.T) {
 	}
 }
 
-// ========== parseSessionData Tests ==========
+// ========== output.ParseAgentSession Tests ==========
 
 func TestParseSessionData_NilReturnsNil(t *testing.T) {
-	result, err := parseSessionData(nil)
+	result, err := output.ParseAgentSession(nil)
 	assert.NoError(t, err)
 	assert.Nil(t, result)
 }
 
 func TestParseSessionData_EmptyStringReturnsNil(t *testing.T) {
-	result, err := parseSessionData("")
+	result, err := output.ParseAgentSession("")
 	assert.NoError(t, err)
 	assert.Nil(t, result)
 }
@@ -581,7 +584,7 @@ func TestParseSessionData_MapReturnsMap(t *testing.T) {
 		"linked_at":   "2026-01-08T12:00:00Z",
 	}
 
-	result, err := parseSessionData(input)
+	result, err := output.ParseAgentSession(input)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, "opencode", result["tool"])
@@ -591,7 +594,7 @@ func TestParseSessionData_MapReturnsMap(t *testing.T) {
 func TestParseSessionData_JSONStringParsesCorrectly(t *testing.T) {
 	jsonStr := `{"tool":"claude-code","ref":"abc-def","ref_type":"uuid","working_dir":"/home"}`
 
-	result, err := parseSessionData(jsonStr)
+	result, err := output.ParseAgentSession(jsonStr)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, "claude-code", result["tool"])
@@ -599,22 +602,22 @@ func TestParseSessionData_JSONStringParsesCorrectly(t *testing.T) {
 }
 
 func TestParseSessionData_NullStringReturnsNil(t *testing.T) {
-	result, err := parseSessionData("null")
+	result, err := output.ParseAgentSession("null")
 	assert.NoError(t, err)
 	assert.Nil(t, result)
 }
 
-// ========== truncateSessionRef Tests ==========
+// ========== output.TruncateMiddle Tests ==========
 
 func TestTruncateSessionRef_ShortString(t *testing.T) {
 	short := "abc123"
-	result := truncateSessionRef(short, 40)
+	result := output.TruncateMiddle(short, 40)
 	assert.Equal(t, short, result)
 }
 
 func TestTruncateSessionRef_LongString(t *testing.T) {
 	long := "550e8400-e29b-41d4-a716-446655440000-extra-long-id"
-	result := truncateSessionRef(long, 20)
+	result := output.TruncateMiddle(long, 20)
 	// Result will be at most maxLen, with "..." in the middle
 	assert.LessOrEqual(t, len(result), 20)
 	assert.Contains(t, result, "...")
@@ -622,7 +625,7 @@ func TestTruncateSessionRef_LongString(t *testing.T) {
 
 func TestTruncateSessionRef_ExactLength(t *testing.T) {
 	exact := "12345678901234567890"
-	result := truncateSessionRef(exact, 20)
+	result := output.TruncateMiddle(exact, 20)
 	assert.Equal(t, exact, result)
 }
 
@@ -687,7 +690,7 @@ func TestFullSessionWorkflow(t *testing.T) {
 
 	// Verify session is linked
 	sessionData := task.Get("agent_session")
-	session, _ := parseSessionData(sessionData)
+	session, _ := output.ParseAgentSession(sessionData)
 	assert.Equal(t, "session-1", session["ref"])
 
 	// Step 3: Mark old session as abandoned and link new one
@@ -708,7 +711,7 @@ func TestFullSessionWorkflow(t *testing.T) {
 
 	// Verify current session is session-2
 	sessionData = task.Get("agent_session")
-	session, _ = parseSessionData(sessionData)
+	session, _ = output.ParseAgentSession(sessionData)
 	assert.Equal(t, "session-2", session["ref"])
 	assert.Equal(t, "claude-code", session["tool"])
 
@@ -767,7 +770,7 @@ func TestSessionWithNeedInputTask(t *testing.T) {
 
 	// Verify session is still linked
 	sessionData := task.Get("agent_session")
-	session, _ := parseSessionData(sessionData)
+	session, _ := output.ParseAgentSession(sessionData)
 	assert.Equal(t, "blocked-session", session["ref"])
 	assert.Equal(t, "opencode", session["tool"])
 }

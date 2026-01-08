@@ -283,7 +283,7 @@ func (f *Formatter) TaskDetailWithSubtasks(task *core.Record, subtasks []*core.R
 			fmt.Printf("  Tool:        %s\n", tool)
 		}
 		if ref, ok := session["ref"].(string); ok {
-			fmt.Printf("  Ref:         %s\n", truncateMiddle(ref, 40))
+			fmt.Printf("  Ref:         %s\n", TruncateMiddle(ref, 40))
 		}
 		if workingDir, ok := session["working_dir"].(string); ok {
 			fmt.Printf("  Working Dir: %s\n", workingDir)
@@ -319,8 +319,9 @@ func (f *Formatter) TaskDetailWithSubtasks(task *core.Record, subtasks []*core.R
 	fmt.Println()
 }
 
-// truncateMiddle truncates a string in the middle if too long
-func truncateMiddle(s string, maxLen int) string {
+// TruncateMiddle truncates a string in the middle if too long.
+// It preserves the beginning and end of the string, replacing the middle with "...".
+func TruncateMiddle(s string, maxLen int) string {
 	if len(s) <= maxLen {
 		return s
 	}
@@ -328,16 +329,18 @@ func truncateMiddle(s string, maxLen int) string {
 	return s[:half] + "..." + s[len(s)-half:]
 }
 
-// parseAgentSession converts various session data formats to map[string]any
-// It handles nil, map[string]any, map[string]interface{}, JSON string, []byte, and fmt.Stringer types
-func parseAgentSession(data any) map[string]any {
+// ParseAgentSession converts various session data formats to map[string]any.
+// It handles nil, map[string]any, map[string]interface{}, JSON string, []byte, and fmt.Stringer types.
+// Returns nil if the data is nil, empty, or "null".
+// Returns (nil, error) if parsing fails.
+func ParseAgentSession(data any) (map[string]any, error) {
 	if data == nil {
-		return nil
+		return nil, nil
 	}
 
 	// Handle map[string]any directly
 	if m, ok := data.(map[string]any); ok {
-		return m
+		return m, nil
 	}
 
 	// Handle map[string]interface{} (common from PocketBase)
@@ -346,47 +349,66 @@ func parseAgentSession(data any) map[string]any {
 		for k, v := range m {
 			result[k] = v
 		}
-		return result
+		return result, nil
 	}
 
 	// Handle JSON string
 	if s, ok := data.(string); ok {
 		if s == "" || s == "null" {
-			return nil
+			return nil, nil
 		}
 		var result map[string]any
 		if err := json.Unmarshal([]byte(s), &result); err != nil {
-			return nil
+			return nil, fmt.Errorf("failed to parse session JSON: %w", err)
 		}
-		return result
+		return result, nil
 	}
 
 	// Handle types.JSONRaw and []byte (PocketBase JSON field types)
 	if b, ok := data.([]byte); ok {
 		if len(b) == 0 || string(b) == "null" {
-			return nil
+			return nil, nil
 		}
 		var result map[string]any
 		if err := json.Unmarshal(b, &result); err != nil {
-			return nil
+			return nil, fmt.Errorf("failed to parse session JSON bytes: %w", err)
 		}
-		return result
+		return result, nil
 	}
 
 	// Try to handle any type that implements fmt.Stringer
 	if stringer, ok := data.(fmt.Stringer); ok {
 		s := stringer.String()
 		if s == "" || s == "null" {
-			return nil
+			return nil, nil
 		}
 		var result map[string]any
 		if err := json.Unmarshal([]byte(s), &result); err != nil {
-			return nil
+			return nil, fmt.Errorf("failed to parse session from stringer: %w", err)
 		}
-		return result
+		return result, nil
 	}
 
-	return nil
+	// Last resort: try JSON marshal then unmarshal
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("unexpected session data type: %T", data)
+	}
+	if string(jsonBytes) == "null" || string(jsonBytes) == "" {
+		return nil, nil
+	}
+	var result map[string]any
+	if err := json.Unmarshal(jsonBytes, &result); err != nil {
+		return nil, fmt.Errorf("failed to re-parse session JSON: %w", err)
+	}
+	return result, nil
+}
+
+// parseAgentSession is the internal version that ignores errors (for display purposes).
+// It delegates to ParseAgentSession and ignores any errors.
+func parseAgentSession(data any) map[string]any {
+	result, _ := ParseAgentSession(data)
+	return result
 }
 
 // Success outputs a success message.
