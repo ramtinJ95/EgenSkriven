@@ -221,6 +221,8 @@ func (f *Formatter) TaskDetailWithSubtasks(task *core.Record, subtasks []*core.R
 		result := taskToMap(task)
 		result["subtasks"] = tasksToMaps(subtasks)
 		result["subtask_count"] = len(subtasks)
+		// Include agent_session in JSON output
+		result["agent_session"] = task.Get("agent_session")
 		f.writeJSON(result)
 		return
 	}
@@ -273,6 +275,30 @@ func (f *Formatter) TaskDetailWithSubtasks(task *core.Record, subtasks []*core.R
 		fmt.Printf("\nDescription:\n  %s\n", strings.ReplaceAll(desc, "\n", "\n  "))
 	}
 
+	// Agent Session
+	sessionData := task.Get("agent_session")
+	if session := parseAgentSession(sessionData); session != nil {
+		fmt.Printf("\nAgent Session:\n")
+		if tool, ok := session["tool"].(string); ok {
+			fmt.Printf("  Tool:        %s\n", tool)
+		}
+		if ref, ok := session["ref"].(string); ok {
+			fmt.Printf("  Ref:         %s\n", truncateMiddle(ref, 40))
+		}
+		if workingDir, ok := session["working_dir"].(string); ok {
+			fmt.Printf("  Working Dir: %s\n", workingDir)
+		}
+		if linkedAt, ok := session["linked_at"].(string); ok {
+			if t, err := time.Parse(time.RFC3339, linkedAt); err == nil {
+				fmt.Printf("  Linked:      %s\n", formatTime(t))
+			}
+		}
+		// Show resume hint if task is in need_input
+		if task.GetString("column") == "need_input" {
+			fmt.Printf("  (Use 'egenskriven resume <task>' to continue)\n")
+		}
+	}
+
 	// Sub-tasks
 	if len(subtasks) > 0 {
 		fmt.Printf("\nSub-tasks (%d):\n", len(subtasks))
@@ -291,6 +317,76 @@ func (f *Formatter) TaskDetailWithSubtasks(task *core.Record, subtasks []*core.R
 	}
 
 	fmt.Println()
+}
+
+// truncateMiddle truncates a string in the middle if too long
+func truncateMiddle(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	half := (maxLen - 3) / 2
+	return s[:half] + "..." + s[len(s)-half:]
+}
+
+// parseAgentSession converts various session data formats to map[string]any
+// It handles nil, map[string]any, map[string]interface{}, JSON string, []byte, and fmt.Stringer types
+func parseAgentSession(data any) map[string]any {
+	if data == nil {
+		return nil
+	}
+
+	// Handle map[string]any directly
+	if m, ok := data.(map[string]any); ok {
+		return m
+	}
+
+	// Handle map[string]interface{} (common from PocketBase)
+	if m, ok := data.(map[string]interface{}); ok {
+		result := make(map[string]any, len(m))
+		for k, v := range m {
+			result[k] = v
+		}
+		return result
+	}
+
+	// Handle JSON string
+	if s, ok := data.(string); ok {
+		if s == "" || s == "null" {
+			return nil
+		}
+		var result map[string]any
+		if err := json.Unmarshal([]byte(s), &result); err != nil {
+			return nil
+		}
+		return result
+	}
+
+	// Handle types.JSONRaw and []byte (PocketBase JSON field types)
+	if b, ok := data.([]byte); ok {
+		if len(b) == 0 || string(b) == "null" {
+			return nil
+		}
+		var result map[string]any
+		if err := json.Unmarshal(b, &result); err != nil {
+			return nil
+		}
+		return result
+	}
+
+	// Try to handle any type that implements fmt.Stringer
+	if stringer, ok := data.(fmt.Stringer); ok {
+		s := stringer.String()
+		if s == "" || s == "null" {
+			return nil
+		}
+		var result map[string]any
+		if err := json.Unmarshal([]byte(s), &result); err != nil {
+			return nil
+		}
+		return result
+	}
+
+	return nil
 }
 
 // Success outputs a success message.
