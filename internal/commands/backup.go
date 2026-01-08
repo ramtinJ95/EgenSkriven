@@ -87,14 +87,21 @@ Examples:
 			}
 
 			// Get file size for display
-			info, _ := os.Stat(backupPath)
-			size := formatFileSize(info.Size())
+			var size string
+			var sizeBytes int64
+			if info, err := os.Stat(backupPath); err == nil {
+				sizeBytes = info.Size()
+				size = formatFileSize(sizeBytes)
+			} else {
+				size = "unknown"
+				sizeBytes = 0
+			}
 
 			if jsonOutput {
 				out.WriteJSON(map[string]any{
 					"backup_path": backupPath,
 					"source_path": dbPath,
-					"size":        info.Size(),
+					"size":        sizeBytes,
 					"created":     time.Now().Format(time.RFC3339),
 				})
 				return nil

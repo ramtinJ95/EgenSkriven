@@ -26,6 +26,13 @@ func init() {
 			return fmt.Errorf("column field is not a select field")
 		}
 
+		// Check if need_input is already present (idempotency)
+		for _, v := range selectField.Values {
+			if v == "need_input" {
+				return nil // Already migrated
+			}
+		}
+
 		// Add need_input to valid values (after in_progress, before review)
 		selectField.Values = []string{
 			"backlog",
