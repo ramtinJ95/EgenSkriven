@@ -1280,7 +1280,7 @@ Before considering this phase complete:
 
 - [ ] Full workflow: create task → block → add comment → list comments
 - [ ] Atomic block: if comment creation fails, task stays in original column
-- [ ] History is updated correctly when task is blocked
+- [x] History is updated correctly when task is blocked
 
 ### Error Handling
 
