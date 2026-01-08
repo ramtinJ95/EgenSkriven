@@ -71,6 +71,9 @@ func Register(app *pocketbase.PocketBase) {
 	app.RootCmd.AddCommand(newBlockCmd(app))
 	app.RootCmd.AddCommand(newCommentCmd(app))
 	app.RootCmd.AddCommand(newCommentsCmd(app))
+
+	// AI workflow commands (Phase 2 - session management)
+	app.RootCmd.AddCommand(newSessionCmd(app))
 }
 
 // getFormatter creates a new output formatter with current flag values.

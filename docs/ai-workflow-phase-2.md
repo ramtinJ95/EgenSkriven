@@ -34,6 +34,186 @@ Before starting this phase:
 
 ---
 
+## Implementation Checklist
+
+Use this checklist to track progress. Complete tasks in order from top to bottom.
+
+### Phase Prerequisites (Verify First)
+
+- [x] **PREREQ-1**: Verify Phase 1 is complete - run `egenskriven block`, `egenskriven comment`, `egenskriven comments` commands
+- [x] **PREREQ-2**: Verify `sessions` collection exists in PocketBase schema
+- [x] **PREREQ-3**: Verify `agent_session` JSON field exists on tasks collection
+
+### Step 1: Create Session Command Group
+
+| ID | Task | File | Priority | Status |
+|----|------|------|----------|--------|
+| 2.1 | Create session command group | `internal/commands/session.go` | High | [x] |
+| 2.1a | Register session command in root.go | `internal/commands/root.go` | High | [x] |
+
+**Verification**: `egenskriven session --help` should show subcommands
+
+### Step 2: Implement Session Link Command
+
+| ID | Task | File | Priority | Status |
+|----|------|------|----------|--------|
+| 2.2 | Create session link command | `internal/commands/session.go` | High | [x] |
+| 2.2a | Implement tool validation (opencode, claude-code, codex) | `session.go` | High | [x] |
+| 2.2b | Implement ref type detection (uuid vs path) | `session.go` | Medium | [x] |
+| 2.2c | Implement transaction for session linking | `session.go` | High | [x] |
+| 2.2d | Handle existing session replacement (mark old as abandoned) | `session.go` | High | [x] |
+
+**Verification**:
+```bash
+egenskriven add "Test session" --type feature
+egenskriven session link WRK-1 --tool opencode --ref test-123
+egenskriven session link WRK-1 --tool opencode --ref test-123 --json
+```
+
+### Step 3: Implement Session Show Command
+
+| ID | Task | File | Priority | Status |
+|----|------|------|----------|--------|
+| 2.3 | Create session show command | `internal/commands/session.go` | High | [x] |
+| 2.3a | Handle case when no session is linked | `session.go` | Medium | [x] |
+| 2.3b | Show resume hint for need_input tasks | `session.go` | Low | [x] |
+
+**Verification**:
+```bash
+egenskriven session show WRK-1           # Should show session details
+egenskriven session show WRK-1 --json    # Should output valid JSON
+```
+
+### Step 4: Implement Session History Command
+
+| ID | Task | File | Priority | Status |
+|----|------|------|----------|--------|
+| 2.4 | Create session history command | `internal/commands/session.go` | High | [x] |
+| 2.4a | Query sessions collection by task ID | `session.go` | Medium | [x] |
+| 2.4b | Format session status with icons/labels | `session.go` | Low | [x] |
+
+**Verification**:
+```bash
+# Link multiple sessions to create history
+egenskriven session link WRK-1 --tool claude-code --ref session-2
+egenskriven session link WRK-1 --tool codex --ref session-3
+egenskriven session history WRK-1        # Should show 3 sessions
+egenskriven session history WRK-1 --json
+```
+
+### Step 5: Implement Session Unlink Command (Optional)
+
+| ID | Task | File | Priority | Status |
+|----|------|------|----------|--------|
+| 2.5 | Create session unlink command | `internal/commands/session.go` | Low | [x] |
+
+**Verification**:
+```bash
+egenskriven session unlink WRK-1
+egenskriven session unlink WRK-1 --status completed
+```
+
+### Step 6: Update Show Command
+
+| ID | Task | File | Priority | Status |
+|----|------|------|----------|--------|
+| 2.6 | Display session info in task show command | `internal/commands/show.go` | Medium | [ ] |
+
+**Verification**:
+```bash
+egenskriven show WRK-1    # Should include "Agent Session" section
+```
+
+### Step 7: Write Unit Tests
+
+| ID | Task | File | Priority | Status |
+|----|------|------|----------|--------|
+| 2.7 | Create test file | `internal/commands/session_test.go` | High | [ ] |
+| 2.7a | Test: session link creates session on task | `session_test.go` | Medium | [ ] |
+| 2.7b | Test: session link creates record in sessions table | `session_test.go` | Medium | [ ] |
+| 2.7c | Test: session link replaces existing (marks old as abandoned) | `session_test.go` | Medium | [ ] |
+| 2.7d | Test: session link fails with invalid tool name | `session_test.go` | Medium | [ ] |
+| 2.7e | Test: session link --json outputs valid JSON | `session_test.go` | Medium | [ ] |
+| 2.7f | Test: session show displays "no session" for task without session | `session_test.go` | Medium | [ ] |
+| 2.7g | Test: session show displays session details correctly | `session_test.go` | Medium | [ ] |
+| 2.7h | Test: session history shows all sessions for a task | `session_test.go` | Medium | [ ] |
+| 2.7i | Test: determineRefType function | `session_test.go` | Low | [ ] |
+
+**Verification**:
+```bash
+go test ./internal/commands/... -run TestSession -v
+```
+
+### Step 8: Integration Testing
+
+| ID | Task | Priority | Status |
+|----|------|----------|--------|
+| 2.8 | Full workflow test: link -> show -> link again -> history shows both | High | [ ] |
+
+**Verification Script**:
+```bash
+#!/bin/bash
+# Run this script to verify the full phase 2 implementation
+
+echo "=== Phase 2 Integration Test ==="
+
+# Create test task
+egenskriven add "Integration test task" --type feature
+TASK_ID=$(egenskriven list --json | jq -r '.tasks[0].display_id')
+
+echo "Created task: $TASK_ID"
+
+# Test 1: Link first session
+echo "Test 1: Linking first session..."
+egenskriven session link $TASK_ID --tool opencode --ref session-001
+egenskriven session show $TASK_ID
+
+# Test 2: Link second session (should mark first as abandoned)
+echo "Test 2: Linking second session..."
+egenskriven session link $TASK_ID --tool claude-code --ref session-002
+
+# Test 3: Check history
+echo "Test 3: Checking session history..."
+egenskriven session history $TASK_ID
+
+# Test 4: Verify JSON outputs
+echo "Test 4: Verifying JSON outputs..."
+egenskriven session show $TASK_ID --json | jq .
+egenskriven session history $TASK_ID --json | jq .
+
+# Test 5: Task show includes session
+echo "Test 5: Task show includes session info..."
+egenskriven show $TASK_ID
+
+echo "=== All tests complete ==="
+```
+
+---
+
+## Summary
+
+| Category | Count |
+|----------|-------|
+| Prerequisites | 3 |
+| High Priority Tasks | 14 |
+| Medium Priority Tasks | 10 |
+| Low Priority Tasks | 5 |
+| **Total** | **32** |
+
+**Files to Create**:
+- `internal/commands/session.go`
+- `internal/commands/session_link.go`
+- `internal/commands/session_show.go`
+- `internal/commands/session_history.go`
+- `internal/commands/session_unlink.go` (optional)
+- `internal/commands/session_test.go`
+
+**Files to Modify**:
+- `internal/commands/root.go`
+- `internal/commands/show.go`
+
+---
+
 ## Data Model Recap
 
 ### `agent_session` Field on Tasks (Current Session)
@@ -1044,9 +1224,9 @@ func TestDetermineRefType(t *testing.T) {
 
 ---
 
-## Testing Checklist
+## Final Verification Checklist
 
-Before considering this phase complete:
+Before marking this phase complete, verify all items pass:
 
 ### Session Link Tests
 
@@ -1079,9 +1259,13 @@ Before considering this phase complete:
 - [ ] Session status transitions work correctly
 - [ ] History entries are created for session changes
 
+### Unit Tests Pass
+
+- [ ] `go test ./internal/commands/... -run TestSession -v` passes
+
 ---
 
-## Files Changed/Created
+## Files Changed/Created Summary
 
 | File | Change Type | Description |
 |------|-------------|-------------|
@@ -1089,10 +1273,20 @@ Before considering this phase complete:
 | `internal/commands/session_link.go` | New | Link subcommand |
 | `internal/commands/session_show.go` | New | Show subcommand |
 | `internal/commands/session_history.go` | New | History subcommand |
-| `internal/commands/session_unlink.go` | New | Unlink subcommand |
+| `internal/commands/session_unlink.go` | New | Unlink subcommand (optional) |
 | `internal/commands/show.go` | Modified | Display session info |
 | `internal/commands/root.go` | Modified | Register session command |
 | `internal/commands/session_test.go` | New | Session command tests |
+
+---
+
+## Phase Completion
+
+Once all checklist items are verified:
+
+1. Update this document's status from "Not Started" to "Complete"
+2. Commit all changes with message: `feat(cli): implement session management (Phase 2)`
+3. Proceed to [Phase 3: Resume Flow](./ai-workflow-phase-3.md)
 
 ---
 
