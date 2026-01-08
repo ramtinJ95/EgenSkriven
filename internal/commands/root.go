@@ -58,6 +58,7 @@ func Register(app *pocketbase.PocketBase) {
 	// Phase 8 commands
 	app.RootCmd.AddCommand(newExportCmd(app))
 	app.RootCmd.AddCommand(newImportCmd(app))
+	app.RootCmd.AddCommand(newBackupCmd(app))
 
 	// Phase 9 commands
 	app.RootCmd.AddCommand(newCompletionCmd(app.RootCmd))
