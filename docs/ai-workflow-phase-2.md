@@ -128,16 +128,16 @@ egenskriven show WRK-1    # Should include "Agent Session" section
 
 | ID | Task | File | Priority | Status |
 |----|------|------|----------|--------|
-| 2.7 | Create test file | `internal/commands/session_test.go` | High | [ ] |
-| 2.7a | Test: session link creates session on task | `session_test.go` | Medium | [ ] |
-| 2.7b | Test: session link creates record in sessions table | `session_test.go` | Medium | [ ] |
-| 2.7c | Test: session link replaces existing (marks old as abandoned) | `session_test.go` | Medium | [ ] |
-| 2.7d | Test: session link fails with invalid tool name | `session_test.go` | Medium | [ ] |
-| 2.7e | Test: session link --json outputs valid JSON | `session_test.go` | Medium | [ ] |
-| 2.7f | Test: session show displays "no session" for task without session | `session_test.go` | Medium | [ ] |
-| 2.7g | Test: session show displays session details correctly | `session_test.go` | Medium | [ ] |
-| 2.7h | Test: session history shows all sessions for a task | `session_test.go` | Medium | [ ] |
-| 2.7i | Test: determineRefType function | `session_test.go` | Low | [ ] |
+| 2.7 | Create test file | `internal/commands/session_test.go` | High | [x] |
+| 2.7a | Test: session link creates session on task | `session_test.go` | Medium | [x] |
+| 2.7b | Test: session link creates record in sessions table | `session_test.go` | Medium | [x] |
+| 2.7c | Test: session link replaces existing (marks old as abandoned) | `session_test.go` | Medium | [x] |
+| 2.7d | Test: session link fails with invalid tool name | `session_test.go` | Medium | [x] |
+| 2.7e | Test: session link --json outputs valid JSON | `session_test.go` | Medium | [x] |
+| 2.7f | Test: session show displays "no session" for task without session | `session_test.go` | Medium | [x] |
+| 2.7g | Test: session show displays session details correctly | `session_test.go` | Medium | [x] |
+| 2.7h | Test: session history shows all sessions for a task | `session_test.go` | Medium | [x] |
+| 2.7i | Test: determineRefType function | `session_test.go` | Low | [x] |
 
 **Verification**:
 ```bash
