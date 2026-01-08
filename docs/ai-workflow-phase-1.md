@@ -1266,11 +1266,11 @@ Before considering this phase complete:
 - [x] `egenskriven comment --stdin` reads from stdin
 - [x] `egenskriven comment --json` outputs valid JSON
 
-- [ ] `egenskriven comments <task>` lists all comments
-- [ ] `egenskriven comments --limit N` limits output
-- [ ] `egenskriven comments --since` filters by time
-- [ ] `egenskriven comments --json` outputs valid JSON
-- [ ] `egenskriven comments` shows helpful message when no comments
+- [x] `egenskriven comments <task>` lists all comments
+- [x] `egenskriven comments --limit N` limits output
+- [x] `egenskriven comments --since` filters by time
+- [x] `egenskriven comments --json` outputs valid JSON
+- [x] `egenskriven comments` shows helpful message when no comments
 
 - [x] `egenskriven list --need-input` shows only blocked tasks
 - [x] `egenskriven list --need-input` works with other filters
