@@ -6,6 +6,104 @@
 > **Estimated Effort**: 3-4 days  
 > **Prerequisites**: [Phase 2](./ai-workflow-phase-2.md) completed
 
+---
+
+## Phase 3 Completion Checklist
+
+### Task 3.1: Create Context Prompt Builder
+- [ ] Create `internal/resume/context.go` file
+- [ ] Implement `Comment` struct with Content, AuthorType, AuthorId, Created fields
+- [ ] Implement `BuildContextPrompt()` function that generates full context markdown
+- [ ] Implement `BuildMinimalPrompt()` function for token-constrained scenarios (last 3 comments only)
+- [ ] Implement `formatAuthorLabel()` helper function
+- [ ] Implement `getDisplayId()` helper function
+- [ ] Handle empty comments case with "_No comments yet_" message
+- [ ] Implement description truncation (>500 chars)
+- [ ] Implement comment truncation in minimal mode (>200 chars)
+
+### Task 3.2: Create Resume Command Builder
+- [ ] Create `internal/resume/command.go` file
+- [ ] Define tool constants: `ToolOpenCode`, `ToolClaudeCode`, `ToolCodex`
+- [ ] Implement `ResumeCommand` struct with Tool, SessionRef, WorkingDir, Prompt, Command, Args
+- [ ] Implement `BuildResumeCommand()` function for all three tools
+- [ ] Implement `buildOpenCodeCommand()` - format: `opencode run "<prompt>" --session <id>`
+- [ ] Implement `buildClaudeCodeCommand()` - format: `claude --resume <id> "<prompt>"`
+- [ ] Implement `buildCodexCommand()` - format: `codex exec resume <id> "<prompt>"`
+- [ ] Implement `ValidateSessionRef()` function (check non-empty, minimum length)
+- [ ] Return error for unsupported tools
+
+### Task 3.3: Add Shell Escape Dependency
+- [ ] Add `github.com/alessio/shellescape` to go.mod OR
+- [ ] Create `internal/resume/escape.go` with custom `ShellQuote()` function
+- [ ] Ensure special characters in prompts are safely escaped
+
+### Task 3.4: Implement `egenskriven resume` Command
+- [ ] Create `internal/commands/resume.go` file
+- [ ] Implement `newResumeCmd()` function with cobra command setup
+- [ ] Add `--exec` / `-e` flag (execute the resume command)
+- [ ] Add `--json` / `-j` flag (output as JSON)
+- [ ] Add `--minimal` / `-m` flag (use minimal prompt)
+- [ ] Add `--prompt` / `-p` flag (custom prompt override)
+- [ ] Add `--dry-run` flag (show command without running)
+- [ ] Validate task is in `need_input` state
+- [ ] Validate task has `agent_session` linked (with helpful error message)
+- [ ] Implement `fetchCommentsForResume()` function
+- [ ] Implement `updateTaskForResume()` function (move to in_progress, add history)
+- [ ] Implement `executeResumeCommand()` function (change dir, spawn process)
+- [ ] Implement `updateSessionStatusInHistory()` function
+- [ ] Implement `indent()` helper for output formatting
+- [ ] Register command in root.go: `rootCmd.AddCommand(newResumeCmd(app))`
+
+### Task 3.5: Write Unit Tests - Context Builder
+- [ ] Create `internal/resume/context_test.go` file
+- [ ] Test `BuildContextPrompt` includes task title and priority
+- [ ] Test `BuildContextPrompt` includes all comments in chronological order
+- [ ] Test `BuildContextPrompt` formats authors correctly (authorId or authorType)
+- [ ] Test `BuildContextPrompt` handles empty comments with placeholder text
+- [ ] Test `BuildContextPrompt` truncates descriptions over 500 chars
+- [ ] Test `BuildMinimalPrompt` only includes last 3 comments
+- [ ] Test `BuildMinimalPrompt` truncates comments over 200 chars
+- [ ] Create mock record helper for testing
+
+### Task 3.6: Write Unit Tests - Command Builder
+- [ ] Create `internal/resume/command_test.go` file
+- [ ] Test `BuildResumeCommand` works for opencode tool
+- [ ] Test `BuildResumeCommand` works for claude-code tool
+- [ ] Test `BuildResumeCommand` works for codex tool
+- [ ] Test `BuildResumeCommand` returns error for unknown tools
+- [ ] Test command properly escapes special characters (quotes, etc.)
+- [ ] Test session refs are included correctly in commands
+- [ ] Test `ValidateSessionRef` rejects empty refs
+- [ ] Test `ValidateSessionRef` rejects refs that are too short (<8 chars)
+
+### Task 3.7: Write Unit Tests - Resume Command
+- [ ] Create `internal/commands/resume_test.go` file
+- [ ] Test `resume` fails for task not in need_input state
+- [ ] Test `resume` fails for task without agent_session linked
+- [ ] Test `resume` prints command by default (no --exec)
+- [ ] Test `resume --json` outputs valid JSON with required fields
+- [ ] Test `resume --minimal` uses shorter prompt
+- [ ] Test `resume --prompt` uses custom prompt override
+- [ ] Test `resume --exec --dry-run` shows command without running
+- [ ] Create `createTestTaskWithSession()` helper function
+- [ ] Create `addTestComment()` helper function
+
+### Task 3.8: Integration Tests
+- [ ] Test full workflow: block task → add comment → resume --exec
+- [ ] Verify task moves from need_input to in_progress after resume --exec
+- [ ] Verify history is updated with "resumed" action after resume --exec
+- [ ] Verify session status is updated to "active" after resume
+
+### Task 3.9: Final Validation
+- [ ] Run `go build` successfully
+- [ ] Run `go test ./internal/resume/...` - all tests pass
+- [ ] Run `go test ./internal/commands/...` - all tests pass
+- [ ] Manual test: create task, link session, block, comment, resume (print mode)
+- [ ] Manual test: resume --exec with each supported tool (opencode, claude-code, codex)
+- [ ] Verify JSON output format matches documented schema
+
+---
+
 ## Overview
 
 This phase implements the resume functionality - the ability to resume an agent session on a blocked task with full context from the comments thread. This is the core feature that completes the human-AI collaboration loop.
@@ -17,9 +115,9 @@ This phase implements the resume functionality - the ability to resume an agent 
 - Tool-specific resume command generation
 
 **What we're NOT building yet:**
-- Tool integrations for session discovery (Phase 4)
-- UI resume button (Phase 5)
-- Auto-resume on @agent mention (Phase 6)
+- Tool integrations for session discovery (future phase)
+- UI resume button (future phase)
+- Auto-resume on @agent mention (future phase)
 
 ---
 
@@ -1113,17 +1211,6 @@ Before considering this phase complete:
 | `internal/commands/resume_test.go` | New | Resume command tests |
 | `internal/commands/root.go` | Modified | Register resume command |
 | `go.mod` | Modified | Add shellescape dependency |
-
----
-
-## Next Phase
-
-Once all tests pass, proceed to [Phase 4: Tool Integrations](./ai-workflow-phase-4.md).
-
-Phase 4 will implement:
-- `egenskriven init --opencode` - Generate OpenCode custom tool
-- `egenskriven init --claude-code` - Generate Claude Code hooks
-- `egenskriven init --codex` - Generate Codex helper script
 
 ---
 
