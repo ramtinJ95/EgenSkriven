@@ -66,6 +66,9 @@ func Register(app *pocketbase.PocketBase) {
 
 	// AI agent integration commands
 	app.RootCmd.AddCommand(newSkillCmd(app))
+
+	// AI workflow commands (Phase 1 - blocked workflow)
+	app.RootCmd.AddCommand(newBlockCmd(app))
 }
 
 // getFormatter creates a new output formatter with current flag values.

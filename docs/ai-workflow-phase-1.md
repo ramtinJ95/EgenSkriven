@@ -1253,12 +1253,12 @@ Before considering this phase complete:
 
 ### Command Tests
 
-- [ ] `egenskriven block <task> "question"` moves task to need_input
-- [ ] `egenskriven block <task> "question"` creates comment with question
-- [ ] `egenskriven block` fails gracefully if task already blocked
-- [ ] `egenskriven block` fails gracefully if task is done
-- [ ] `egenskriven block --stdin` reads from stdin
-- [ ] `egenskriven block --json` outputs valid JSON
+- [x] `egenskriven block <task> "question"` moves task to need_input
+- [x] `egenskriven block <task> "question"` creates comment with question
+- [x] `egenskriven block` fails gracefully if task already blocked
+- [x] `egenskriven block` fails gracefully if task is done
+- [x] `egenskriven block --stdin` reads from stdin
+- [x] `egenskriven block --json` outputs valid JSON
 
 - [ ] `egenskriven comment <task> "text"` creates comment
 - [ ] `egenskriven comment --author` sets author correctly
@@ -1284,9 +1284,9 @@ Before considering this phase complete:
 
 ### Error Handling
 
-- [ ] Invalid task reference shows helpful error
-- [ ] Empty question/comment shows helpful error
-- [ ] All commands show usage when given --help
+- [x] Invalid task reference shows helpful error
+- [x] Empty question/comment shows helpful error
+- [x] All commands show usage when given --help
 
 ---
 
