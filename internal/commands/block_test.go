@@ -159,6 +159,52 @@ func simulateBlockTask(t *testing.T, app *pocketbase.PocketBase, task *core.Reco
 	require.NoError(t, app.Save(task))
 }
 
+// simulateBlockTaskWithComment simulates the full block command:
+// moves task to need_input, adds history entry, AND creates a comment
+// This is used for integration tests that need the full workflow.
+func simulateBlockTaskWithComment(t *testing.T, app *pocketbase.PocketBase, task *core.Record, question string, agentName string) {
+	t.Helper()
+
+	currentColumn := task.GetString("column")
+
+	// Get comments collection
+	commentsCollection, err := app.FindCollectionByNameOrId("comments")
+	require.NoError(t, err, "comments collection should exist")
+
+	// Execute in transaction for atomicity (same as real block command)
+	err = app.RunInTransaction(func(txApp core.App) error {
+		// Update task column to need_input
+		task.Set("column", "need_input")
+
+		// Add history entry
+		addHistoryEntry(task, "blocked", agentName, map[string]any{
+			"column": map[string]any{
+				"from": currentColumn,
+				"to":   "need_input",
+			},
+			"reason": question,
+		})
+
+		if err := txApp.Save(task); err != nil {
+			return err
+		}
+
+		// Create comment (same as real block command)
+		comment := core.NewRecord(commentsCollection)
+		comment.Set("task", task.Id)
+		comment.Set("content", question)
+		comment.Set("author_type", "agent")
+		comment.Set("author_id", agentName)
+		comment.Set("metadata", map[string]any{
+			"action": "block_question",
+		})
+
+		return txApp.Save(comment)
+	})
+
+	require.NoError(t, err, "block with comment should succeed")
+}
+
 // ========== Tests ==========
 
 func TestBlockCommand_HistoryIsUpdatedCorrectly(t *testing.T) {
@@ -312,4 +358,156 @@ func TestBlockCommand_HistoryWithDifferentAgents(t *testing.T) {
 			assert.Equal(t, agentToUse, lastEntry["actor_detail"])
 		})
 	}
+}
+
+// ========== Integration Tests ==========
+
+// TestFullWorkflow_CreateBlockCommentList tests the complete workflow:
+// create task → block → add comment → list comments
+// This is an integration test that verifies all components work together.
+func TestFullWorkflow_CreateBlockCommentList(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	setupTasksCollectionWithNeedInput(t, app)
+	setupCommentsCollection(t, app)
+
+	// Step 1: Create a task in todo state
+	task := createBlockTestTask(t, app, "Implement authentication", "todo")
+	require.NotEmpty(t, task.Id, "task should have an ID")
+	assert.Equal(t, "todo", task.GetString("column"), "task should start in todo column")
+
+	// Step 2: Simulate agent blocking the task with a question
+	// This mirrors what the block command does: update task AND create comment
+	agentQuestion := "What authentication approach should I use? JWT, sessions, or OAuth2?"
+	agentName := "opencode-build"
+	simulateBlockTaskWithComment(t, app, task, agentQuestion, agentName)
+
+	// Verify task moved to need_input
+	task, err := app.FindRecordById("tasks", task.Id)
+	require.NoError(t, err, "should be able to fetch task")
+	assert.Equal(t, "need_input", task.GetString("column"), "task should be in need_input after blocking")
+
+	// Verify blocking created a comment
+	comments, err := app.FindRecordsByFilter(
+		"comments",
+		"task = '"+task.Id+"'",
+		"", // No sorting in tests - collection lacks autodate fields
+		0, 0,
+	)
+	require.NoError(t, err, "should be able to fetch comments")
+	require.Len(t, comments, 1, "blocking should create exactly one comment")
+
+	agentComment := comments[0]
+	assert.Equal(t, agentQuestion, agentComment.GetString("content"), "comment content should match question")
+	assert.Equal(t, "agent", agentComment.GetString("author_type"), "comment should be from agent")
+	assert.Equal(t, agentName, agentComment.GetString("author_id"), "comment author should match agent name")
+
+	// Step 3: Simulate human adding a response comment
+	humanResponse := "@agent Use JWT with refresh tokens. Access tokens expire in 15 minutes, refresh tokens in 7 days."
+	humanAuthor := "senior-developer"
+
+	commentsCollection, err := app.FindCollectionByNameOrId("comments")
+	require.NoError(t, err, "comments collection should exist")
+
+	humanComment := core.NewRecord(commentsCollection)
+	humanComment.Set("task", task.Id)
+	humanComment.Set("content", humanResponse)
+	humanComment.Set("author_type", "human")
+	humanComment.Set("author_id", humanAuthor)
+	humanComment.Set("metadata", map[string]any{
+		"mentions": []string{"@agent"},
+	})
+	require.NoError(t, app.Save(humanComment), "should be able to save human comment")
+
+	// Step 4: Verify all comments can be listed (simulates comments command)
+	allComments, err := app.FindRecordsByFilter(
+		"comments",
+		"task = '"+task.Id+"'",
+		"", // No sorting in tests - collection lacks autodate fields
+		0, 0,
+	)
+	require.NoError(t, err, "should be able to list all comments")
+	require.Len(t, allComments, 2, "should have 2 comments total")
+
+	// Verify we have both comment types (order not guaranteed without autodate)
+	var foundAgent, foundHuman bool
+	for _, comment := range allComments {
+		authorType := comment.GetString("author_type")
+		content := comment.GetString("content")
+
+		if authorType == "agent" && content == agentQuestion {
+			foundAgent = true
+		}
+		if authorType == "human" && content == humanResponse {
+			foundHuman = true
+		}
+	}
+
+	assert.True(t, foundAgent, "should find the agent's blocking question comment")
+	assert.True(t, foundHuman, "should find the human's response comment")
+
+	// Verify history was updated correctly
+	history := getHistoryFromTask(t, task)
+	require.Greater(t, len(history), 0, "task should have history")
+
+	lastHistoryEntry := history[len(history)-1]
+	assert.Equal(t, "blocked", lastHistoryEntry["action"], "last history action should be 'blocked'")
+	changes, ok := lastHistoryEntry["changes"].(map[string]any)
+	require.True(t, ok, "changes should be a map")
+	assert.Equal(t, agentQuestion, changes["reason"], "history should record the blocking reason")
+}
+
+// TestAtomicBlock_RollbackOnCommentFailure verifies that if comment creation fails,
+// the task column change is rolled back (atomicity test).
+func TestAtomicBlock_RollbackOnCommentFailure(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	setupTasksCollectionWithNeedInput(t, app)
+	// Intentionally NOT setting up comments collection to simulate failure
+
+	// Create a task
+	task := createBlockTestTask(t, app, "Test atomic rollback", "in_progress")
+	originalColumn := task.GetString("column")
+	require.Equal(t, "in_progress", originalColumn)
+
+	// Try to block the task - this should fail because comments collection doesn't exist
+	// We'll simulate what the block command does: wrap in transaction and try to save comment
+	err := app.RunInTransaction(func(txApp core.App) error {
+		// Update task column to need_input
+		task.Set("column", "need_input")
+		addHistoryEntry(task, "blocked", "test-agent", map[string]any{
+			"column": map[string]any{
+				"from": originalColumn,
+				"to":   "need_input",
+			},
+			"reason": "Test question",
+		})
+
+		if err := txApp.Save(task); err != nil {
+			return err
+		}
+
+		// Try to create comment - this should fail because collection doesn't exist
+		commentsCollection, err := txApp.FindCollectionByNameOrId("comments")
+		if err != nil {
+			return err // This will cause rollback
+		}
+
+		comment := core.NewRecord(commentsCollection)
+		comment.Set("task", task.Id)
+		comment.Set("content", "Test question")
+		comment.Set("author_type", "agent")
+		comment.Set("author_id", "test-agent")
+
+		return txApp.Save(comment)
+	})
+
+	// The transaction should have failed
+	require.Error(t, err, "transaction should fail when comments collection doesn't exist")
+
+	// Verify task column was NOT changed (rolled back)
+	task, fetchErr := app.FindRecordById("tasks", task.Id)
+	require.NoError(t, fetchErr, "should be able to fetch task after failed transaction")
+
+	// The task should still be in its original column because the transaction was rolled back
+	assert.Equal(t, originalColumn, task.GetString("column"),
+		"task column should be rolled back to original state after failed transaction")
 }
