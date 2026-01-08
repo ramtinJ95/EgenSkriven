@@ -61,7 +61,7 @@ func (f *Formatter) Tasks(tasks []*core.Record) {
 
 	// Group tasks by column
 	grouped := groupByColumn(tasks)
-	columns := []string{"backlog", "todo", "in_progress", "review", "done"}
+	columns := []string{"backlog", "todo", "in_progress", "need_input", "review", "done"}
 
 	for _, col := range columns {
 		colTasks := grouped[col]
@@ -121,7 +121,7 @@ func (f *Formatter) TasksWithBoards(tasks []*core.Record, boardsMap map[string]*
 
 	// Group tasks by column
 	grouped := groupByColumn(tasks)
-	columns := []string{"backlog", "todo", "in_progress", "review", "done"}
+	columns := []string{"backlog", "todo", "in_progress", "need_input", "review", "done"}
 
 	for _, col := range columns {
 		colTasks := grouped[col]

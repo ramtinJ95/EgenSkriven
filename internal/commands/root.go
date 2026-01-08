@@ -85,7 +85,7 @@ const (
 )
 
 // ValidColumns is the list of valid column values
-var ValidColumns = []string{"backlog", "todo", "in_progress", "review", "done"}
+var ValidColumns = []string{"backlog", "todo", "in_progress", "need_input", "review", "done"}
 
 // ValidTypes is the list of valid task types
 var ValidTypes = []string{"bug", "feature", "chore"}
