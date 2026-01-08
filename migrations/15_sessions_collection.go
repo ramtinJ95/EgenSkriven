@@ -74,6 +74,13 @@ func init() {
 			OnCreate: true,
 		})
 
+		// Auto-timestamp on update (tracks status changes)
+		collection.Fields.Add(&core.AutodateField{
+			Name:     "updated",
+			OnCreate: true,
+			OnUpdate: true,
+		})
+
 		// End timestamp (optional, set when session ends)
 		collection.Fields.Add(&core.DateField{
 			Name: "ended_at",

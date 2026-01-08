@@ -71,6 +71,13 @@ func init() {
 			OnCreate: true,
 		})
 
+		// Auto-timestamp on update
+		collection.Fields.Add(&core.AutodateField{
+			Name:     "updated",
+			OnCreate: true,
+			OnUpdate: true,
+		})
+
 		// Indexes for common queries
 		collection.Indexes = []string{
 			"CREATE INDEX idx_comments_task ON comments (task)",

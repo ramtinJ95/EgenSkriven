@@ -206,14 +206,20 @@ func listBackups(dataDir string, out *output.Formatter) error {
 	return nil
 }
 
+// Backup file naming constants
+const (
+	backupPrefix = "data.db.backup"
+	mainDBName   = "data.db"
+)
+
 // isBackupFile checks if a filename looks like a backup file
 func isBackupFile(name string) bool {
 	// Match data.db.backup-* pattern
-	if len(name) > 14 && name[:14] == "data.db.backup" {
+	if len(name) > len(backupPrefix) && name[:len(backupPrefix)] == backupPrefix {
 		return true
 	}
 	// Match *.db files that aren't the main database
-	if filepath.Ext(name) == ".db" && name != "data.db" {
+	if filepath.Ext(name) == ".db" && name != mainDBName {
 		return true
 	}
 	return false
