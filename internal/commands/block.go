@@ -156,7 +156,9 @@ Use this when you're blocked and need human guidance to proceed.`,
 				}
 				encoder := json.NewEncoder(os.Stdout)
 				encoder.SetIndent("", "  ")
-				encoder.Encode(result)
+				if err := encoder.Encode(result); err != nil {
+					return out.Error(ExitGeneralError, fmt.Sprintf("failed to encode JSON output: %v", err), nil)
+				}
 				return nil
 			}
 

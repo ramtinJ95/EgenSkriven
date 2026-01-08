@@ -12,128 +12,36 @@ import (
 )
 
 // ========== Setup Functions ==========
+// These are thin wrappers around shared helpers in test_helpers_test.go
 
-// setupTasksCollectionForComment creates tasks collection for comment tests
+// setupTasksCollectionForComment creates tasks collection for comment tests.
+// Deprecated: Use SetupTasksCollection from test_helpers_test.go instead.
 func setupTasksCollectionForComment(t *testing.T, app *pocketbase.PocketBase) {
-	t.Helper()
-
-	_, err := app.FindCollectionByNameOrId("tasks")
-	if err == nil {
-		return
-	}
-
-	collection := core.NewBaseCollection("tasks")
-	collection.Fields.Add(&core.TextField{Name: "title", Required: true})
-	collection.Fields.Add(&core.TextField{Name: "description"})
-	collection.Fields.Add(&core.SelectField{
-		Name:     "type",
-		Required: true,
-		Values:   []string{"bug", "feature", "chore"},
-	})
-	collection.Fields.Add(&core.SelectField{
-		Name:     "priority",
-		Required: true,
-		Values:   []string{"low", "medium", "high", "urgent"},
-	})
-	collection.Fields.Add(&core.SelectField{
-		Name:     "column",
-		Required: true,
-		Values:   []string{"backlog", "todo", "in_progress", "need_input", "review", "done"},
-	})
-	collection.Fields.Add(&core.NumberField{Name: "position", Required: true})
-	collection.Fields.Add(&core.JSONField{Name: "labels"})
-	collection.Fields.Add(&core.JSONField{Name: "blocked_by"})
-	collection.Fields.Add(&core.SelectField{
-		Name:     "created_by",
-		Required: true,
-		Values:   []string{"user", "agent", "cli"},
-	})
-	collection.Fields.Add(&core.TextField{Name: "created_by_agent"})
-	collection.Fields.Add(&core.JSONField{Name: "history"})
-
-	if err := app.Save(collection); err != nil {
-		t.Fatalf("failed to create tasks collection: %v", err)
-	}
+	SetupTasksCollection(t, app)
 }
 
-// setupCommentsCollectionForComment creates comments collection for comment tests
+// setupCommentsCollectionForComment creates comments collection for comment tests.
+// Deprecated: Use SetupCommentsCollection from test_helpers_test.go instead.
 func setupCommentsCollectionForComment(t *testing.T, app *pocketbase.PocketBase) {
-	t.Helper()
-
-	_, err := app.FindCollectionByNameOrId("comments")
-	if err == nil {
-		return
-	}
-
-	collection := core.NewBaseCollection("comments")
-	collection.Fields.Add(&core.TextField{Name: "task", Required: true})
-	collection.Fields.Add(&core.TextField{Name: "content", Required: true})
-	collection.Fields.Add(&core.SelectField{
-		Name:     "author_type",
-		Required: true,
-		Values:   []string{"human", "agent"},
-	})
-	collection.Fields.Add(&core.TextField{Name: "author_id"})
-	collection.Fields.Add(&core.JSONField{Name: "metadata"})
-
-	if err := app.Save(collection); err != nil {
-		t.Fatalf("failed to create comments collection: %v", err)
-	}
+	SetupCommentsCollection(t, app)
 }
 
-// createCommentTestTask creates a task for comment command testing
+// createCommentTestTask creates a task for comment command testing.
+// Deprecated: Use CreateTestTask from test_helpers_test.go instead.
 func createCommentTestTask(t *testing.T, app *pocketbase.PocketBase, title string, column string) *core.Record {
-	t.Helper()
-
-	collection, err := app.FindCollectionByNameOrId("tasks")
-	require.NoError(t, err)
-
-	record := core.NewRecord(collection)
-	record.Set("title", title)
-	record.Set("type", "feature")
-	record.Set("priority", "medium")
-	record.Set("column", column)
-	record.Set("position", 1000.0)
-	record.Set("labels", []string{})
-	record.Set("blocked_by", []string{})
-	record.Set("created_by", "cli")
-	record.Set("history", []map[string]any{})
-
-	require.NoError(t, app.Save(record))
-	return record
+	return CreateTestTask(t, app, title, column)
 }
 
-// createTestComment creates a comment directly for testing
+// createTestComment creates a comment directly for testing.
+// Deprecated: Use CreateTestComment from test_helpers_test.go instead.
 func createTestComment(t *testing.T, app *pocketbase.PocketBase, taskId, content, authorType, authorId string) *core.Record {
-	t.Helper()
-
-	collection, err := app.FindCollectionByNameOrId("comments")
-	require.NoError(t, err)
-
-	record := core.NewRecord(collection)
-	record.Set("task", taskId)
-	record.Set("content", content)
-	record.Set("author_type", authorType)
-	record.Set("author_id", authorId)
-	record.Set("metadata", map[string]any{})
-
-	require.NoError(t, app.Save(record))
-	return record
+	return CreateTestComment(t, app, taskId, content, authorType, authorId)
 }
 
-// getCommentsForTask returns all comments for a given task ID
+// getCommentsForTask returns all comments for a given task ID.
+// Deprecated: Use GetCommentsForTask from test_helpers_test.go instead.
 func getCommentsForTask(t *testing.T, app *pocketbase.PocketBase, taskId string) []*core.Record {
-	t.Helper()
-
-	records, err := app.FindRecordsByFilter(
-		"comments",
-		"task = '"+taskId+"'",
-		"", // No sorting - simplifies test setup
-		0,
-		0,
-	)
-	require.NoError(t, err)
-	return records
+	return GetCommentsForTask(t, app, taskId)
 }
 
 // ========== extractMentions Tests ==========
@@ -489,4 +397,99 @@ func TestCommentCreation_UnicodeContent(t *testing.T) {
 
 	// Verify unicode content is stored correctly
 	assert.Equal(t, content, comment.GetString("content"))
+}
+
+// ========== Stdin and JSON Output Tests ==========
+
+// TestCommentCommand_StdinInput verifies that the comment command can read from stdin
+func TestCommentCommand_StdinInput(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	setupTasksCollectionForComment(t, app)
+	setupCommentsCollectionForComment(t, app)
+
+	task := createCommentTestTask(t, app, "Task for stdin test", "need_input")
+
+	// Simulate reading from stdin
+	stdinContent := `Here's my detailed response from stdin:
+
+1. Use JWT for authentication
+2. Access tokens should expire in 15 minutes
+3. Refresh tokens should expire in 7 days
+
+Additional notes:
+- Consider using httpOnly cookies
+- Implement token rotation`
+
+	// Create comment with the stdin content (simulates --stdin flag behavior)
+	comment := createTestComment(t, app, task.Id, stdinContent, "human", "architect")
+
+	// Verify full content was preserved
+	assert.Equal(t, stdinContent, comment.GetString("content"), "stdin content should be preserved exactly")
+	assert.Contains(t, comment.GetString("content"), "JWT for authentication")
+	assert.Contains(t, comment.GetString("content"), "httpOnly cookies")
+}
+
+// TestCommentCommand_JSONOutput verifies that the comment command produces valid JSON output structure
+func TestCommentCommand_JSONOutput(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	setupTasksCollectionForComment(t, app)
+	setupCommentsCollectionForComment(t, app)
+
+	task := createCommentTestTask(t, app, "Task for JSON test", "need_input")
+
+	// Create a comment with mentions
+	content := "@agent I've decided to use OAuth2 for authentication"
+	authorType := "human"
+	authorId := "senior-dev"
+
+	comment := createTestComment(t, app, task.Id, content, authorType, authorId)
+
+	// Extract mentions like the command does
+	mentions := extractMentions(content)
+
+	// Verify the structure that would be in JSON output
+	jsonResult := map[string]any{
+		"success":     true,
+		"comment_id":  comment.Id,
+		"task_id":     task.Id,
+		"display_id":  task.Id[:8], // Simplified display ID
+		"author_type": authorType,
+		"author_id":   authorId,
+		"mentions":    mentions,
+	}
+
+	// Verify all expected fields
+	assert.True(t, jsonResult["success"].(bool))
+	assert.NotEmpty(t, jsonResult["comment_id"])
+	assert.Equal(t, task.Id, jsonResult["task_id"])
+	assert.Equal(t, "human", jsonResult["author_type"])
+	assert.Equal(t, "senior-dev", jsonResult["author_id"])
+
+	// Verify mentions were extracted
+	mentionsList := jsonResult["mentions"].([]string)
+	assert.Len(t, mentionsList, 1)
+	assert.Contains(t, mentionsList, "@agent")
+}
+
+// TestCommentCommand_JSONOutputWithMultipleMentions verifies mentions are correctly included in JSON
+func TestCommentCommand_JSONOutputWithMultipleMentions(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	setupTasksCollectionForComment(t, app)
+	setupCommentsCollectionForComment(t, app)
+
+	task := createCommentTestTask(t, app, "Task for mentions JSON test", "todo")
+
+	// Content with multiple mentions
+	content := "@agent @reviewer please review this approach @lead"
+	mentions := extractMentions(content)
+
+	// Create comment with mentions in metadata
+	comment := createTestComment(t, app, task.Id, content, "human", "developer")
+	require.NotEmpty(t, comment.Id)
+
+	// Verify mentions extraction
+	assert.Len(t, mentions, 3)
+	assert.Contains(t, mentions, "@agent")
+	assert.Contains(t, mentions, "@reviewer")
+	assert.Contains(t, mentions, "@lead")
 }

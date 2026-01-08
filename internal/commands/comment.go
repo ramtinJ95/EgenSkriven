@@ -129,7 +129,9 @@ comment, it may trigger an auto-resume (depending on board configuration).`,
 				}
 				encoder := json.NewEncoder(os.Stdout)
 				encoder.SetIndent("", "  ")
-				encoder.Encode(result)
+				if err := encoder.Encode(result); err != nil {
+					return out.Error(ExitGeneralError, fmt.Sprintf("failed to encode JSON output: %v", err), nil)
+				}
 				return nil
 			}
 

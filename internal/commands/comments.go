@@ -106,7 +106,9 @@ or for reviewing the discussion history on a task.`,
 				}
 				encoder := json.NewEncoder(os.Stdout)
 				encoder.SetIndent("", "  ")
-				encoder.Encode(result)
+				if err := encoder.Encode(result); err != nil {
+					return out.Error(ExitGeneralError, fmt.Sprintf("failed to encode JSON output: %v", err), nil)
+				}
 				return nil
 			}
 
@@ -160,6 +162,11 @@ or for reviewing the discussion history on a task.`,
 func formatRelativeTime(t time.Time) string {
 	now := time.Now()
 	diff := now.Sub(t)
+
+	// Handle future times (negative diff) - show absolute time
+	if diff < 0 {
+		return t.Format("Jan 2, 15:04")
+	}
 
 	if diff < time.Minute {
 		return "just now"

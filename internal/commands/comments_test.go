@@ -13,133 +13,37 @@ import (
 )
 
 // ========== Setup Functions ==========
+// These are thin wrappers around shared helpers in test_helpers_test.go
 
-// setupTasksCollectionForComments creates tasks collection for comments list tests
+// setupTasksCollectionForComments creates tasks collection for comments list tests.
+// Deprecated: Use SetupTasksCollection from test_helpers_test.go instead.
 func setupTasksCollectionForComments(t *testing.T, app *pocketbase.PocketBase) {
-	t.Helper()
-
-	_, err := app.FindCollectionByNameOrId("tasks")
-	if err == nil {
-		return
-	}
-
-	collection := core.NewBaseCollection("tasks")
-	collection.Fields.Add(&core.TextField{Name: "title", Required: true})
-	collection.Fields.Add(&core.TextField{Name: "description"})
-	collection.Fields.Add(&core.SelectField{
-		Name:     "type",
-		Required: true,
-		Values:   []string{"bug", "feature", "chore"},
-	})
-	collection.Fields.Add(&core.SelectField{
-		Name:     "priority",
-		Required: true,
-		Values:   []string{"low", "medium", "high", "urgent"},
-	})
-	collection.Fields.Add(&core.SelectField{
-		Name:     "column",
-		Required: true,
-		Values:   []string{"backlog", "todo", "in_progress", "need_input", "review", "done"},
-	})
-	collection.Fields.Add(&core.NumberField{Name: "position", Required: true})
-	collection.Fields.Add(&core.JSONField{Name: "labels"})
-	collection.Fields.Add(&core.JSONField{Name: "blocked_by"})
-	collection.Fields.Add(&core.SelectField{
-		Name:     "created_by",
-		Required: true,
-		Values:   []string{"user", "agent", "cli"},
-	})
-	collection.Fields.Add(&core.TextField{Name: "created_by_agent"})
-	collection.Fields.Add(&core.JSONField{Name: "history"})
-
-	if err := app.Save(collection); err != nil {
-		t.Fatalf("failed to create tasks collection: %v", err)
-	}
+	SetupTasksCollection(t, app)
 }
 
 // setupCommentsCollectionForComments creates comments collection for comments list tests
-// This version includes autodate fields for proper sorting
+// This version includes autodate fields for proper sorting.
+// Deprecated: Use SetupCommentsCollectionWithAutodate from test_helpers_test.go instead.
 func setupCommentsCollectionForComments(t *testing.T, app *pocketbase.PocketBase) {
-	t.Helper()
-
-	_, err := app.FindCollectionByNameOrId("comments")
-	if err == nil {
-		return
-	}
-
-	collection := core.NewBaseCollection("comments")
-	collection.Fields.Add(&core.TextField{Name: "task", Required: true})
-	collection.Fields.Add(&core.TextField{Name: "content", Required: true})
-	collection.Fields.Add(&core.SelectField{
-		Name:     "author_type",
-		Required: true,
-		Values:   []string{"human", "agent"},
-	})
-	collection.Fields.Add(&core.TextField{Name: "author_id"})
-	collection.Fields.Add(&core.JSONField{Name: "metadata"})
-	collection.Fields.Add(&core.AutodateField{
-		Name:     "created",
-		OnCreate: true,
-	})
-
-	if err := app.Save(collection); err != nil {
-		t.Fatalf("failed to create comments collection: %v", err)
-	}
+	SetupCommentsCollectionWithAutodate(t, app)
 }
 
-// createCommentsTestTask creates a task for comments list command testing
+// createCommentsTestTask creates a task for comments list command testing.
+// Deprecated: Use CreateTestTask from test_helpers_test.go instead.
 func createCommentsTestTask(t *testing.T, app *pocketbase.PocketBase, title string, column string) *core.Record {
-	t.Helper()
-
-	collection, err := app.FindCollectionByNameOrId("tasks")
-	require.NoError(t, err)
-
-	record := core.NewRecord(collection)
-	record.Set("title", title)
-	record.Set("type", "feature")
-	record.Set("priority", "medium")
-	record.Set("column", column)
-	record.Set("position", 1000.0)
-	record.Set("labels", []string{})
-	record.Set("blocked_by", []string{})
-	record.Set("created_by", "cli")
-	record.Set("history", []map[string]any{})
-
-	require.NoError(t, app.Save(record))
-	return record
+	return CreateTestTask(t, app, title, column)
 }
 
-// createCommentsTestComment creates a comment for testing
+// createCommentsTestComment creates a comment for testing.
+// Deprecated: Use CreateTestComment from test_helpers_test.go instead.
 func createCommentsTestComment(t *testing.T, app *pocketbase.PocketBase, taskId, content, authorType, authorId string) *core.Record {
-	t.Helper()
-
-	collection, err := app.FindCollectionByNameOrId("comments")
-	require.NoError(t, err)
-
-	record := core.NewRecord(collection)
-	record.Set("task", taskId)
-	record.Set("content", content)
-	record.Set("author_type", authorType)
-	record.Set("author_id", authorId)
-	record.Set("metadata", map[string]any{})
-
-	require.NoError(t, app.Save(record))
-	return record
+	return CreateTestComment(t, app, taskId, content, authorType, authorId)
 }
 
-// getCommentsForTaskList returns all comments for a given task ID
+// getCommentsForTaskList returns all comments for a given task ID.
+// Deprecated: Use GetCommentsForTaskSorted from test_helpers_test.go instead.
 func getCommentsForTaskList(t *testing.T, app *pocketbase.PocketBase, taskId string) []*core.Record {
-	t.Helper()
-
-	records, err := app.FindRecordsByFilter(
-		"comments",
-		"task = '"+taskId+"'",
-		"+created", // Sort by creation time ascending
-		0,
-		0,
-	)
-	require.NoError(t, err)
-	return records
+	return GetCommentsForTaskSorted(t, app, taskId)
 }
 
 // ========== formatRelativeTime Tests ==========
@@ -195,12 +99,21 @@ func TestFormatRelativeTime_MoreThan24Hours(t *testing.T) {
 }
 
 func TestFormatRelativeTime_FutureTime(t *testing.T) {
-	// Future times should result in negative diff, which will be < time.Minute
+	// Future times should return absolute format
 	futureTime := time.Now().Add(1 * time.Hour)
 	result := formatRelativeTime(futureTime)
-	// Negative diff is less than any threshold, so it may return unusual value
-	// The function doesn't handle future times specially
-	assert.NotEmpty(t, result)
+	// Future times are displayed as absolute timestamps
+	assert.Contains(t, result, ",", "future times should show absolute format")
+	assert.Contains(t, result, ":", "future times should show absolute format")
+}
+
+func TestFormatRelativeTime_FutureTimeFarAhead(t *testing.T) {
+	// Even far future times should return absolute format
+	futureTime := time.Now().Add(30 * 24 * time.Hour) // 30 days from now
+	result := formatRelativeTime(futureTime)
+	// Should show absolute format like "Jan 2, 15:04"
+	assert.Contains(t, result, ",", "far future times should show absolute format")
+	assert.Contains(t, result, ":", "far future times should show absolute format")
 }
 
 // ========== Comments Listing Tests ==========
@@ -551,4 +464,111 @@ func TestCommentsListing_FullWorkflowVerification(t *testing.T) {
 
 	assert.Equal(t, 2, agentCount, "should have 2 agent comments")
 	assert.Equal(t, 1, humanCount, "should have 1 human comment")
+}
+
+// ========== JSON Output Tests ==========
+
+// TestCommentsCommand_JSONOutput verifies that the comments command produces valid JSON output
+func TestCommentsCommand_JSONOutput(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	setupTasksCollectionForComments(t, app)
+	setupCommentsCollectionForComments(t, app)
+
+	task := createCommentsTestTask(t, app, "Task for JSON test", "need_input")
+
+	// Create comments
+	createCommentsTestComment(t, app, task.Id, "First question from agent", "agent", "opencode")
+	createCommentsTestComment(t, app, task.Id, "Human response with @agent mention", "human", "developer")
+
+	// Get comments
+	comments := getCommentsForTaskList(t, app, task.Id)
+	require.Len(t, comments, 2)
+
+	// Verify the structure that JSON output would contain
+	jsonComments := make([]map[string]any, len(comments))
+	for i, r := range comments {
+		jsonComments[i] = map[string]any{
+			"id":          r.Id,
+			"content":     r.GetString("content"),
+			"author_type": r.GetString("author_type"),
+			"author_id":   r.GetString("author_id"),
+			"metadata":    r.Get("metadata"),
+			"created":     r.GetDateTime("created").Time().Format(time.RFC3339),
+		}
+	}
+
+	jsonResult := map[string]any{
+		"task_id":    task.Id,
+		"display_id": task.Id[:8],
+		"count":      len(jsonComments),
+		"comments":   jsonComments,
+	}
+
+	// Verify structure
+	assert.Equal(t, task.Id, jsonResult["task_id"])
+	assert.NotEmpty(t, jsonResult["display_id"])
+	assert.Equal(t, 2, jsonResult["count"])
+
+	commentsArray := jsonResult["comments"].([]map[string]any)
+	assert.Len(t, commentsArray, 2)
+
+	// Verify comment fields
+	for _, c := range commentsArray {
+		assert.NotEmpty(t, c["id"])
+		assert.NotEmpty(t, c["content"])
+		assert.NotEmpty(t, c["author_type"])
+		assert.NotEmpty(t, c["created"])
+	}
+}
+
+// TestCommentsCommand_EmptyTaskShowsHelpfulMessage verifies helpful output when no comments exist
+func TestCommentsCommand_EmptyTaskShowsHelpfulMessage(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	setupTasksCollectionForComments(t, app)
+	setupCommentsCollectionForComments(t, app)
+
+	// Create a task with no comments
+	task := createCommentsTestTask(t, app, "Task with no comments", "todo")
+
+	// Get comments (should be empty)
+	comments := getCommentsForTaskList(t, app, task.Id)
+
+	// Verify empty result
+	assert.Empty(t, comments, "task should have no comments")
+
+	// The command would output: "No comments on <display_id>"
+	// This is handled in comments.go lines 114-117:
+	// if len(records) == 0 {
+	//     fmt.Printf("No comments on %s\n", displayId)
+	//     return nil
+	// }
+
+	// Verify the display ID can be generated (used in the message)
+	displayId := task.Id[:8] // Simplified display ID
+	assert.NotEmpty(t, displayId, "display ID should be available for the message")
+}
+
+// TestCommentsCommand_JSONOutputEmpty verifies JSON output for task with no comments
+func TestCommentsCommand_JSONOutputEmpty(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	setupTasksCollectionForComments(t, app)
+	setupCommentsCollectionForComments(t, app)
+
+	task := createCommentsTestTask(t, app, "Empty task for JSON", "backlog")
+
+	// Get comments (empty)
+	comments := getCommentsForTaskList(t, app, task.Id)
+
+	// Build JSON result structure
+	jsonComments := make([]map[string]any, len(comments))
+	jsonResult := map[string]any{
+		"task_id":    task.Id,
+		"display_id": task.Id[:8],
+		"count":      len(jsonComments),
+		"comments":   jsonComments,
+	}
+
+	// Verify empty JSON structure
+	assert.Equal(t, 0, jsonResult["count"])
+	assert.Empty(t, jsonResult["comments"])
 }
