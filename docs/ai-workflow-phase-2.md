@@ -2,7 +2,7 @@
 
 > **Parent Document**: [ai-workflow-plan.md](./ai-workflow-plan.md)  
 > **Phase**: 2 of 7  
-> **Status**: Not Started  
+> **Status**: Complete  
 > **Estimated Effort**: 2-3 days  
 > **Prerequisites**: [Phase 1](./ai-workflow-phase-1.md) completed
 
@@ -148,7 +148,7 @@ go test ./internal/commands/... -run TestSession -v
 
 | ID | Task | Priority | Status |
 |----|------|----------|--------|
-| 2.8 | Full workflow test: link -> show -> link again -> history shows both | High | [ ] |
+| 2.8 | Full workflow test: link -> show -> link again -> history shows both | High | [x] |
 
 **Verification Script**:
 ```bash
@@ -1230,38 +1230,38 @@ Before marking this phase complete, verify all items pass:
 
 ### Session Link Tests
 
-- [ ] `session link` creates session on task
-- [ ] `session link` creates record in sessions table
-- [ ] `session link` replaces existing session (marks old as abandoned)
-- [ ] `session link` fails with invalid tool name
-- [ ] `session link` fails without required flags
-- [ ] `session link --json` outputs valid JSON
-- [ ] `session link` uses cwd when no --working-dir specified
+- [x] `session link` creates session on task
+- [x] `session link` creates record in sessions table
+- [x] `session link` replaces existing session (marks old as abandoned)
+- [x] `session link` fails with invalid tool name
+- [x] `session link` fails without required flags
+- [x] `session link --json` outputs valid JSON
+- [x] `session link` uses cwd when no --working-dir specified
 
 ### Session Show Tests
 
-- [ ] `session show` displays "no session" for task without session
-- [ ] `session show` displays session details correctly
-- [ ] `session show --json` outputs valid JSON
-- [ ] `session show` shows resume hint for need_input tasks
+- [x] `session show` displays "no session" for task without session
+- [x] `session show` displays session details correctly
+- [x] `session show --json` outputs valid JSON
+- [x] `session show` shows resume hint for need_input tasks
 
 ### Session History Tests
 
-- [ ] `session history` shows all sessions for a task
-- [ ] `session history` shows correct status for each session
-- [ ] `session history` orders by most recent first
-- [ ] `session history --json` outputs valid JSON
-- [ ] `session history` shows helpful message when no history
+- [x] `session history` shows all sessions for a task
+- [x] `session history` shows correct status for each session
+- [x] `session history` orders by most recent first
+- [x] `session history --json` outputs valid JSON
+- [x] `session history` shows helpful message when no history
 
 ### Integration Tests
 
-- [ ] Full workflow: link → show → link again → history shows both
-- [ ] Session status transitions work correctly
-- [ ] History entries are created for session changes
+- [x] Full workflow: link → show → link again → history shows both
+- [x] Session status transitions work correctly
+- [x] History entries are created for session changes
 
 ### Unit Tests Pass
 
-- [ ] `go test ./internal/commands/... -run TestSession -v` passes
+- [x] `go test ./internal/commands/... -run TestSession -v` passes
 
 ---
 
