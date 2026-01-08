@@ -69,6 +69,7 @@ func Register(app *pocketbase.PocketBase) {
 
 	// AI workflow commands (Phase 1 - blocked workflow)
 	app.RootCmd.AddCommand(newBlockCmd(app))
+	app.RootCmd.AddCommand(newCommentCmd(app))
 }
 
 // getFormatter creates a new output formatter with current flag values.

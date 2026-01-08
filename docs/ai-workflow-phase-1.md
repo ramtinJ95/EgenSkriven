@@ -1260,11 +1260,11 @@ Before considering this phase complete:
 - [x] `egenskriven block --stdin` reads from stdin
 - [x] `egenskriven block --json` outputs valid JSON
 
-- [ ] `egenskriven comment <task> "text"` creates comment
-- [ ] `egenskriven comment --author` sets author correctly
-- [ ] `egenskriven comment` extracts @mentions
-- [ ] `egenskriven comment --stdin` reads from stdin
-- [ ] `egenskriven comment --json` outputs valid JSON
+- [x] `egenskriven comment <task> "text"` creates comment
+- [x] `egenskriven comment --author` sets author correctly
+- [x] `egenskriven comment` extracts @mentions
+- [x] `egenskriven comment --stdin` reads from stdin
+- [x] `egenskriven comment --json` outputs valid JSON
 
 - [ ] `egenskriven comments <task>` lists all comments
 - [ ] `egenskriven comments --limit N` limits output
