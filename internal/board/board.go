@@ -10,7 +10,7 @@ import (
 )
 
 // DefaultColumns are used when creating a board without custom columns
-var DefaultColumns = []string{"backlog", "todo", "in_progress", "review", "done"}
+var DefaultColumns = []string{"backlog", "todo", "in_progress", "need_input", "review", "done"}
 
 // Board represents a board with its metadata
 type Board struct {

@@ -49,6 +49,7 @@ export const purpleDream: Theme = {
     statusBacklog: '#8b72a3', // comments purple
     statusTodo: '#d4a5ff', // lavender
     statusInProgress: '#f9f871', // neon yellow
+    statusNeedInput: '#ffb3d9', // pastel pink
     statusReview: '#8b9aff', // periwinkle blue
     statusDone: '#5ffbf1', // bright cyan
     statusCanceled: '#543a6e', // muted purple

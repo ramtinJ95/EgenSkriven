@@ -1,0 +1,41 @@
+/* StatusBadge Component Styles */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-1, 4px) var(--space-2, 8px);
+  font-size: var(--text-sm, 13px);
+  font-weight: var(--font-medium, 500);
+  color: var(--text-secondary, #999999);
+  background-color: var(--bg-card, #1a1a1a);
+  border-radius: var(--radius-sm, 4px);
+  text-transform: capitalize;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Status-specific text colors (optional - can match dot color) */
+.status_need_input {
+  color: var(--status-need-input, #f97316);
+}
+
+.status_need_input .dot {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+  }
+}

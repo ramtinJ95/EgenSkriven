@@ -48,6 +48,7 @@ export const nord: Theme = {
     statusBacklog: '#4c566a', // nord3
     statusTodo: '#eceff4', // nord6
     statusInProgress: '#ebcb8b', // nord13 (yellow)
+    statusNeedInput: '#d08770', // nord12 (orange)
     statusReview: '#b48ead', // nord15 (purple)
     statusDone: '#a3be8c', // nord14 (green)
     statusCanceled: '#4c566a', // nord3

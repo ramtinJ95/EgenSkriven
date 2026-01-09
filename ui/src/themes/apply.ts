@@ -83,6 +83,7 @@ export function applyTheme(theme: Theme): void {
   root.style.setProperty('--status-backlog', colors.statusBacklog);
   root.style.setProperty('--status-todo', colors.statusTodo);
   root.style.setProperty('--status-in-progress', colors.statusInProgress);
+  root.style.setProperty('--status-need-input', colors.statusNeedInput);
   root.style.setProperty('--status-review', colors.statusReview);
   root.style.setProperty('--status-done', colors.statusDone);
   root.style.setProperty('--status-canceled', colors.statusCanceled);

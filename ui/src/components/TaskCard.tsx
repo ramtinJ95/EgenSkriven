@@ -95,6 +95,9 @@ function TaskCardComponent({ task, isSelected = false, onClick, onSelect, curren
     }
   }
 
+  // Check if task needs input (blocked)
+  const needsInput = task.column === 'need_input'
+
   // Build class names - include global 'task-card' for drag-drop.css styles
   const classNames = [
     'task-card', // Global class for drag-drop.css
@@ -102,6 +105,7 @@ function TaskCardComponent({ task, isSelected = false, onClick, onSelect, curren
     isSelected && styles.selected,
     isCurrentlyDragging && 'dragging',
     isDragOverlay && 'drag-overlay',
+    needsInput && styles.needsInput,
   ].filter(Boolean).join(' ')
 
   return (
@@ -118,10 +122,10 @@ function TaskCardComponent({ task, isSelected = false, onClick, onSelect, curren
       role="button"
       aria-pressed={isSelected}
     >
-      {/* Header: Status dot + ID */}
+      {/* Header: Status dot + ID + Needs Input badge */}
       <div className={styles.header}>
         <span
-          className={styles.statusDot}
+          className={`${styles.statusDot} ${needsInput ? styles.pulsingDot : ''}`}
           style={{
             backgroundColor: `var(--status-${task.column.replace('_', '-')})`,
           }}
@@ -131,6 +135,9 @@ function TaskCardComponent({ task, isSelected = false, onClick, onSelect, curren
             ? formatDisplayId(currentBoard.prefix, task.seq)
             : task.id.slice(0, 8)}
         </span>
+        {needsInput && (
+          <span className={styles.needsInputBadge}>Needs Input</span>
+        )}
       </div>
 
       {/* Title */}

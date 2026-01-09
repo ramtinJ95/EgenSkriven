@@ -46,6 +46,7 @@ export const light: Theme = {
     statusBacklog: '#6B7280',
     statusTodo: '#E5E5E5',
     statusInProgress: '#F59E0B',
+    statusNeedInput: '#F97316',
     statusReview: '#A855F7',
     statusDone: '#22C55E',
     statusCanceled: '#6B7280',

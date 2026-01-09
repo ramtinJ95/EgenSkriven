@@ -53,6 +53,7 @@ export function EpicDetail({ epicId, tasks, onClose, onTaskClick }: EpicDetailPr
       backlog: [],
       todo: [],
       in_progress: [],
+      need_input: [],
       review: [],
       done: [],
     }

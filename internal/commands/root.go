@@ -58,6 +58,7 @@ func Register(app *pocketbase.PocketBase) {
 	// Phase 8 commands
 	app.RootCmd.AddCommand(newExportCmd(app))
 	app.RootCmd.AddCommand(newImportCmd(app))
+	app.RootCmd.AddCommand(newBackupCmd(app))
 
 	// Phase 9 commands
 	app.RootCmd.AddCommand(newCompletionCmd(app.RootCmd))
@@ -65,6 +66,17 @@ func Register(app *pocketbase.PocketBase) {
 
 	// AI agent integration commands
 	app.RootCmd.AddCommand(newSkillCmd(app))
+
+	// AI workflow commands (Phase 1 - blocked workflow)
+	app.RootCmd.AddCommand(newBlockCmd(app))
+	app.RootCmd.AddCommand(newCommentCmd(app))
+	app.RootCmd.AddCommand(newCommentsCmd(app))
+
+	// AI workflow commands (Phase 2 - session management)
+	app.RootCmd.AddCommand(newSessionCmd(app))
+
+	// AI workflow commands (Phase 3 - resume flow)
+	app.RootCmd.AddCommand(newResumeCmd(app))
 }
 
 // getFormatter creates a new output formatter with current flag values.
@@ -84,7 +96,7 @@ const (
 )
 
 // ValidColumns is the list of valid column values
-var ValidColumns = []string{"backlog", "todo", "in_progress", "review", "done"}
+var ValidColumns = []string{"backlog", "todo", "in_progress", "need_input", "review", "done"}
 
 // ValidTypes is the list of valid task types
 var ValidTypes = []string{"bug", "feature", "chore"}

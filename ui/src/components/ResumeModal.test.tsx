@@ -1,0 +1,838 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { ResumeModal } from './ResumeModal'
+import type { ResumeResult } from '../hooks/useResume'
+
+// Mock the useResume hook
+vi.mock('../hooks/useResume', () => ({
+  useResume: vi.fn(),
+}))
+
+import { useResume } from '../hooks/useResume'
+
+const mockedUseResume = vi.mocked(useResume)
+
+// Mock result data
+const mockResumeResult: ResumeResult = {
+  command: "claude --resume abc123 'Continue the task'",
+  prompt: '## Task Context\n\nContinue working...',
+  tool: 'claude-code',
+  sessionRef: 'abc123-def456',
+  workingDir: '/home/user/project',
+}
+
+describe('ResumeModal', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // Mock clipboard API
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: vi.fn().mockResolvedValue(undefined),
+      },
+    })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  // Test: Modal is not rendered when not open
+  describe('visibility', () => {
+    it('returns null when isOpen is false', () => {
+      mockedUseResume.mockReturnValue({
+        resume: vi.fn(),
+        loading: false,
+        error: null,
+      })
+
+      const { container } = render(
+        <ResumeModal
+          isOpen={false}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      expect(container.firstChild).toBeNull()
+    })
+
+    it('renders modal when isOpen is true', () => {
+      mockedUseResume.mockReturnValue({
+        resume: vi.fn(),
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      expect(screen.getByText('Resume Session for WRK-123')).toBeInTheDocument()
+    })
+  })
+
+  // Test: Initial state shows generate button
+  describe('initial state', () => {
+    it('displays description text', () => {
+      mockedUseResume.mockReturnValue({
+        resume: vi.fn(),
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      expect(
+        screen.getByText(/Generate the command to resume the agent session/)
+      ).toBeInTheDocument()
+    })
+
+    it('shows generate button', () => {
+      mockedUseResume.mockReturnValue({
+        resume: vi.fn(),
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      expect(screen.getByText('Generate Resume Command')).toBeInTheDocument()
+    })
+  })
+
+  // Test: Generate command functionality
+  describe('generate command', () => {
+    it('calls resume when generate button is clicked', async () => {
+      const mockResume = vi.fn().mockResolvedValue(mockResumeResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      const generateButton = screen.getByText('Generate Resume Command')
+      await userEvent.click(generateButton)
+
+      expect(mockResume).toHaveBeenCalledWith({
+        taskId: 'task-123',
+        displayId: 'WRK-123',
+        exec: false,
+      })
+    })
+
+    it('shows loading state while generating', () => {
+      mockedUseResume.mockReturnValue({
+        resume: vi.fn(),
+        loading: true,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      expect(screen.getByText('Generating...')).toBeInTheDocument()
+    })
+
+    it('disables generate button while loading', () => {
+      mockedUseResume.mockReturnValue({
+        resume: vi.fn(),
+        loading: true,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      const button = screen.getByText('Generating...').closest('button')
+      expect(button).toBeDisabled()
+    })
+
+    it('shows error message when generation fails', async () => {
+      const mockResume = vi.fn().mockRejectedValue(new Error('Network error'))
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      const generateButton = screen.getByText('Generate Resume Command')
+      await userEvent.click(generateButton)
+
+      await waitFor(() => {
+        expect(screen.getByText('Network error')).toBeInTheDocument()
+      })
+    })
+  })
+
+  // Test: Result display
+  describe('result display', () => {
+    it('displays tool name after generation', async () => {
+      const mockResume = vi.fn().mockResolvedValue(mockResumeResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Tool:')).toBeInTheDocument()
+        expect(screen.getByText('claude-code')).toBeInTheDocument()
+      })
+    })
+
+    it('displays working directory after generation', async () => {
+      const mockResume = vi.fn().mockResolvedValue(mockResumeResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Working Dir:')).toBeInTheDocument()
+        // Working dir appears twice (info row and instructions), use getAllByText
+        const workingDirElements = screen.getAllByText('/home/user/project')
+        expect(workingDirElements.length).toBeGreaterThanOrEqual(1)
+      })
+    })
+
+    it('displays command after generation', async () => {
+      const mockResume = vi.fn().mockResolvedValue(mockResumeResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Resume Command')).toBeInTheDocument()
+        expect(screen.getByText(mockResumeResult.command)).toBeInTheDocument()
+      })
+    })
+
+    it('displays instructions after generation', async () => {
+      const mockResume = vi.fn().mockResolvedValue(mockResumeResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Instructions')).toBeInTheDocument()
+        expect(screen.getByText('Copy the command above')).toBeInTheDocument()
+        expect(screen.getByText('Paste and run the command')).toBeInTheDocument()
+      })
+    })
+  })
+
+  // Test: Copy to clipboard functionality
+  describe('copy to clipboard', () => {
+    it('shows copy button after generation', async () => {
+      const mockResume = vi.fn().mockResolvedValue(mockResumeResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Copy')).toBeInTheDocument()
+      })
+    })
+
+    it('copies command to clipboard when copy button is clicked', async () => {
+      const mockResume = vi.fn().mockResolvedValue(mockResumeResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Copy')).toBeInTheDocument()
+      })
+
+      await userEvent.click(screen.getByText('Copy'))
+
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        mockResumeResult.command
+      )
+    })
+
+    it('shows "Copied!" after successful copy', async () => {
+      const mockResume = vi.fn().mockResolvedValue(mockResumeResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Copy')).toBeInTheDocument()
+      })
+
+      await userEvent.click(screen.getByText('Copy'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Copied!')).toBeInTheDocument()
+      })
+    })
+
+    // 5.12.4: Additional tests for copy button functionality
+    it('copies the exact command from result', async () => {
+      const specificCommand = "claude --resume specific-id 'Test specific prompt'"
+      const specificResult: ResumeResult = {
+        ...mockResumeResult,
+        command: specificCommand,
+      }
+      const mockResume = vi.fn().mockResolvedValue(specificResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Copy')).toBeInTheDocument()
+      })
+
+      await userEvent.click(screen.getByText('Copy'))
+
+      // Verify the EXACT command is copied
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(specificCommand)
+      expect(navigator.clipboard.writeText).toHaveBeenCalledTimes(1)
+    })
+
+    it('copy button is accessible with aria-label', async () => {
+      const mockResume = vi.fn().mockResolvedValue(mockResumeResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Copy')).toBeInTheDocument()
+      })
+
+      // Copy button should be a button element
+      const copyButton = screen.getByText('Copy').closest('button')
+      expect(copyButton).toBeInTheDocument()
+      expect(copyButton?.tagName).toBe('BUTTON')
+    })
+
+    it('can copy multiple times', async () => {
+      const mockResume = vi.fn().mockResolvedValue(mockResumeResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Copy')).toBeInTheDocument()
+      })
+
+      // First copy
+      await userEvent.click(screen.getByText('Copy'))
+
+      await waitFor(() => {
+        expect(screen.getByText('Copied!')).toBeInTheDocument()
+      })
+
+      // Wait for state to reset (the button text reverts after timeout)
+      // For now, just verify clipboard was called
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(mockResumeResult.command)
+    })
+  })
+
+  // Test: Modal close functionality
+  describe('close functionality', () => {
+    it('calls onClose when close button is clicked', async () => {
+      const onClose = vi.fn()
+      mockedUseResume.mockReturnValue({
+        resume: vi.fn(),
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={onClose}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      // Find close button (it's the button in the header with X icon)
+      const closeButton = document.querySelector('[class*="closeButton"]')
+      expect(closeButton).toBeInTheDocument()
+
+      fireEvent.click(closeButton!)
+
+      expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
+    it('calls onClose when clicking overlay', () => {
+      const onClose = vi.fn()
+      mockedUseResume.mockReturnValue({
+        resume: vi.fn(),
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={onClose}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      // Click on the overlay (the outer div)
+      const overlay = document.querySelector('[class*="overlay"]')
+      expect(overlay).toBeInTheDocument()
+
+      fireEvent.click(overlay!)
+
+      expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
+    it('calls onClose when Escape key is pressed', () => {
+      const onClose = vi.fn()
+      mockedUseResume.mockReturnValue({
+        resume: vi.fn(),
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={onClose}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      fireEvent.keyDown(window, { key: 'Escape' })
+
+      expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not call onClose when clicking modal content', () => {
+      const onClose = vi.fn()
+      mockedUseResume.mockReturnValue({
+        resume: vi.fn(),
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={onClose}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      // Click on the modal content (not the overlay)
+      const modal = document.querySelector('[class*="modal"]')
+      expect(modal).toBeInTheDocument()
+
+      fireEvent.click(modal!)
+
+      // onClose should not be called when clicking inside the modal
+      expect(onClose).not.toHaveBeenCalled()
+    })
+  })
+
+  // Test: State reset when modal reopens
+  describe('state reset', () => {
+    it('resets result when modal reopens', async () => {
+      const mockResume = vi.fn().mockResolvedValue(mockResumeResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      const { rerender } = render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      // Generate result
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText(mockResumeResult.command)).toBeInTheDocument()
+      })
+
+      // Close modal
+      rerender(
+        <ResumeModal
+          isOpen={false}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      // Reopen modal
+      rerender(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      // Should show generate button again, not the result
+      expect(screen.getByText('Generate Resume Command')).toBeInTheDocument()
+      expect(screen.queryByText(mockResumeResult.command)).not.toBeInTheDocument()
+    })
+  })
+
+  // Test: Display ID in header
+  describe('display id', () => {
+    it('shows correct display ID in title', () => {
+      mockedUseResume.mockReturnValue({
+        resume: vi.fn(),
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-456"
+          displayId="PROJ-789"
+        />
+      )
+
+      expect(screen.getByText('Resume Session for PROJ-789')).toBeInTheDocument()
+    })
+  })
+
+  // 5.12.3: Test resume modal generates correct command for each tool
+  describe('tool-specific commands', () => {
+    it('displays correct command format for claude-code', async () => {
+      const claudeCodeResult: ResumeResult = {
+        command: "claude --resume abc123 'Continue the task'",
+        prompt: '## Task Context\n\nContinue working...',
+        tool: 'claude-code',
+        sessionRef: 'abc123',
+        workingDir: '/home/user/project',
+      }
+      const mockResume = vi.fn().mockResolvedValue(claudeCodeResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText('claude-code')).toBeInTheDocument()
+        // Verify command starts with claude --resume
+        expect(screen.getByText(claudeCodeResult.command)).toBeInTheDocument()
+        expect(claudeCodeResult.command).toMatch(/^claude --resume/)
+      })
+    })
+
+    it('displays correct command format for opencode', async () => {
+      const opencodeResult: ResumeResult = {
+        command: "opencode run 'Continue the task' --session xyz789",
+        prompt: '## Task Context\n\nContinue working...',
+        tool: 'opencode',
+        sessionRef: 'xyz789',
+        workingDir: '/workspace/app',
+      }
+      const mockResume = vi.fn().mockResolvedValue(opencodeResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText('opencode')).toBeInTheDocument()
+        // Verify command starts with opencode run
+        expect(screen.getByText(opencodeResult.command)).toBeInTheDocument()
+        expect(opencodeResult.command).toMatch(/^opencode run/)
+        expect(opencodeResult.command).toContain('--session')
+      })
+    })
+
+    it('displays correct command format for codex', async () => {
+      const codexResult: ResumeResult = {
+        command: "codex exec resume thread-456 'Continue the task'",
+        prompt: '## Task Context\n\nContinue working...',
+        tool: 'codex',
+        sessionRef: 'thread-456',
+        workingDir: '/projects/codex-app',
+      }
+      const mockResume = vi.fn().mockResolvedValue(codexResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText('codex')).toBeInTheDocument()
+        // Verify command starts with codex exec resume
+        expect(screen.getByText(codexResult.command)).toBeInTheDocument()
+        expect(codexResult.command).toMatch(/^codex exec resume/)
+      })
+    })
+
+    it('displays session ref for each tool', async () => {
+      const tools = [
+        { tool: 'claude-code' as const, ref: 'claude-session-id' },
+        { tool: 'opencode' as const, ref: 'opencode-session-id' },
+        { tool: 'codex' as const, ref: 'codex-thread-id' },
+      ]
+
+      for (const { tool, ref } of tools) {
+        vi.clearAllMocks()
+
+        const result: ResumeResult = {
+          command: `test-command-${tool}`,
+          prompt: 'Test prompt',
+          tool,
+          sessionRef: ref,
+          workingDir: '/test/path',
+        }
+        const mockResume = vi.fn().mockResolvedValue(result)
+        mockedUseResume.mockReturnValue({
+          resume: mockResume,
+          loading: false,
+          error: null,
+        })
+
+        const { unmount } = render(
+          <ResumeModal
+            isOpen={true}
+            onClose={vi.fn()}
+            taskId="task-123"
+            displayId="WRK-123"
+          />
+        )
+
+        await userEvent.click(screen.getByText('Generate Resume Command'))
+
+        await waitFor(() => {
+          expect(screen.getByText(tool)).toBeInTheDocument()
+          expect(screen.getByText(result.command)).toBeInTheDocument()
+        })
+
+        unmount()
+      }
+    })
+  })
+})

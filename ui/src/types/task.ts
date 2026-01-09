@@ -1,4 +1,5 @@
 import type { RecordModel } from 'pocketbase'
+import type { AgentSession } from './session'
 
 // Task type values
 export type TaskType = 'bug' | 'feature' | 'chore'
@@ -7,7 +8,7 @@ export type TaskType = 'bug' | 'feature' | 'chore'
 export type Priority = 'urgent' | 'high' | 'medium' | 'low'
 
 // Column/status values (ordered by workflow)
-export type Column = 'backlog' | 'todo' | 'in_progress' | 'review' | 'done'
+export type Column = 'backlog' | 'todo' | 'in_progress' | 'need_input' | 'review' | 'done'
 
 // Creator type
 export type CreatedBy = 'user' | 'agent' | 'cli'
@@ -44,6 +45,7 @@ export interface Task extends RecordModel {
   history?: HistoryEntry[]    // Activity tracking array
   board?: string              // Board ID (relation to boards collection)
   seq?: number                // Per-board sequence number for display IDs
+  agent_session?: AgentSession // Current linked agent session (JSON field)
 }
 
 // All possible columns in display order
@@ -51,6 +53,7 @@ export const COLUMNS: Column[] = [
   'backlog',
   'todo',
   'in_progress',
+  'need_input',
   'review',
   'done',
 ]
@@ -60,6 +63,7 @@ export const COLUMN_NAMES: Record<Column, string> = {
   backlog: 'Backlog',
   todo: 'Todo',
   in_progress: 'In Progress',
+  need_input: 'Need Input',
   review: 'Review',
   done: 'Done',
 }

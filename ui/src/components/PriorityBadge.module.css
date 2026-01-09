@@ -1,0 +1,16 @@
+/* PriorityBadge Component Styles */
+
+.badge {
+  font-size: var(--text-sm, 13px);
+  font-weight: var(--font-medium, 500);
+  text-transform: capitalize;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 14px;
+}

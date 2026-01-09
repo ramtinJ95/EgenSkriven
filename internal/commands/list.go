@@ -37,6 +37,7 @@ func newListCmd(app *pocketbase.PocketBase) *cobra.Command {
 		noDue      bool
 		hasParent  bool
 		noParent   bool
+		needInput  bool
 	)
 
 	cmd := &cobra.Command{
@@ -111,6 +112,11 @@ Examples:
 			if ready {
 				columns = []string{"todo", "backlog"}
 				notBlocked = true
+			}
+
+			// Need input filter: tasks awaiting human input
+			if needInput {
+				filters = append(filters, dbx.NewExp("column = 'need_input'"))
 			}
 
 			// Column filter
@@ -388,6 +394,8 @@ Examples:
 		"Only show sub-tasks (tasks with a parent)")
 	cmd.Flags().BoolVar(&noParent, "no-parent", false,
 		"Only show top-level tasks (exclude sub-tasks)")
+	cmd.Flags().BoolVar(&needInput, "need-input", false,
+		"Show only tasks awaiting human input (in need_input column)")
 
 	return cmd
 }

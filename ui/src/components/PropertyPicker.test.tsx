@@ -313,11 +313,12 @@ describe('PropertyPicker', () => {
 
   describe('pre-configured option sets', () => {
     it('exports STATUS_OPTIONS with correct values', () => {
-      expect(STATUS_OPTIONS).toHaveLength(5)
+      expect(STATUS_OPTIONS).toHaveLength(6)
       expect(STATUS_OPTIONS.map((o) => o.value)).toEqual([
         'backlog',
         'todo',
         'in_progress',
+        'need_input',
         'review',
         'done',
       ])

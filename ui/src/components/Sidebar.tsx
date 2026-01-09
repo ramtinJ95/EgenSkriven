@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useCurrentBoard } from '../contexts'
 import { BOARD_COLORS } from '../types/board'
 import type { Task } from '../types/task'
@@ -78,6 +78,7 @@ export function Sidebar({ collapsed, onToggle, tasks = [], selectedEpicId, onSel
                       currentBoard?.id === board.id ? styles.active : ''
                     }`}
                     onClick={() => setCurrentBoard(board)}
+                    aria-pressed={currentBoard?.id === board.id}
                   >
                     <span
                       className={styles.boardIndicator}
@@ -136,6 +137,18 @@ function NewBoardModal({ onClose, createBoard }: NewBoardModalProps) {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  // Handle Escape key to close modal
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && !submitting) {
+      onClose()
+    }
+  }, [onClose, submitting])
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [handleKeyDown])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -170,8 +183,14 @@ function NewBoardModal({ onClose, createBoard }: NewBoardModalProps) {
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <h2 className={styles.modalTitle}>Create New Board</h2>
+      <div 
+        className={styles.modal} 
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="new-board-modal-title"
+      >
+        <h2 id="new-board-modal-title" className={styles.modalTitle}>Create New Board</h2>
         <form onSubmit={handleSubmit}>
           <div className={styles.formField}>
             <label htmlFor="board-name">Name</label>

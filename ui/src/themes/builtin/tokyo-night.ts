@@ -48,6 +48,7 @@ export const tokyoNight: Theme = {
     statusBacklog: '#565f89', // comment
     statusTodo: '#c0caf5', // foreground
     statusInProgress: '#e0af68', // yellow
+    statusNeedInput: '#ff9e64', // orange
     statusReview: '#bb9af7', // purple
     statusDone: '#9ece6a', // green
     statusCanceled: '#565f89', // comment

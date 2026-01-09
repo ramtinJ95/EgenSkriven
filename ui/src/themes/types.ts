@@ -44,6 +44,7 @@ export interface ThemeColors {
   statusBacklog: string;
   statusTodo: string;
   statusInProgress: string;
+  statusNeedInput: string;
   statusReview: string;
   statusDone: string;
   statusCanceled: string;

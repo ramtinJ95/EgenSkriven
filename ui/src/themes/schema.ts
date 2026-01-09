@@ -56,6 +56,7 @@ export const themeColorsSchema = z.object({
   statusBacklog: hexColor,
   statusTodo: hexColor,
   statusInProgress: hexColor,
+  statusNeedInput: hexColor,
   statusReview: hexColor,
   statusDone: hexColor,
   statusCanceled: hexColor,
