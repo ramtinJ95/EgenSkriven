@@ -110,7 +110,7 @@
 - [x] 7.V.2: Prime template works for all tools (OpenCode, Claude Code, Codex)
 - [x] 7.V.3: AGENTS.md accurately reflects implementation
 - [x] 7.V.4: User guide is comprehensive
-- [ ] 7.V.5: All code examples are tested and work
+- [x] 7.V.5: All code examples are tested and work
 
 #### Testing
 - [ ] 7.V.6: `scripts/test-collaborative-workflow.sh` passes all tests
