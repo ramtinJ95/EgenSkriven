@@ -118,4 +118,99 @@ Use `--blocked-by` to track dependencies:
 - `egenskriven list --not-blocked` - Find parallelizable work
 - `egenskriven list --is-blocked` - See what's waiting
 - `egenskriven list --ready` - Unblocked tasks in todo/backlog
+
+## Human-AI Collaborative Workflow
+
+When you need human input to proceed with a task, use the collaborative workflow.
+
+### Before Starting Work
+
+1. **Link your session** to the task:
+{{if eq .Tool "opencode"}}
+   - Call the `egenskriven-session` tool to get your session ID
+   - Run: `egenskriven session link <task-ref> --tool opencode --ref <session-id>`
+{{else if eq .Tool "claude-code"}}
+   - Your session ID is available as `$CLAUDE_SESSION_ID`
+   - Run: `egenskriven session link <task-ref> --tool claude-code --ref $CLAUDE_SESSION_ID`
+{{else if eq .Tool "codex"}}
+   - Run: `SESSION_ID=$(.codex/get-session-id.sh)`
+   - Run: `egenskriven session link <task-ref> --tool codex --ref $SESSION_ID`
+{{else}}
+   - Get your session ID using the appropriate tool integration
+   - Run: `egenskriven session link <task-ref> --tool <tool> --ref <session-id>`
+{{end}}
+
+2. **Move task to in_progress**:
+   ```bash
+   egenskriven move <task-ref> in_progress
+   ```
+
+### When You Need Human Input
+
+1. **Block the task** with your question:
+   ```bash
+   egenskriven block <task-ref> "Your specific question here"
+   ```
+
+2. **Your session is preserved**. The human will respond via comments and resume you.
+
+### After Being Resumed
+
+You will receive context that includes:
+- Task information (title, priority, description)
+- Full comment thread (your question + human responses)
+- Instructions to continue
+
+Example context you'll receive:
+```
+## Task Context (from EgenSkriven)
+
+**Task**: WRK-42 - Implement authentication
+**Status**: need_input -> in_progress
+**Priority**: high
+
+## Conversation Thread
+
+[agent @ 10:30]: What authentication approach should I use?
+[human @ 11:45]: Use JWT with refresh tokens. The refresh token should
+have a 7-day expiry, and the access token should be 15 minutes.
+
+## Instructions
+
+Continue working on the task based on the human's response above.
+```
+
+### Best Practices
+
+1. **Be specific** in your blocking questions
+2. **Provide context** about what you've already considered
+3. **List options** if you have multiple approaches in mind
+4. **Link your session early** before you might need to block
+
+### Example Workflow
+
+```bash
+# 1. Start work
+egenskriven session link WRK-42 --tool {{.Tool}} --ref <your-session-id>
+egenskriven move WRK-42 in_progress
+
+# 2. Work on the task...
+
+# 3. Encounter a decision point
+egenskriven block WRK-42 "The API could use either REST or GraphQL.
+REST is simpler but GraphQL offers more flexibility for the frontend.
+Which approach should I implement first?"
+
+# 4. Wait for human response (session ends here)
+
+# 5. When resumed, you'll have full context to continue
+```
+
+### Checking for Responses
+
+If you want to check for responses without waiting for resume:
+
+```bash
+egenskriven comments <task-ref> --json
+```
 </EXTREMELY_IMPORTANT>
