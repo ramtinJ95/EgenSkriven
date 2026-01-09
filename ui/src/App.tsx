@@ -766,6 +766,7 @@ function AppContent() {
         onTaskClick={(task) => {
           selectTask(task.id)
         }}
+        currentBoard={currentBoard}
       />
 
       {/* Quick Create Modal */}
