@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo } from 'react'
 import { useComments, extractMentions } from '../hooks/useComments'
 import type { Comment } from '../types/comment'
 import styles from './CommentsPanel.module.css'
@@ -160,8 +160,9 @@ export function CommentsPanel({ taskId }: CommentsPanelProps) {
 
 /**
  * Individual comment item with agent/human styling.
+ * Wrapped in React.memo to prevent re-renders when comment data unchanged.
  */
-function CommentItem({ comment }: { comment: Comment }) {
+const CommentItem = memo(function CommentItem({ comment }: { comment: Comment }) {
   const isAgent = comment.author_type === 'agent'
   const author = comment.author_id || comment.author_type
   const timeAgo = formatTimeAgo(comment.created)
@@ -200,7 +201,7 @@ function CommentItem({ comment }: { comment: Comment }) {
       <div className={styles.itemContent}>{comment.content}</div>
     </article>
   )
-}
+})
 
 /**
  * Format timestamp as relative time (e.g., "2h ago").
