@@ -121,7 +121,7 @@
 
 #### Polish
 - [x] 7.V.11: No typos in documentation
-- [ ] 7.V.12: Consistent terminology across all docs
+- [x] 7.V.12: Consistent terminology across all docs
 - [ ] 7.V.13: Clear error messages throughout
 - [ ] 7.V.14: Helpful tips and best practices included
 
