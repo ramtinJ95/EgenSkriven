@@ -90,7 +90,7 @@
 
 .agentItem {
   background: var(--bg-agent, rgba(59, 130, 246, 0.08));
-  border-left: 3px solid var(--color-agent, #3b82f6);
+  border-left: 3px solid var(--accent, #3b82f6);
 }
 
 .humanItem {
@@ -118,7 +118,7 @@
 
 .authorBadge[data-type='agent'] {
   background: var(--bg-agent-badge, rgba(59, 130, 246, 0.15));
-  color: var(--color-agent, #3b82f6);
+  color: var(--accent, #3b82f6);
 }
 
 .authorBadge[data-type='human'] {
@@ -143,7 +143,7 @@
 
 .mention {
   font-size: var(--text-xs, 11px);
-  color: var(--color-warning, #f59e0b);
+  color: var(--status-need-input, #f59e0b);
   font-weight: var(--font-medium, 500);
 }
 
@@ -180,7 +180,7 @@
 
 .textarea:focus {
   outline: none;
-  border-color: var(--color-accent, #6366f1);
+  border-color: var(--accent, #6366f1);
 }
 
 .textarea::placeholder {
@@ -199,7 +199,7 @@
   gap: var(--space-2, 8px);
   padding: var(--space-2, 8px) var(--space-3, 12px);
   background: var(--bg-warning, rgba(245, 158, 11, 0.1));
-  color: var(--color-warning, #f59e0b);
+  color: var(--status-need-input, #f59e0b);
   border-radius: var(--radius-md, 6px);
   font-size: var(--text-xs, 11px);
 }
@@ -222,7 +222,7 @@
 
 .submitButton {
   padding: var(--space-2, 8px) var(--space-4, 16px);
-  background: var(--color-accent, #6366f1);
+  background: var(--accent, #6366f1);
   color: white;
   border: none;
   border-radius: var(--radius-md, 6px);
@@ -233,7 +233,7 @@
 }
 
 .submitButton:hover:not(:disabled) {
-  background: var(--color-accent-hover, #4f46e5);
+  background: var(--accent-hover, #4f46e5);
 }
 
 .submitButton:disabled {
