@@ -26,6 +26,13 @@ interface UseCommentsReturn {
  * - Returns comments sorted by creation date (oldest first)
  * - Provides loading and error states
  * - Provides addComment mutation with optimistic updates
+ * - Real-time subscription for live updates (create/update/delete)
+ *
+ * Real-time updates:
+ * - Automatically subscribes to PocketBase SSE for comment changes
+ * - Handles comments added via CLI or other clients
+ * - Intelligently deduplicates with optimistic updates
+ * - Cleans up subscription on unmount
  *
  * @param taskId - The task ID to fetch comments for
  *
@@ -90,6 +97,104 @@ export function useComments(taskId: string): UseCommentsReturn {
     }
 
     fetchComments()
+  }, [taskId])
+
+  // Subscribe to real-time comment updates
+  useEffect(() => {
+    // Don't subscribe if no taskId
+    if (!taskId) {
+      return
+    }
+
+    debugLog('Setting up real-time subscription for task:', taskId)
+
+    let isSubscribed = false
+
+    // Subscribe to comments collection
+    pb.collection('comments')
+      .subscribe<Comment>('*', (event) => {
+        debugLog('========== COMMENT EVENT RECEIVED ==========')
+        debugLog('Action:', event.action)
+        debugLog('Record ID:', event.record.id)
+        debugLog('Record Task:', event.record.task)
+        debugLog('Current Task Filter:', taskId)
+
+        // Only process events for this task
+        const commentTaskId = event.record.task
+        const matchesTask = commentTaskId === taskId
+        debugLog('Matches Task:', matchesTask)
+
+        if (!matchesTask) {
+          debugLog('Ignoring event - different task')
+          return
+        }
+
+        switch (event.action) {
+          case 'create':
+            debugLog('Adding new comment to state')
+            setComments((prev) => {
+              // Check if this comment already exists (from optimistic update)
+              const exists = prev.some((c) => c.id === event.record.id)
+              if (exists) {
+                debugLog('Comment already exists, skipping')
+                return prev
+              }
+              // Also check if we have an optimistic version (temp-*) that should be replaced
+              const hasOptimistic = prev.some(
+                (c) =>
+                  c.id.startsWith('temp-') &&
+                  c.content === event.record.content &&
+                  c.author_type === event.record.author_type
+              )
+              if (hasOptimistic) {
+                debugLog('Replacing optimistic comment with server version')
+                return prev.map((c) =>
+                  c.id.startsWith('temp-') &&
+                  c.content === event.record.content &&
+                  c.author_type === event.record.author_type
+                    ? event.record
+                    : c
+                )
+              }
+              // New comment from elsewhere (CLI, another user) - add it
+              const newComments = [...prev, event.record].sort(
+                (a, b) => new Date(a.created).getTime() - new Date(b.created).getTime()
+              )
+              debugLog('New comment count:', newComments.length)
+              return newComments
+            })
+            break
+
+          case 'update':
+            debugLog('Updating comment in state')
+            setComments((prev) =>
+              prev.map((c) => (c.id === event.record.id ? event.record : c))
+            )
+            break
+
+          case 'delete':
+            debugLog('Removing deleted comment')
+            setComments((prev) => prev.filter((c) => c.id !== event.record.id))
+            break
+
+          default:
+            debugLog('Unknown action:', event.action)
+        }
+        debugLog('=============================================')
+      })
+      .then(() => {
+        isSubscribed = true
+        debugLog('Comments subscription established successfully')
+      })
+      .catch((err) => {
+        console.error('[useComments] Subscription FAILED:', err)
+      })
+
+    // Cleanup subscription on unmount or taskId change
+    return () => {
+      debugLog('Cleaning up comments subscription, was subscribed:', isSubscribed)
+      pb.collection('comments').unsubscribe('*')
+    }
   }, [taskId])
 
   // Add a new comment with optimistic update
