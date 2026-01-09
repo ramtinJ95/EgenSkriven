@@ -117,7 +117,7 @@
 - [ ] 7.V.7: Manual test with OpenCode completed
 - [x] 7.V.8: Manual test with Claude Code completed
 - [ ] 7.V.9: Manual test with Codex completed
-- [ ] 7.V.10: Auto-resume mode works with @agent mention
+- [x] 7.V.10: Auto-resume mode works with @agent mention
 
 #### Polish
 - [x] 7.V.11: No typos in documentation
