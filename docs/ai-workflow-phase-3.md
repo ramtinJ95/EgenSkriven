@@ -40,84 +40,84 @@ This is the comprehensive task list for completing Phase 3. All items must be co
 
 ### 2. Resume Command Builder (`internal/resume/command.go`)
 
-- [ ] **2.1** Create `internal/resume/command.go` file
-- [ ] **2.2** Define tool constants:
+- [x] **2.1** Create `internal/resume/command.go` file
+- [x] **2.2** Define tool constants:
   - `ToolOpenCode = "opencode"`
   - `ToolClaudeCode = "claude-code"`
   - `ToolCodex = "codex"`
-- [ ] **2.3** Implement `ResumeCommand` struct with fields:
+- [x] **2.3** Implement `ResumeCommand` struct with fields:
   - `Tool` (string)
   - `SessionRef` (string)
   - `WorkingDir` (string)
   - `Prompt` (string)
   - `Command` (string) - full shell command
   - `Args` ([]string) - parsed arguments for exec
-- [ ] **2.4** Implement `BuildResumeCommand(tool, sessionRef, workingDir, prompt)` function
+- [x] **2.4** Implement `BuildResumeCommand(tool, sessionRef, workingDir, prompt)` function
   - Return `*ResumeCommand` and error
   - Handle all three supported tools
-- [ ] **2.5** Implement `buildOpenCodeCommand(sessionRef, prompt)` helper
+- [x] **2.5** Implement `buildOpenCodeCommand(sessionRef, prompt)` helper
   - Format: `opencode run "<escaped-prompt>" --session <id>`
-- [ ] **2.6** Implement `buildClaudeCodeCommand(sessionRef, prompt)` helper
+- [x] **2.6** Implement `buildClaudeCodeCommand(sessionRef, prompt)` helper
   - Format: `claude --resume <id> "<escaped-prompt>"`
-- [ ] **2.7** Implement `buildCodexCommand(sessionRef, prompt)` helper
+- [x] **2.7** Implement `buildCodexCommand(sessionRef, prompt)` helper
   - Format: `codex exec resume <id> "<escaped-prompt>"`
-- [ ] **2.8** Implement `ValidateSessionRef(tool, ref)` function
+- [x] **2.8** Implement `ValidateSessionRef(tool, ref)` function
   - Return error if ref is empty
   - Return error if ref is too short (<8 chars)
-- [ ] **2.9** Return appropriate error for unsupported tools
+- [x] **2.9** Return appropriate error for unsupported tools
 
 ### 3. Shell Escape Handling
 
-- [ ] **3.1** Choose approach: external dependency OR custom implementation
-- [ ] **3.2** If external: Add `github.com/alessio/shellescape` to go.mod
-- [ ] **3.3** If custom: Create `internal/resume/escape.go` with `ShellQuote(s string)` function
+- [x] **3.1** Choose approach: external dependency OR custom implementation
+- [x] **3.2** If external: Add `github.com/alessio/shellescape` to go.mod
+- [x] **3.3** If custom: Create `internal/resume/escape.go` with `ShellQuote(s string)` function
   - Escape single quotes by replacing `'` with `'\''`
   - Wrap result in single quotes
-- [ ] **3.4** Verify special characters in prompts are safely escaped (quotes, newlines, etc.)
+- [x] **3.4** Verify special characters in prompts are safely escaped (quotes, newlines, etc.)
 
 ### 4. Resume Command Implementation (`internal/commands/resume.go`)
 
-- [ ] **4.1** Create `internal/commands/resume.go` file
-- [ ] **4.2** Implement `newResumeCmd(app *pocketbase.PocketBase)` function
-- [ ] **4.3** Add command flags:
+- [x] **4.1** Create `internal/commands/resume.go` file
+- [x] **4.2** Implement `newResumeCmd(app *pocketbase.PocketBase)` function
+- [x] **4.3** Add command flags:
   - `--exec` / `-e` (bool) - Execute the resume command
   - `--json` / `-j` (bool) - Output as JSON
   - `--minimal` / `-m` (bool) - Use minimal prompt
   - `--prompt` / `-p` (string) - Custom prompt override
   - `--dry-run` (bool) - Show command without running
-- [ ] **4.4** Implement task state validation
+- [x] **4.4** Implement task state validation
   - Error if task is not in `need_input` state
   - Include current state in error message
-- [ ] **4.5** Implement session validation
+- [x] **4.5** Implement session validation
   - Error if no `agent_session` linked
   - Include helpful hint about `session link` command
-- [ ] **4.6** Implement `fetchCommentsForResume(app, taskId)` function
+- [x] **4.6** Implement `fetchCommentsForResume(app, taskId)` function
   - Query comments collection filtered by task
   - Sort by created ascending (chronological order)
   - Return `[]resume.Comment`
-- [ ] **4.7** Implement `updateTaskForResume(app, task)` function
+- [x] **4.7** Implement `updateTaskForResume(app, task)` function
   - Set column to "in_progress"
   - Add history entry with action "resumed"
   - Include actor and timestamp
-- [ ] **4.8** Implement `executeResumeCommand(rc *resume.ResumeCommand)` function
+- [x] **4.8** Implement `executeResumeCommand(rc *resume.ResumeCommand)` function
   - Change to working directory
   - Restore original directory on completion
   - Spawn process with stdin/stdout/stderr connected
-- [ ] **4.9** Implement `updateSessionStatusInHistory(app, taskId, externalRef, status)` function
+- [x] **4.9** Implement `updateSessionStatusInHistory(app, taskId, externalRef, status)` function
   - Find session record by task and external_ref
   - Update status field
-- [ ] **4.10** Implement `indent(text, prefix)` helper for output formatting
-- [ ] **4.11** Implement print mode output (default)
+- [x] **4.10** Implement `indent(text, prefix)` helper for output formatting
+- [x] **4.11** Implement print mode output (default)
   - Show resume command
   - Show working directory
   - Show prompt length
   - Show hint about --exec flag
-- [ ] **4.12** Implement JSON output mode
+- [x] **4.12** Implement JSON output mode
   - Include: task_id, display_id, tool, session_ref, working_dir, command, prompt, prompt_length
-- [ ] **4.13** Implement dry-run mode
+- [x] **4.13** Implement dry-run mode
   - Show what would be executed
   - Include prompt content (indented)
-- [ ] **4.14** Register command in root.go: `rootCmd.AddCommand(newResumeCmd(app))`
+- [x] **4.14** Register command in root.go: `rootCmd.AddCommand(newResumeCmd(app))`
 
 ### 5. Unit Tests - Context Builder (`internal/resume/context_test.go`)
 
