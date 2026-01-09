@@ -67,9 +67,8 @@
 
 ### Quality & Polish
 - [x] **5.11.1** Ensure all new components support dark mode
-- [ ] **5.11.2** Add proper ARIA labels for accessibility
+- [x] **5.11.2** Add proper ARIA labels for accessibility
 - [ ] **5.11.3** Add keyboard navigation support
-- [ ] **5.11.4** Test on mobile viewport sizes (responsive design)
 - [ ] **5.11.5** Handle PocketBase SSE connection errors gracefully
 - [ ] **5.11.6** Add React.memo for comment items if rendering many comments
 
