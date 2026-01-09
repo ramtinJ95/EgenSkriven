@@ -2,7 +2,7 @@
 
 > **Parent Document**: [ai-workflow-plan.md](./ai-workflow-plan.md)  
 > **Phase**: 5 of 7  
-> **Status**: Not Started  
+> **Status**: In Progress  
 > **Estimated Effort**: 3-4 days  
 > **Prerequisites**: [Phase 4](./ai-workflow-phase-4.md) completed
 
@@ -16,9 +16,9 @@
 
 ### React Hooks
 - [x] **5.2.1** Create `ui/src/hooks/useComments.ts` with useComments query hook
-- [ ] **5.2.2** Add useAddComment mutation hook to useComments.ts
+- [x] **5.2.2** Add useAddComment mutation hook to useComments.ts
 - [ ] **5.2.3** Add useCommentsSubscription real-time subscription hook
-- [ ] **5.2.4** Implement extractMentions helper function for @mentions
+- [x] **5.2.4** Implement extractMentions helper function for @mentions
 - [ ] **5.5.1** Create `ui/src/hooks/useResume.ts` with resume mutation hook
 - [ ] **5.5.2** Implement buildContextPrompt function in useResume.ts
 - [ ] **5.5.3** Implement buildResumeCommand function for all 3 tools (opencode, claude-code, codex)
