@@ -56,12 +56,12 @@
 - [x] **5.9.4** Add StatusBadge and PriorityBadge components if not existing
 
 ### Testing
-- [ ] **5.10.1** Create `ui/src/components/TaskDetail/CommentsPanel.test.tsx`
-- [ ] **5.10.2** Write test: loading state displays correctly
-- [ ] **5.10.3** Write test: empty state shows when no comments
-- [ ] **5.10.4** Write test: comments display with author, time, content
-- [ ] **5.10.5** Write test: add comment form works
-- [ ] **5.10.6** Write test: @agent warning shows in textarea
+- [x] **5.10.1** Create `ui/src/components/TaskDetail/CommentsPanel.test.tsx`
+- [x] **5.10.2** Write test: loading state displays correctly
+- [x] **5.10.3** Write test: empty state shows when no comments
+- [x] **5.10.4** Write test: comments display with author, time, content
+- [x] **5.10.5** Write test: add comment form works
+- [x] **5.10.6** Write test: @agent warning shows in textarea
 - [ ] **5.10.7** Create `ui/src/components/TaskDetail/SessionInfo.test.tsx`
 - [ ] **5.10.8** Create `ui/src/components/TaskDetail/ResumeModal.test.tsx`
 
