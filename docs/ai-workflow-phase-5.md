@@ -15,7 +15,7 @@
 - [x] **5.1.2** Create `ui/src/types/session.ts` with AgentSession and SessionRecord interfaces
 
 ### React Hooks
-- [ ] **5.2.1** Create `ui/src/hooks/useComments.ts` with useComments query hook
+- [x] **5.2.1** Create `ui/src/hooks/useComments.ts` with useComments query hook
 - [ ] **5.2.2** Add useAddComment mutation hook to useComments.ts
 - [ ] **5.2.3** Add useCommentsSubscription real-time subscription hook
 - [ ] **5.2.4** Implement extractMentions helper function for @mentions
