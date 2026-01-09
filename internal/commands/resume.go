@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -279,7 +280,9 @@ func updateSessionStatusInHistory(app *pocketbase.PocketBase, taskId, externalRe
 
 	record := records[0]
 	record.Set("status", status)
-	app.Save(record)
+	if err := app.Save(record); err != nil {
+		log.Printf("warning: failed to update session status: %v", err)
+	}
 }
 
 // indentText adds prefix to each line of text.
