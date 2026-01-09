@@ -20,6 +20,7 @@ type PrimeTemplateData struct {
 	WorkflowMode       string
 	AgentMode          string
 	AgentName          string
+	Tool               string
 	OverrideTodoWrite  bool
 	RequireSummary     bool
 	StructuredSections bool
@@ -29,6 +30,7 @@ func newPrimeCmd(app *pocketbase.PocketBase) *cobra.Command {
 	var (
 		workflowOverride string
 		agentName        string
+		toolName         string
 	)
 
 	cmd := &cobra.Command{
@@ -75,6 +77,7 @@ Examples:
 				WorkflowMode:       workflowMode,
 				AgentMode:          cfg.Agent.Mode,
 				AgentName:          agentName,
+				Tool:               toolName,
 				OverrideTodoWrite:  cfg.Agent.OverrideTodoWrite,
 				RequireSummary:     cfg.Agent.RequireSummary,
 				StructuredSections: cfg.Agent.StructuredSections,
@@ -88,6 +91,8 @@ Examples:
 		"Override workflow mode (strict, light, minimal)")
 	cmd.Flags().StringVar(&agentName, "agent", "",
 		"Agent identifier for --agent flag in examples")
+	cmd.Flags().StringVar(&toolName, "tool", "",
+		"AI tool name (opencode, claude-code, codex) for session instructions")
 
 	return cmd
 }
