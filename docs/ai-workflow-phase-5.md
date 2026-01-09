@@ -63,7 +63,7 @@
 - [x] **5.10.5** Write test: add comment form works
 - [x] **5.10.6** Write test: @agent warning shows in textarea
 - [x] **5.10.7** Create `ui/src/components/TaskDetail/SessionInfo.test.tsx`
-- [ ] **5.10.8** Create `ui/src/components/TaskDetail/ResumeModal.test.tsx`
+- [x] **5.10.8** Create `ui/src/components/TaskDetail/ResumeModal.test.tsx`
 
 ### Quality & Polish
 - [ ] **5.11.1** Ensure all new components support dark mode
