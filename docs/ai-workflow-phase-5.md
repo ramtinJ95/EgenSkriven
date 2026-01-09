@@ -45,9 +45,9 @@
 - [x] **5.7.3** Add orange ring styling around blocked task cards
 
 ### Kanban Board Updates
-- [ ] **5.8.1** Add need_input column to columnConfig with distinct styling
-- [ ] **5.8.2** Add pulsing indicator to need_input column header
-- [ ] **5.8.3** Ensure drag-and-drop works to/from need_input column
+- [x] **5.8.1** Add need_input column to columnConfig with distinct styling
+- [x] **5.8.2** Add pulsing indicator to need_input column header
+- [x] **5.8.3** Ensure drag-and-drop works to/from need_input column
 
 ### Integration
 - [ ] **5.9.1** Update `ui/src/components/TaskDetail/index.tsx` to integrate CommentsPanel
