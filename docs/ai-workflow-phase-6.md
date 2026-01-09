@@ -54,17 +54,17 @@
 
 ### Testing
 
-- [ ] **Task 6.6: Write Unit Tests**
-  - [ ] 6.6.1: Create `internal/autoresume/service_test.go`
-  - [ ] 6.6.2: Test: All conditions met triggers resume
-  - [ ] 6.6.3: Test: Agent comments do NOT trigger resume
-  - [ ] 6.6.4: Test: Comments without @agent do NOT trigger
-  - [ ] 6.6.5: Test: Manual mode does NOT auto-resume
-  - [ ] 6.6.6: Test: Command mode does NOT auto-resume
-  - [ ] 6.6.7: Test: No session does NOT trigger
-  - [ ] 6.6.8: Test: Wrong column (not need_input) does NOT trigger
-  - [ ] 6.6.9: Test: `hasAgentMention()` helper function
-  - [ ] 6.6.10: Create test helpers (createTestComment, etc.)
+- [x] **Task 6.6: Write Unit Tests**
+  - [x] 6.6.1: Create `internal/autoresume/service_test.go`
+  - [x] 6.6.2: Test: All conditions met triggers resume
+  - [x] 6.6.3: Test: Agent comments do NOT trigger resume
+  - [x] 6.6.4: Test: Comments without @agent do NOT trigger
+  - [x] 6.6.5: Test: Manual mode does NOT auto-resume
+  - [x] 6.6.6: Test: Command mode does NOT auto-resume
+  - [x] 6.6.7: Test: No session does NOT trigger
+  - [x] 6.6.8: Test: Wrong column (not need_input) does NOT trigger
+  - [x] 6.6.9: Test: `hasAgentMention()` helper function
+  - [x] 6.6.10: Create test helpers (createTestComment, etc.)
 
 - [ ] **Task 6.7: Add E2E Tests**
   - [ ] 6.7.1: Create `tests/e2e/autoresume_test.go`

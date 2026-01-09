@@ -9,6 +9,7 @@
 package autoresume
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os/exec"
@@ -60,6 +61,11 @@ func (s *Service) CheckAndResume(comment *core.Record) error {
 	// 5. Check task has session
 	sessionData := task.Get("agent_session")
 	if sessionData == nil {
+		return nil // No session linked
+	}
+	// JSON fields return types.JSONRaw even when null, check for actual value
+	sessionStr := fmt.Sprintf("%s", sessionData)
+	if sessionStr == "" || sessionStr == "null" || sessionStr == "{}" {
 		return nil // No session linked
 	}
 
@@ -242,9 +248,18 @@ func hasAgentMention(comment *core.Record) bool {
 		return false
 	}
 
-	metaMap, ok := metadata.(map[string]any)
-	if !ok {
-		return false
+	// Handle both map[string]any (in-memory) and types.JSONRaw (from DB)
+	var metaMap map[string]any
+
+	switch v := metadata.(type) {
+	case map[string]any:
+		metaMap = v
+	default:
+		// Try to parse as JSON (handles types.JSONRaw and other stringifiable types)
+		raw := []byte(fmt.Sprintf("%s", metadata))
+		if err := json.Unmarshal(raw, &metaMap); err != nil {
+			return false
+		}
 	}
 
 	mentions, ok := metaMap["mentions"].([]any)
