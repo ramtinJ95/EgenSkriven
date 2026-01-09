@@ -202,6 +202,47 @@ describe('SessionInfo', () => {
 
       expect(screen.queryByText('Resume Agent Session')).not.toBeInTheDocument()
     })
+
+    // 5.12.2: Verify resume button appears ONLY for need_input tasks
+    it('hides resume button for all non-need_input columns', () => {
+      const onResume = vi.fn()
+      const nonBlockedColumns: Column[] = ['backlog', 'todo', 'in_progress', 'review', 'done']
+
+      nonBlockedColumns.forEach((column) => {
+        const { unmount } = render(
+          <SessionInfo
+            session={mockSession}
+            taskColumn={column}
+            onResume={onResume}
+          />
+        )
+        expect(screen.queryByText('Resume Agent Session')).not.toBeInTheDocument()
+        unmount()
+      })
+    })
+
+    it('shows resume button ONLY for need_input column', () => {
+      const onResume = vi.fn()
+      const allColumns: Column[] = ['backlog', 'todo', 'in_progress', 'need_input', 'review', 'done']
+
+      allColumns.forEach((column) => {
+        const { unmount } = render(
+          <SessionInfo
+            session={mockSession}
+            taskColumn={column}
+            onResume={onResume}
+          />
+        )
+
+        if (column === 'need_input') {
+          expect(screen.getByText('Resume Agent Session')).toBeInTheDocument()
+        } else {
+          expect(screen.queryByText('Resume Agent Session')).not.toBeInTheDocument()
+        }
+
+        unmount()
+      })
+    })
   })
 
   // Test: Working directory display
