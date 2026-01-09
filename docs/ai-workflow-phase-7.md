@@ -107,7 +107,7 @@
 
 #### Documentation
 - [x] 7.V.1: All skills documentation is accurate and complete
-- [ ] 7.V.2: Prime template works for all tools (OpenCode, Claude Code, Codex)
+- [x] 7.V.2: Prime template works for all tools (OpenCode, Claude Code, Codex)
 - [ ] 7.V.3: AGENTS.md accurately reflects implementation
 - [ ] 7.V.4: User guide is comprehensive
 - [ ] 7.V.5: All code examples are tested and work
