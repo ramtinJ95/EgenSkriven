@@ -196,6 +196,102 @@ View workflow mode in context:
 egenskriven context --json | jq '.workflow_mode'
 ```
 
+## Resume Modes
+
+Each board can be configured with a resume mode that controls how blocked tasks
+are resumed after human input. This is part of the Human-AI Collaborative Workflow.
+
+### Available Modes
+
+#### Manual Mode (`manual`)
+
+The resume command is printed for the user to copy and run manually.
+
+```bash
+$ egenskriven resume WRK-42
+Resume command for WRK-42:
+
+  opencode run '## Task Context...' --session abc-123
+
+Working directory: /home/user/project
+```
+
+Best for: Maximum control, debugging, understanding the resume process.
+
+#### Command Mode (`command`) - Default
+
+User explicitly runs the resume command with `--exec` flag.
+
+```bash
+$ egenskriven resume WRK-42 --exec
+Resuming session for WRK-42...
+Tool: opencode
+Working directory: /home/user/project
+
+[Agent session starts]
+```
+
+Best for: Most workflows, explicit control over when resume happens.
+
+#### Auto Mode (`auto`)
+
+Session resumes automatically when human adds a comment containing `@agent`.
+
+```bash
+# Human adds comment:
+$ egenskriven comment WRK-42 "@agent I've decided to use JWT auth"
+
+# Session automatically resumes with full context
+```
+
+Best for: Responsive workflows, quick back-and-forth communication.
+
+### Configuring Resume Mode
+
+```bash
+# View current mode
+egenskriven board show <board>
+
+# Change mode
+egenskriven board update <board> --resume-mode auto
+```
+
+### Workflow Recommendations
+
+| Scenario | Recommended Mode |
+|----------|-----------------|
+| Learning the workflow | `manual` |
+| Normal development | `command` |
+| Pair programming with AI | `auto` |
+| Sensitive/critical tasks | `command` |
+| High-frequency interaction | `auto` |
+
+### Collaborative Mode Integration
+
+The resume modes work with all agent modes:
+
+| Agent Mode | Blocking Behavior |
+|------------|-------------------|
+| `autonomous` | Block only for critical decisions |
+| `collaborative` | Block for significant decisions |
+| `supervised` | Block frequently for confirmation |
+
+Example configuration:
+
+```json
+{
+  "workflow_mode": "light",
+  "agent": {
+    "mode": "collaborative"
+  }
+}
+```
+
+With `collaborative` mode, agents are expected to:
+1. Execute minor updates directly
+2. Block for major decisions requiring human input
+3. Provide clear, specific questions when blocking
+
 ## Related Skills
 
 - `egenskriven` - Core commands and task management
