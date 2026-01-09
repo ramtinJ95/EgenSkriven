@@ -12,7 +12,7 @@
 
 ### Type Definitions
 - [x] **5.1.1** Create `ui/src/types/comment.ts` with Comment and CreateCommentInput interfaces
-- [ ] **5.1.2** Create `ui/src/types/session.ts` with AgentSession and SessionRecord interfaces
+- [x] **5.1.2** Create `ui/src/types/session.ts` with AgentSession and SessionRecord interfaces
 
 ### React Hooks
 - [ ] **5.2.1** Create `ui/src/hooks/useComments.ts` with useComments query hook
