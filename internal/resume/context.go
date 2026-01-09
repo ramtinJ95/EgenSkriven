@@ -81,20 +81,24 @@ func BuildMinimalPrompt(task *core.Record, comments []Comment) string {
 	sb.WriteString(fmt.Sprintf("Task %s: %s\n\n", displayId, title))
 	sb.WriteString("Recent comments:\n")
 
-	// Only include last 3 comments for minimal version
-	start := 0
-	if len(comments) > 3 {
-		start = len(comments) - 3
-	}
-
-	for _, c := range comments[start:] {
-		authorLabel := formatAuthorLabel(c.AuthorType, c.AuthorId)
-		// Truncate long comments at 200 chars
-		content := c.Content
-		if len(content) > 200 {
-			content = content[:200] + "..."
+	if len(comments) == 0 {
+		sb.WriteString("_No comments yet_\n")
+	} else {
+		// Only include last 3 comments for minimal version
+		start := 0
+		if len(comments) > 3 {
+			start = len(comments) - 3
 		}
-		sb.WriteString(fmt.Sprintf("- %s: %s\n", authorLabel, content))
+
+		for _, c := range comments[start:] {
+			authorLabel := formatAuthorLabel(c.AuthorType, c.AuthorId)
+			// Truncate long comments at 200 chars
+			content := c.Content
+			if len(content) > 200 {
+				content = content[:200] + "..."
+			}
+			sb.WriteString(fmt.Sprintf("- %s: %s\n", authorLabel, content))
+		}
 	}
 
 	sb.WriteString("\nContinue based on the above context.\n")
