@@ -232,7 +232,7 @@ func TestGenerateCodexIntegration(t *testing.T) {
 	assert.Contains(t, contentStr, "CODEX_HOME", "should reference CODEX_HOME")
 	assert.Contains(t, contentStr, "rollout-", "should look for rollout files")
 	assert.Contains(t, contentStr, "sessions", "should reference sessions directory")
-	assert.Contains(t, contentStr, "grep -oP", "should use grep to extract UUID")
+	assert.Contains(t, contentStr, "grep -oE", "should use grep with extended regex for macOS compatibility")
 
 	// Verify executable
 	info, err := os.Stat(helperScript)

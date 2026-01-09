@@ -25,13 +25,15 @@ set -e
 # Read JSON input from stdin
 INPUT=$(cat)
 
-# Extract session_id (try jq first, fall back to Python)
+# Extract session_id and hook_event_name (try jq first, fall back to Python)
 if command -v jq &> /dev/null; then
     SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
     HOOK_EVENT=$(echo "$INPUT" | jq -r '.hook_event_name // empty')
 else
-    SESSION_ID=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('session_id',''))" 2>/dev/null || echo "")
-    HOOK_EVENT=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('hook_event_name',''))" 2>/dev/null || echo "")
+    # Parse both values in a single Python invocation for efficiency
+    PARSED=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('session_id',''), d.get('hook_event_name',''))" 2>/dev/null || echo "")
+    SESSION_ID=$(echo "$PARSED" | cut -d' ' -f1)
+    HOOK_EVENT=$(echo "$PARSED" | cut -d' ' -f2)
 fi
 
 # Only process SessionStart events
@@ -74,8 +76,23 @@ func generateClaudeCodeIntegration(force bool) ([]string, error) {
 	}
 
 	// Check if hook file exists
-	if _, err := os.Stat(hookFile); err == nil && !force {
-		return nil, fmt.Errorf("file already exists: %s (use --force to overwrite)", hookFile)
+	hookExists := false
+	if _, err := os.Stat(hookFile); err == nil {
+		hookExists = true
+		if !force {
+			return nil, fmt.Errorf("file already exists: %s (use --force to overwrite)", hookFile)
+		}
+	}
+
+	// Check if settings file exists (for consistent --force behavior)
+	settingsExists := false
+	if _, err := os.Stat(settingsFile); err == nil {
+		settingsExists = true
+	}
+
+	// If both files exist and no --force, return error
+	if hookExists && settingsExists && !force {
+		return nil, fmt.Errorf("files already exist: %s, %s (use --force to overwrite)", hookFile, settingsFile)
 	}
 
 	// Write hook script with executable permissions
@@ -84,7 +101,7 @@ func generateClaudeCodeIntegration(force bool) ([]string, error) {
 	}
 	generatedFiles = append(generatedFiles, hookFile)
 
-	// Update or create settings.json
+	// Update or create settings.json (merge is non-destructive, so always safe to apply)
 	settings := loadClaudeSettings(settingsFile)
 	settings = mergeClaudeHooks(settings)
 

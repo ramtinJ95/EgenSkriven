@@ -44,7 +44,8 @@ fi
 
 # Extract UUID from filename
 # Format: rollout-2025-05-07T17-24-21-5973b6c0-94b8-487b-a530-2aeb6098ae0e.jsonl
-SESSION_ID=$(basename "$LATEST_ROLLOUT" | grep -oP '[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}')
+# Using -oE (extended regex) instead of -oP (Perl regex) for macOS compatibility
+SESSION_ID=$(basename "$LATEST_ROLLOUT" | grep -oE '[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}')
 
 if [ -z "$SESSION_ID" ]; then
     echo "ERROR: Could not extract session ID from filename: $LATEST_ROLLOUT" >&2
