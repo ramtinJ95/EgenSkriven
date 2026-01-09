@@ -16,9 +16,9 @@ This phase implements the tool-specific integrations that allow AI agents to dis
 - `egenskriven init --codex` - Generate Codex helper script
 - `egenskriven init --all` - Generate all integrations
 
-**What we're NOT building yet:**
-- Web UI (Phase 5)
-- Auto-resume on @agent mention (Phase 6)
+**What we're NOT building yet (out of scope for this phase):**
+- Web UI (comments panel, resume button, session info display)
+- Auto-resume on @agent mention
 
 ---
 
@@ -862,50 +862,6 @@ egenskriven session link <task-ref> --tool codex --ref $SESSION_ID
 
 ---
 
-## Testing Checklist
-
-Before considering this phase complete:
-
-### OpenCode Integration
-
-- [ ] `init --opencode` creates `.opencode/tool/egenskriven-session.ts`
-- [ ] Generated tool file is valid TypeScript
-- [ ] Tool references `context.sessionID` correctly
-- [ ] Tool provides helpful instructions
-- [ ] Re-running without --force fails appropriately
-- [ ] Re-running with --force overwrites
-
-### Claude Code Integration
-
-- [ ] `init --claude-code` creates hook script
-- [ ] `init --claude-code` creates/updates settings.json
-- [ ] Hook script is executable
-- [ ] Hook script handles both jq and Python fallback
-- [ ] Settings merge preserves existing configuration
-- [ ] Settings include correct SessionStart hook
-
-### Codex Integration
-
-- [ ] `init --codex` creates helper script
-- [ ] Helper script is executable
-- [ ] Helper script correctly parses rollout filenames
-- [ ] Helper script handles missing session gracefully
-
-### Combined
-
-- [ ] `init --all` creates all integrations
-- [ ] `init --force` overwrites existing files
-- [ ] Error messages are helpful
-- [ ] Output lists generated files
-
-### Manual Testing
-
-- [ ] OpenCode: Start session, call tool, verify session ID returned
-- [ ] Claude Code: Start session, verify $CLAUDE_SESSION_ID is set
-- [ ] Codex: Start session, run helper script, verify correct session ID
-
----
-
 ## Files Changed/Created
 
 | File | Change Type | Description |
@@ -928,15 +884,151 @@ Before considering this phase complete:
 
 ---
 
-## Next Phase
+## Phase 4 Task Checklist
 
-Once all tests pass, proceed to [Phase 5: Web UI](./ai-workflow-phase-5.md).
+This section provides a detailed checklist of all tasks required to complete Phase 4.
 
-Phase 5 will implement:
-- Comments panel on task detail
-- Session info display
-- Resume button for blocked tasks
-- Real-time comment updates
+### Task 4.1: Update `init` Command with Tool Flags
+
+- [x] Add `--opencode` flag to init command
+- [x] Add `--claude-code` flag to init command
+- [x] Add `--codex` flag to init command
+- [x] Add `--all` flag to init command
+- [x] Implement flag handling logic (when `--all` is set, enable all three)
+- [x] Add command examples to help text
+- [x] Display list of generated files on completion
+
+### Task 4.2: Implement OpenCode Integration Generator
+
+- [ ] Create `internal/commands/init_opencode.go` file
+- [ ] Define `openCodeToolTemplate` constant with TypeScript template
+- [ ] Implement `generateOpenCodeIntegration(force bool)` function
+- [ ] Create `.opencode/tool/` directory if not exists
+- [ ] Write `egenskriven-session.ts` file with correct permissions (0644)
+- [ ] Handle existing file detection (error without `--force`)
+- [ ] Verify template includes `context.sessionID` reference
+- [ ] Verify template includes `link_command` instructions
+
+### Task 4.3: Implement Claude Code Integration Generator
+
+- [ ] Create `internal/commands/init_claude.go` file
+- [ ] Define `claudeCodeHookTemplate` constant with bash script template
+- [ ] Implement `generateClaudeCodeIntegration(force bool)` function
+- [ ] Implement `loadClaudeSettings(path string)` helper function
+- [ ] Implement `mergeClaudeHooks(settings map[string]any)` function
+- [ ] Create `.claude/hooks/` directory if not exists
+- [ ] Write `egenskriven-session.sh` hook script with executable permissions (0755)
+- [ ] Create or update `.claude/settings.json` with hook configuration
+- [ ] Ensure settings merge preserves existing configuration
+- [ ] Hook script should support both `jq` and Python fallback for JSON parsing
+- [ ] Hook script should persist `CLAUDE_SESSION_ID` to `$CLAUDE_ENV_FILE`
+
+### Task 4.4: Implement Codex Integration Generator
+
+- [ ] Create `internal/commands/init_codex.go` file
+- [ ] Define `codexHelperTemplate` constant with bash script template
+- [ ] Implement `generateCodexIntegration(force bool)` function
+- [ ] Create `.codex/` directory if not exists
+- [ ] Write `get-session-id.sh` helper script with executable permissions (0755)
+- [ ] Script should handle `CODEX_HOME` environment variable
+- [ ] Script should find most recent rollout file
+- [ ] Script should extract UUID from rollout filename using regex
+- [ ] Script should provide clear error messages when no session found
+
+### Task 4.5: Add --force Flag for Overwriting
+
+- [x] Add `--force` / `-f` flag to init command (completed in Task 4.1)
+- [x] Pass `force` parameter to all generator functions (completed in Task 4.1)
+- [x] Update `generateOpenCodeIntegration` to accept `force` parameter (stub created)
+- [x] Update `generateClaudeCodeIntegration` to accept `force` parameter (stub created)
+- [x] Update `generateCodexIntegration` to accept `force` parameter (stub created)
+- [ ] When file exists and `force=false`, return appropriate error message
+- [ ] When file exists and `force=true`, overwrite without error
+
+### Task 4.6: Write Unit Tests
+
+- [ ] Create `internal/commands/init_test.go` file
+- [ ] Add `strings` import for content verification
+- [ ] Implement `TestGenerateOpenCodeIntegration` test
+  - [ ] Test file creation in temp directory
+  - [ ] Verify correct file path
+  - [ ] Verify file is not empty
+  - [ ] Verify file contains `context.sessionID`
+  - [ ] Verify file contains `egenskriven session link`
+- [ ] Implement `TestGenerateOpenCodeIntegrationNoOverwrite` test
+  - [ ] Test first generation succeeds
+  - [ ] Test second generation without force fails
+  - [ ] Verify error message mentions "already exists"
+  - [ ] Test generation with force succeeds
+- [ ] Implement `TestGenerateClaudeCodeIntegration` test
+  - [ ] Verify 2 files created (hook script + settings)
+  - [ ] Verify hook script content contains `CLAUDE_SESSION_ID`
+  - [ ] Verify hook script is executable
+  - [ ] Verify settings.json contains `SessionStart` hook
+- [ ] Implement `TestClaudeSettingsMerge` test
+  - [ ] Create existing settings.json with other settings
+  - [ ] Generate integration
+  - [ ] Verify existing settings preserved
+  - [ ] Verify new SessionStart hook added
+- [ ] Implement `TestGenerateCodexIntegration` test
+  - [ ] Verify 1 file created
+  - [ ] Verify script contains `CODEX_HOME`
+  - [ ] Verify script looks for `rollout-` files
+  - [ ] Verify script is executable
+- [ ] Implement `TestInitCommandAllFlag` test
+  - [ ] Test `--all` flag creates all integrations
+  - [ ] Verify all expected files exist
+
+### Task 4.7: Update Skills Documentation
+
+- [ ] Update `internal/commands/skills/egenskriven/SKILL.md`
+- [ ] Add "Tool Integrations" section
+- [ ] Document OpenCode integration setup and usage
+- [ ] Document Claude Code integration setup and usage
+- [ ] Document Codex CLI integration setup and usage
+- [ ] Include example commands for each tool
+
+### Testing Checklist
+
+#### OpenCode Integration Testing
+
+- [ ] `init --opencode` creates `.opencode/tool/egenskriven-session.ts`
+- [ ] Generated tool file is valid TypeScript (no syntax errors)
+- [ ] Tool correctly references `context.sessionID`
+- [ ] Tool provides helpful usage instructions
+- [ ] Re-running without `--force` fails with appropriate error
+- [ ] Re-running with `--force` overwrites successfully
+
+#### Claude Code Integration Testing
+
+- [ ] `init --claude-code` creates hook script at `.claude/hooks/egenskriven-session.sh`
+- [ ] `init --claude-code` creates/updates `.claude/settings.json`
+- [ ] Hook script is executable (has execute permissions)
+- [ ] Hook script handles JSON parsing with jq
+- [ ] Hook script handles JSON parsing with Python fallback
+- [ ] Settings merge preserves existing configuration
+- [ ] Settings include correct SessionStart hook configuration
+
+#### Codex Integration Testing
+
+- [ ] `init --codex` creates `.codex/get-session-id.sh`
+- [ ] Helper script is executable (has execute permissions)
+- [ ] Helper script correctly parses rollout filenames
+- [ ] Helper script handles missing sessions directory gracefully
+- [ ] Helper script handles no rollout files gracefully
+
+#### Combined Testing
+
+- [ ] `init --all` creates all three integrations
+- [ ] `init --force` overwrites all existing files
+- [ ] Error messages are helpful and actionable
+- [ ] Output lists all generated files clearly
+
+#### Manual Integration Testing
+
+- [ ] OpenCode: Start session, call tool, verify session ID returned correctly
+- [ ] Claude Code: Start session, verify `$CLAUDE_SESSION_ID` is set in env
+- [ ] Codex: Start session, run helper script, verify correct session ID returned
 
 ---
 
