@@ -925,15 +925,15 @@ This section provides a detailed checklist of all tasks required to complete Pha
 
 ### Task 4.4: Implement Codex Integration Generator
 
-- [ ] Create `internal/commands/init_codex.go` file
-- [ ] Define `codexHelperTemplate` constant with bash script template
-- [ ] Implement `generateCodexIntegration(force bool)` function
-- [ ] Create `.codex/` directory if not exists
-- [ ] Write `get-session-id.sh` helper script with executable permissions (0755)
-- [ ] Script should handle `CODEX_HOME` environment variable
-- [ ] Script should find most recent rollout file
-- [ ] Script should extract UUID from rollout filename using regex
-- [ ] Script should provide clear error messages when no session found
+- [x] Create `internal/commands/init_codex.go` file (implemented in init_integrations.go)
+- [x] Define `codexHelperTemplate` constant with bash script template
+- [x] Implement `generateCodexIntegration(force bool)` function
+- [x] Create `.codex/` directory if not exists
+- [x] Write `get-session-id.sh` helper script with executable permissions (0755)
+- [x] Script should handle `CODEX_HOME` environment variable
+- [x] Script should find most recent rollout file
+- [x] Script should extract UUID from rollout filename using regex
+- [x] Script should provide clear error messages when no session found
 
 ### Task 4.5: Add --force Flag for Overwriting
 
@@ -941,9 +941,9 @@ This section provides a detailed checklist of all tasks required to complete Pha
 - [x] Pass `force` parameter to all generator functions (completed in Task 4.1)
 - [x] Update `generateOpenCodeIntegration` to accept `force` parameter (completed in Task 4.2)
 - [x] Update `generateClaudeCodeIntegration` to accept `force` parameter (completed in Task 4.3)
-- [x] Update `generateCodexIntegration` to accept `force` parameter (stub created)
-- [x] When file exists and `force=false`, return appropriate error message (verified for OpenCode, Claude Code)
-- [x] When file exists and `force=true`, overwrite without error (verified for OpenCode, Claude Code)
+- [x] Update `generateCodexIntegration` to accept `force` parameter (completed in Task 4.4)
+- [x] When file exists and `force=false`, return appropriate error message (verified for OpenCode, Claude Code, Codex)
+- [x] When file exists and `force=true`, overwrite without error (verified for OpenCode, Claude Code, Codex)
 
 ### Task 4.6: Write Unit Tests
 
@@ -1011,18 +1011,18 @@ This section provides a detailed checklist of all tasks required to complete Pha
 
 #### Codex Integration Testing
 
-- [ ] `init --codex` creates `.codex/get-session-id.sh`
-- [ ] Helper script is executable (has execute permissions)
-- [ ] Helper script correctly parses rollout filenames
-- [ ] Helper script handles missing sessions directory gracefully
-- [ ] Helper script handles no rollout files gracefully
+- [x] `init --codex` creates `.codex/get-session-id.sh`
+- [x] Helper script is executable (has execute permissions)
+- [x] Helper script correctly parses rollout filenames
+- [x] Helper script handles missing sessions directory gracefully
+- [x] Helper script handles no rollout files gracefully
 
 #### Combined Testing
 
-- [ ] `init --all` creates all three integrations
-- [ ] `init --force` overwrites all existing files
-- [ ] Error messages are helpful and actionable
-- [ ] Output lists all generated files clearly
+- [x] `init --all` creates all three integrations
+- [x] `init --force` overwrites all existing files
+- [x] Error messages are helpful and actionable
+- [x] Output lists all generated files clearly
 
 #### Manual Integration Testing
 
