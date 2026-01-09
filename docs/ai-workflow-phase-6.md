@@ -1,10 +1,108 @@
 # Phase 6: Auto-Resume
 
-> **Parent Document**: [ai-workflow-plan.md](./ai-workflow-plan.md)  
-> **Phase**: 6 of 7  
-> **Status**: Not Started  
-> **Estimated Effort**: 2-3 days  
+> **Parent Document**: [ai-workflow-plan.md](./ai-workflow-plan.md)
+> **Phase**: 6
+> **Status**: Not Started
 > **Prerequisites**: [Phase 5](./ai-workflow-phase-5.md) completed
+
+---
+
+## Phase 6 Todo List
+
+### Backend Implementation
+
+- [x] **Task 6.1: Create Auto-Resume Service**
+  - [x] 6.1.1: Create `internal/autoresume/service.go`
+  - [x] 6.1.2: Implement `NewService()` constructor
+  - [x] 6.1.3: Implement `CheckAndResume()` method with all condition checks
+  - [x] 6.1.4: Implement `triggerResume()` method
+  - [x] 6.1.5: Implement `updateTaskForResume()` method
+  - [x] 6.1.6: Implement `executeResume()` method for background execution
+  - [x] 6.1.7: Implement `fetchComments()` helper
+  - [x] 6.1.8: Implement `hasAgentMention()` helper
+  - [x] 6.1.9: Implement `logAutoResume()` for debugging/logging
+  - [x] 6.1.10: Implement `ensureHistorySlice()` helper
+
+- [ ] **Task 6.2: Register Comment Hook**
+  - [ ] 6.2.1: Create `internal/hooks/comments.go`
+  - [ ] 6.2.2: Implement `RegisterCommentHooks()` function
+  - [ ] 6.2.3: Add `OnRecordAfterCreateSuccess` hook for comments collection
+  - [ ] 6.2.4: Ensure hook runs auto-resume check in goroutine (non-blocking)
+  - [ ] 6.2.5: Register hook in main/app initialization
+
+- [ ] **Task 6.3: Add Board Resume Mode Configuration**
+  - [ ] 6.3.1: Update `internal/commands/board.go` with `--resume-mode` flag
+  - [ ] 6.3.2: Add resume mode validation (manual, command, auto)
+  - [ ] 6.3.3: Update `board show` command to display resume mode
+  - [ ] 6.3.4: Ensure default resume mode is "command"
+
+### Frontend Implementation
+
+- [ ] **Task 6.4: Add Resume Mode UI Component**
+  - [ ] 6.4.1: Create `ui/src/components/BoardSettings/ResumeModeSelector.tsx`
+  - [ ] 6.4.2: Implement radio button selection for manual/command/auto modes
+  - [ ] 6.4.3: Add mode descriptions for each option
+  - [ ] 6.4.4: Add warning indicator when auto mode is selected
+  - [ ] 6.4.5: Integrate component into board settings view
+
+- [ ] **Task 6.5: Update Comments Panel with Auto-Resume Indicator**
+  - [ ] 6.5.1: Update `ui/src/components/TaskDetail/CommentsPanel.tsx`
+  - [ ] 6.5.2: Add `boardResumeMode` and `taskColumn` props
+  - [ ] 6.5.3: Implement auto-resume enabled indicator (green pulsing dot)
+  - [ ] 6.5.4: Show "@agent to trigger" hint when auto-resume is enabled
+  - [ ] 6.5.5: Add visual feedback for auto-resume capable state
+
+### Testing
+
+- [ ] **Task 6.6: Write Unit Tests**
+  - [ ] 6.6.1: Create `internal/autoresume/service_test.go`
+  - [ ] 6.6.2: Test: All conditions met triggers resume
+  - [ ] 6.6.3: Test: Agent comments do NOT trigger resume
+  - [ ] 6.6.4: Test: Comments without @agent do NOT trigger
+  - [ ] 6.6.5: Test: Manual mode does NOT auto-resume
+  - [ ] 6.6.6: Test: Command mode does NOT auto-resume
+  - [ ] 6.6.7: Test: No session does NOT trigger
+  - [ ] 6.6.8: Test: Wrong column (not need_input) does NOT trigger
+  - [ ] 6.6.9: Test: `hasAgentMention()` helper function
+  - [ ] 6.6.10: Create test helpers (createTestComment, etc.)
+
+- [ ] **Task 6.7: Add E2E Tests**
+  - [ ] 6.7.1: Create `tests/e2e/autoresume_test.go`
+  - [ ] 6.7.2: Test full auto-resume workflow end-to-end
+  - [ ] 6.7.3: Verify task moves to in_progress after trigger
+  - [ ] 6.7.4: Verify history contains auto_resumed action
+
+### Verification Checklist
+
+#### Auto-Resume Logic
+- [ ] 6.V.1: Triggers when ALL conditions are met
+- [ ] 6.V.2: Does NOT trigger for agent comments
+- [ ] 6.V.3: Does NOT trigger without @agent mention
+- [ ] 6.V.4: Does NOT trigger when resume_mode is manual
+- [ ] 6.V.5: Does NOT trigger when resume_mode is command
+- [ ] 6.V.6: Does NOT trigger without linked session
+- [ ] 6.V.7: Does NOT trigger when task not in need_input
+- [ ] 6.V.8: Updates task column to in_progress
+- [ ] 6.V.9: Adds history entry with auto_resumed action
+- [ ] 6.V.10: Executes resume command in background
+
+#### Board Configuration
+- [ ] 6.V.11: `egenskriven board update --resume-mode` works
+- [ ] 6.V.12: `egenskriven board show` displays resume mode
+- [ ] 6.V.13: Invalid resume mode is rejected
+- [ ] 6.V.14: Default resume mode is "command"
+
+#### UI
+- [ ] 6.V.15: Resume mode selector works in board settings
+- [ ] 6.V.16: Auto-resume indicator shows in comments panel
+- [ ] 6.V.17: @agent mention shows appropriate visual feedback
+
+#### Error Handling
+- [ ] 6.V.18: Failures logged but don't break comment creation
+- [ ] 6.V.19: Invalid session data handled gracefully
+- [ ] 6.V.20: Missing board handled gracefully
+
+---
 
 ## Overview
 
@@ -15,9 +113,6 @@ This phase implements the auto-resume functionality - automatically resuming an 
 - Auto-resume trigger when conditions are met
 - Board-level resume mode configuration
 - UI for configuring resume mode
-
-**What we're NOT building:**
-- This is the last feature phase before documentation polish
 
 ---
 
@@ -832,44 +927,6 @@ func TestAutoResumeE2E(t *testing.T) {
 
 ---
 
-## Testing Checklist
-
-Before considering this phase complete:
-
-### Auto-Resume Logic
-
-- [ ] Triggers when ALL conditions met
-- [ ] Does NOT trigger for agent comments
-- [ ] Does NOT trigger without @agent mention
-- [ ] Does NOT trigger when resume_mode is manual
-- [ ] Does NOT trigger when resume_mode is command
-- [ ] Does NOT trigger without linked session
-- [ ] Does NOT trigger when task not in need_input
-- [ ] Updates task to in_progress
-- [ ] Adds history entry with auto_resumed action
-- [ ] Executes resume command in background
-
-### Board Configuration
-
-- [ ] `egenskriven board update --resume-mode` works
-- [ ] `egenskriven board show` displays resume mode
-- [ ] Invalid resume mode rejected
-- [ ] Default resume mode is "command"
-
-### UI
-
-- [ ] Resume mode selector works in board settings
-- [ ] Auto-resume indicator shows in comments panel
-- [ ] @agent mention shows warning in textarea
-
-### Error Handling
-
-- [ ] Failures logged but don't break comment creation
-- [ ] Invalid session data handled gracefully
-- [ ] Missing board handled gracefully
-
----
-
 ## Files Changed/Created
 
 | File | Change Type | Description |
@@ -881,19 +938,6 @@ Before considering this phase complete:
 | `ui/src/components/BoardSettings/ResumeModeSelector.tsx` | New | Resume mode UI |
 | `ui/src/components/TaskDetail/CommentsPanel.tsx` | Modified | Auto-resume indicator |
 | `tests/e2e/autoresume_test.go` | New | E2E tests |
-
----
-
-## Next Phase
-
-Once all tests pass, proceed to [Phase 7: Documentation & Polish](./ai-workflow-phase-7.md).
-
-Phase 7 will:
-- Update all skills documentation
-- Update prime template
-- Update AGENTS.md
-- Final testing across all tools
-- Performance review
 
 ---
 
