@@ -86,6 +86,16 @@
   padding: var(--space-3, 12px);
   border-radius: var(--radius-md, 6px);
   background: var(--bg-card, #1a1a1a);
+  transition: outline 0.15s ease;
+}
+
+.item:focus {
+  outline: 2px solid var(--accent, #6366f1);
+  outline-offset: 2px;
+}
+
+.item:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .agentItem {

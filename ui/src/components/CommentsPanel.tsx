@@ -160,6 +160,7 @@ function CommentItem({ comment }: { comment: Comment }) {
       className={`${styles.item} ${isAgent ? styles.agentItem : styles.humanItem}`}
       role="listitem"
       aria-label={`Comment by ${author}`}
+      tabIndex={0}
     >
       {/* Header with author and time */}
       <div className={styles.itemHeader}>

@@ -210,6 +210,16 @@
   margin: 0;
   max-height: 200px;
   overflow-y: auto;
+  transition: outline 0.15s ease;
+}
+
+.command:focus {
+  outline: 2px solid var(--accent, #6366f1);
+  outline-offset: 2px;
+}
+
+.command:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .copyButton {

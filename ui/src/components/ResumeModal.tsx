@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useResume, type ResumeResult } from '../hooks/useResume'
 import styles from './ResumeModal.module.css'
 
@@ -24,13 +24,44 @@ export function ResumeModal({ isOpen, onClose, taskId, displayId }: ResumeModalP
   const [result, setResult] = useState<ResumeResult | null>(null)
   const [copied, setCopied] = useState(false)
   const [generateError, setGenerateError] = useState<string | null>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const previousActiveElement = useRef<HTMLElement | null>(null)
 
-  // Reset state when modal opens
+  // Reset state when modal opens and manage focus
   useEffect(() => {
     if (isOpen) {
       setResult(null)
       setCopied(false)
       setGenerateError(null)
+      // Store the previously focused element
+      previousActiveElement.current = document.activeElement as HTMLElement
+      // Focus the close button when modal opens
+      setTimeout(() => closeButtonRef.current?.focus(), 0)
+    } else {
+      // Restore focus when modal closes
+      previousActiveElement.current?.focus()
+    }
+  }, [isOpen])
+
+  // Focus trap - keep focus within modal
+  const handleFocusTrap = useCallback((e: KeyboardEvent) => {
+    if (!isOpen || !modalRef.current) return
+
+    const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+    const firstElement = focusableElements[0]
+    const lastElement = focusableElements[focusableElements.length - 1]
+
+    if (e.key === 'Tab') {
+      if (e.shiftKey && document.activeElement === firstElement) {
+        e.preventDefault()
+        lastElement?.focus()
+      } else if (!e.shiftKey && document.activeElement === lastElement) {
+        e.preventDefault()
+        firstElement?.focus()
+      }
     }
   }, [isOpen])
 
@@ -42,11 +73,12 @@ export function ResumeModal({ isOpen, onClose, taskId, displayId }: ResumeModalP
       if (e.key === 'Escape') {
         onClose()
       }
+      handleFocusTrap(e)
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose])
+  }, [isOpen, onClose, handleFocusTrap])
 
   if (!isOpen) return null
 
@@ -87,11 +119,16 @@ export function ResumeModal({ isOpen, onClose, taskId, displayId }: ResumeModalP
       aria-modal="true"
       aria-labelledby="resume-modal-title"
     >
-      <div className={styles.modal}>
+      <div className={styles.modal} ref={modalRef}>
         {/* Header */}
         <div className={styles.header}>
           <h2 id="resume-modal-title" className={styles.title}>Resume Session for {displayId}</h2>
-          <button onClick={onClose} className={styles.closeButton} aria-label="Close modal">
+          <button
+            ref={closeButtonRef}
+            onClick={onClose}
+            className={styles.closeButton}
+            aria-label="Close modal"
+          >
             <CloseIcon />
           </button>
         </div>
@@ -147,7 +184,17 @@ export function ResumeModal({ isOpen, onClose, taskId, displayId }: ResumeModalP
               <div className={styles.commandSection}>
                 <label id="command-label" className={styles.commandLabel}>Resume Command</label>
                 <div className={styles.commandWrapper}>
-                  <pre className={styles.command} aria-labelledby="command-label" tabIndex={0}>
+                  <pre
+                    className={styles.command}
+                    aria-labelledby="command-label"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      // Copy command on Ctrl+C or Cmd+C when focused
+                      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+                        handleCopy()
+                      }
+                    }}
+                  >
                     {result.command}
                   </pre>
                   <button
