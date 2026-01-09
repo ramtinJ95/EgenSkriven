@@ -53,7 +53,7 @@
 - [x] **5.9.1** Update `ui/src/components/TaskDetail/index.tsx` to integrate CommentsPanel
 - [x] **5.9.2** Integrate SessionInfo component into TaskDetail
 - [x] **5.9.3** Integrate ResumeModal with state management
-- [ ] **5.9.4** Add StatusBadge and PriorityBadge components if not existing
+- [x] **5.9.4** Add StatusBadge and PriorityBadge components if not existing
 
 ### Testing
 - [ ] **5.10.1** Create `ui/src/components/TaskDetail/CommentsPanel.test.tsx`
