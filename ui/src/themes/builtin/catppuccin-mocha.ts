@@ -48,6 +48,7 @@ export const catppuccinMocha: Theme = {
     statusBacklog: '#6c7086', // overlay0
     statusTodo: '#cdd6f4', // text
     statusInProgress: '#f9e2af', // yellow
+    statusNeedInput: '#fab387', // peach
     statusReview: '#cba6f7', // mauve
     statusDone: '#a6e3a1', // green
     statusCanceled: '#6c7086', // overlay0

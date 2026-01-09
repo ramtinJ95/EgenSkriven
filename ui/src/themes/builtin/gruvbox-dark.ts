@@ -48,6 +48,7 @@ export const gruvboxDark: Theme = {
     statusBacklog: '#928374', // gray
     statusTodo: '#ebdbb2', // fg1
     statusInProgress: '#fabd2f', // yellow
+    statusNeedInput: '#fe8019', // orange
     statusReview: '#d3869b', // purple
     statusDone: '#b8bb26', // green
     statusCanceled: '#928374', // gray

@@ -45,15 +45,18 @@ export function Column({ column, tasks, onTaskClick, onTaskSelect, selectedTaskI
     },
   })
 
+  // Check if this is the need_input column
+  const isNeedInputColumn = column === 'need_input'
+
   return (
     <div
       ref={setNodeRef}
-      className={`${styles.column} ${isOver ? styles.over : ''}`}
+      className={`${styles.column} ${isOver ? styles.over : ''} ${isNeedInputColumn ? styles.needInputColumn : ''}`}
     >
-      <div className={styles.header}>
+      <div className={`${styles.header} ${isNeedInputColumn ? styles.needInputHeader : ''}`}>
         <div className={styles.headerContent}>
           <span
-            className={styles.statusDot}
+            className={`${styles.statusDot} ${isNeedInputColumn ? styles.pulsingDot : ''}`}
             style={{ backgroundColor: `var(--status-${column.replace('_', '-')})` }}
           />
           <span className={styles.name}>{getColumnDisplayName(column)}</span>
