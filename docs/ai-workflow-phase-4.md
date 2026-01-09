@@ -911,17 +911,17 @@ This section provides a detailed checklist of all tasks required to complete Pha
 
 ### Task 4.3: Implement Claude Code Integration Generator
 
-- [ ] Create `internal/commands/init_claude.go` file
-- [ ] Define `claudeCodeHookTemplate` constant with bash script template
-- [ ] Implement `generateClaudeCodeIntegration(force bool)` function
-- [ ] Implement `loadClaudeSettings(path string)` helper function
-- [ ] Implement `mergeClaudeHooks(settings map[string]any)` function
-- [ ] Create `.claude/hooks/` directory if not exists
-- [ ] Write `egenskriven-session.sh` hook script with executable permissions (0755)
-- [ ] Create or update `.claude/settings.json` with hook configuration
-- [ ] Ensure settings merge preserves existing configuration
-- [ ] Hook script should support both `jq` and Python fallback for JSON parsing
-- [ ] Hook script should persist `CLAUDE_SESSION_ID` to `$CLAUDE_ENV_FILE`
+- [x] Create `internal/commands/init_claude.go` file
+- [x] Define `claudeCodeHookTemplate` constant with bash script template
+- [x] Implement `generateClaudeCodeIntegration(force bool)` function
+- [x] Implement `loadClaudeSettings(path string)` helper function
+- [x] Implement `mergeClaudeHooks(settings map[string]any)` function
+- [x] Create `.claude/hooks/` directory if not exists
+- [x] Write `egenskriven-session.sh` hook script with executable permissions (0755)
+- [x] Create or update `.claude/settings.json` with hook configuration
+- [x] Ensure settings merge preserves existing configuration
+- [x] Hook script should support both `jq` and Python fallback for JSON parsing
+- [x] Hook script should persist `CLAUDE_SESSION_ID` to `$CLAUDE_ENV_FILE`
 
 ### Task 4.4: Implement Codex Integration Generator
 
@@ -940,10 +940,10 @@ This section provides a detailed checklist of all tasks required to complete Pha
 - [x] Add `--force` / `-f` flag to init command (completed in Task 4.1)
 - [x] Pass `force` parameter to all generator functions (completed in Task 4.1)
 - [x] Update `generateOpenCodeIntegration` to accept `force` parameter (completed in Task 4.2)
-- [x] Update `generateClaudeCodeIntegration` to accept `force` parameter (stub created)
+- [x] Update `generateClaudeCodeIntegration` to accept `force` parameter (completed in Task 4.3)
 - [x] Update `generateCodexIntegration` to accept `force` parameter (stub created)
-- [x] When file exists and `force=false`, return appropriate error message (verified for OpenCode)
-- [x] When file exists and `force=true`, overwrite without error (verified for OpenCode)
+- [x] When file exists and `force=false`, return appropriate error message (verified for OpenCode, Claude Code)
+- [x] When file exists and `force=true`, overwrite without error (verified for OpenCode, Claude Code)
 
 ### Task 4.6: Write Unit Tests
 
@@ -1001,13 +1001,13 @@ This section provides a detailed checklist of all tasks required to complete Pha
 
 #### Claude Code Integration Testing
 
-- [ ] `init --claude-code` creates hook script at `.claude/hooks/egenskriven-session.sh`
-- [ ] `init --claude-code` creates/updates `.claude/settings.json`
-- [ ] Hook script is executable (has execute permissions)
-- [ ] Hook script handles JSON parsing with jq
-- [ ] Hook script handles JSON parsing with Python fallback
-- [ ] Settings merge preserves existing configuration
-- [ ] Settings include correct SessionStart hook configuration
+- [x] `init --claude-code` creates hook script at `.claude/hooks/egenskriven-session.sh`
+- [x] `init --claude-code` creates/updates `.claude/settings.json`
+- [x] Hook script is executable (has execute permissions)
+- [x] Hook script handles JSON parsing with jq
+- [ ] Hook script handles JSON parsing with Python fallback (not tested - jq available)
+- [x] Settings merge preserves existing configuration
+- [x] Settings include correct SessionStart hook configuration
 
 #### Codex Integration Testing
 
