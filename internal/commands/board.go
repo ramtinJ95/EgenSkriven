@@ -35,6 +35,7 @@ Each board has:
 	cmd.AddCommand(newBoardListCmd(app))
 	cmd.AddCommand(newBoardAddCmd(app))
 	cmd.AddCommand(newBoardShowCmd(app))
+	cmd.AddCommand(newBoardUpdateCmd(app))
 	cmd.AddCommand(newBoardUseCmd(app))
 	cmd.AddCommand(newBoardDeleteCmd(app))
 
@@ -174,6 +175,10 @@ func newBoardShowCmd(app *pocketbase.PocketBase) *cobra.Command {
 			}
 
 			b := board.RecordToBoard(record)
+			resumeMode := record.GetString("resume_mode")
+			if resumeMode == "" {
+				resumeMode = "command" // Default value
+			}
 
 			// Count tasks in this board
 			tasks, _ := app.FindAllRecords("tasks",
@@ -183,12 +188,13 @@ func newBoardShowCmd(app *pocketbase.PocketBase) *cobra.Command {
 
 			if out.JSON {
 				return json.NewEncoder(os.Stdout).Encode(map[string]interface{}{
-					"id":         b.ID,
-					"name":       b.Name,
-					"prefix":     b.Prefix,
-					"columns":    b.Columns,
-					"color":      b.Color,
-					"task_count": taskCount,
+					"id":          b.ID,
+					"name":        b.Name,
+					"prefix":      b.Prefix,
+					"columns":     b.Columns,
+					"color":       b.Color,
+					"resume_mode": resumeMode,
+					"task_count":  taskCount,
 				})
 			}
 
@@ -198,11 +204,115 @@ func newBoardShowCmd(app *pocketbase.PocketBase) *cobra.Command {
 			if b.Color != "" {
 				fmt.Printf("Color: %s\n", b.Color)
 			}
+			fmt.Printf("Resume Mode: %s\n", resumeMode)
 			fmt.Printf("Tasks: %d\n", taskCount)
 
 			return nil
 		},
 	}
+}
+
+// ValidResumeModes are the allowed values for resume_mode
+var ValidResumeModes = []string{"manual", "command", "auto"}
+
+// newBoardUpdateCmd creates the 'board update' subcommand
+func newBoardUpdateCmd(app *pocketbase.PocketBase) *cobra.Command {
+	var (
+		resumeMode string
+		color      string
+		name       string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "update [name-or-prefix]",
+		Short: "Update board settings",
+		Long: `Update settings for an existing board.
+
+Available settings:
+- --resume-mode: How blocked tasks should be resumed (manual, command, auto)
+- --color: Accent color (hex format)
+- --name: Board display name`,
+		Args: cobra.ExactArgs(1),
+		Example: `  # Set resume mode to auto (triggers on @agent mention)
+  egenskriven board update work --resume-mode auto
+
+  # Change board color
+  egenskriven board update work --color "#22C55E"
+
+  # Rename board
+  egenskriven board update work --name "Work Projects"`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			out := getFormatter()
+			if err := app.Bootstrap(); err != nil {
+				return err
+			}
+
+			record, err := board.GetByNameOrPrefix(app, args[0])
+			if err != nil {
+				return err
+			}
+
+			updated := false
+
+			// Update resume mode if specified
+			if resumeMode != "" {
+				if !containsString(ValidResumeModes, resumeMode) {
+					return fmt.Errorf("invalid resume mode %q: must be one of %v", resumeMode, ValidResumeModes)
+				}
+				record.Set("resume_mode", resumeMode)
+				updated = true
+			}
+
+			// Update color if specified
+			if color != "" {
+				record.Set("color", color)
+				updated = true
+			}
+
+			// Update name if specified
+			if name != "" {
+				record.Set("name", name)
+				updated = true
+			}
+
+			if !updated {
+				return fmt.Errorf("no updates specified; use --resume-mode, --color, or --name")
+			}
+
+			if err := app.Save(record); err != nil {
+				return fmt.Errorf("failed to update board: %w", err)
+			}
+
+			if out.JSON {
+				return json.NewEncoder(os.Stdout).Encode(map[string]interface{}{
+					"success":     true,
+					"id":          record.Id,
+					"name":        record.GetString("name"),
+					"prefix":      record.GetString("prefix"),
+					"resume_mode": record.GetString("resume_mode"),
+					"color":       record.GetString("color"),
+				})
+			}
+
+			fmt.Printf("Board %s updated\n", record.GetString("name"))
+			if resumeMode != "" {
+				fmt.Printf("  Resume Mode: %s\n", resumeMode)
+			}
+			if color != "" {
+				fmt.Printf("  Color: %s\n", color)
+			}
+			if name != "" {
+				fmt.Printf("  Name: %s\n", name)
+			}
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&resumeMode, "resume-mode", "", "Resume mode (manual, command, auto)")
+	cmd.Flags().StringVarP(&color, "color", "c", "", "Accent color (hex, e.g., #3B82F6)")
+	cmd.Flags().StringVarP(&name, "name", "n", "", "Board display name")
+
+	return cmd
 }
 
 // newBoardUseCmd creates the 'board use' subcommand
