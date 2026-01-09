@@ -85,6 +85,62 @@ egenskriven show <ref> --json
 
 **Not needed for**: Simple questions, one-off commands, trivial changes.
 
+## Tool Integrations
+
+Before using the collaborative workflow (blocking tasks, resume flow), initialize the tool integration for your AI coding tool:
+
+### OpenCode
+
+```bash
+egenskriven init --opencode
+```
+
+This creates `.opencode/tool/egenskriven-session.ts`. When working on a task, call the `egenskriven-session` tool to get your session ID:
+
+```
+Agent: [calls egenskriven-session tool]
+Response: { session_id: "abc-123", link_command: "egenskriven session link <task> --tool opencode --ref abc-123" }
+Agent: [runs link command to associate session with task]
+```
+
+### Claude Code
+
+```bash
+egenskriven init --claude-code
+```
+
+This creates:
+- `.claude/hooks/egenskriven-session.sh` - Hook script that runs on SessionStart
+- `.claude/settings.json` - Hook configuration (merged with existing settings)
+
+After the hook runs, your session ID is available as `$CLAUDE_SESSION_ID`. Link your session with:
+
+```bash
+egenskriven session link <task-ref> --tool claude-code --ref $CLAUDE_SESSION_ID
+```
+
+### Codex CLI
+
+```bash
+egenskriven init --codex
+```
+
+This creates `.codex/get-session-id.sh`. Get your session ID with:
+
+```bash
+SESSION_ID=$(.codex/get-session-id.sh)
+egenskriven session link <task-ref> --tool codex --ref $SESSION_ID
+```
+
+### All Integrations
+
+Generate all tool integrations at once:
+
+```bash
+egenskriven init --all
+egenskriven init --all --force  # Overwrite existing files
+```
+
 ## Related Skills
 
 - `egenskriven-workflows` - Workflow modes (strict/light/minimal) and agent behaviors
