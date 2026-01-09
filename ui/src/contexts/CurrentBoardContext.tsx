@@ -14,6 +14,8 @@ interface CurrentBoardContextValue {
   boardsError: Error | null
   /** Create a new board */
   createBoard: (input: { name: string; prefix: string; color?: string; columns?: string[] }) => Promise<Board>
+  /** Update a board in local state (real-time subscription also handles this) */
+  updateBoard: (board: Board) => void
   /** Delete a board */
   deleteBoard: (id: string) => Promise<void>
 }
@@ -113,6 +115,17 @@ export function CurrentBoardProvider({ children }: CurrentBoardProviderProps) {
     localStorage.setItem(STORAGE_KEY, board.id)
   }, [])
 
+  // Update board in local state - mainly for immediate UI feedback
+  // The real-time subscription in useBoards() will also handle this
+  const updateBoard = useCallback((board: Board) => {
+    // If this is the current board, update it immediately
+    if (currentBoard?.id === board.id) {
+      setCurrentBoardState(board)
+    }
+    // Note: The boards array is managed by useBoards() and its real-time subscription
+    // will automatically update when the API call completes
+  }, [currentBoard])
+
   const value: CurrentBoardContextValue = {
     currentBoard,
     setCurrentBoard,
@@ -120,6 +133,7 @@ export function CurrentBoardProvider({ children }: CurrentBoardProviderProps) {
     boards,
     boardsError,
     createBoard,
+    updateBoard,
     deleteBoard,
   }
 

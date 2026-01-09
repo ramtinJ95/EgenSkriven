@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useCurrentBoard } from '../contexts'
 import { BOARD_COLORS } from '../types/board'
+import type { Board } from '../types/board'
 import type { Task } from '../types/task'
 import { ViewsSidebar } from './ViewsSidebar'
 import { EpicList } from './EpicList'
+import { BoardSettingsModal } from './BoardSettings'
 import styles from './Sidebar.module.css'
 
 interface SidebarProps {
@@ -29,8 +31,9 @@ interface SidebarProps {
  * - Board color indicators
  */
 export function Sidebar({ collapsed, onToggle, tasks = [], selectedEpicId, onSelectEpic, onEpicDetailClick }: SidebarProps) {
-  const { boards, loading, boardsError: error, createBoard, currentBoard, setCurrentBoard } = useCurrentBoard()
+  const { boards, loading, boardsError: error, createBoard, currentBoard, setCurrentBoard, updateBoard } = useCurrentBoard()
   const [showNewBoard, setShowNewBoard] = useState(false)
+  const [boardToEdit, setBoardToEdit] = useState<Board | null>(null)
 
   if (collapsed) {
     return (
@@ -72,7 +75,7 @@ export function Sidebar({ collapsed, onToggle, tasks = [], selectedEpicId, onSel
           ) : (
             <ul className={styles.boardList}>
               {boards.map((board) => (
-                <li key={board.id}>
+                <li key={board.id} className={styles.boardListItem}>
                   <button
                     className={`${styles.boardItem} ${
                       currentBoard?.id === board.id ? styles.active : ''
@@ -86,6 +89,16 @@ export function Sidebar({ collapsed, onToggle, tasks = [], selectedEpicId, onSel
                     />
                     <span className={styles.boardName}>{board.name}</span>
                     <span className={styles.boardPrefix}>({board.prefix})</span>
+                  </button>
+                  <button
+                    className={styles.boardSettingsButton}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setBoardToEdit(board)
+                    }}
+                    aria-label={`Settings for ${board.name}`}
+                  >
+                    <GearIcon />
                   </button>
                 </li>
               ))}
@@ -117,6 +130,21 @@ export function Sidebar({ collapsed, onToggle, tasks = [], selectedEpicId, onSel
 
       {showNewBoard && (
         <NewBoardModal onClose={() => setShowNewBoard(false)} createBoard={createBoard} />
+      )}
+
+      {boardToEdit && (
+        <BoardSettingsModal
+          isOpen={true}
+          onClose={() => setBoardToEdit(null)}
+          board={boardToEdit}
+          onUpdate={(updated) => {
+            updateBoard?.(updated)
+            // Update currentBoard if it was the one edited
+            if (currentBoard?.id === updated.id) {
+              setCurrentBoard(updated)
+            }
+          }}
+        />
       )}
     </aside>
   )
@@ -266,6 +294,24 @@ function NewBoardModal({ onClose, createBoard }: NewBoardModalProps) {
 }
 
 // Simple SVG icons
+function GearIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="8" cy="8" r="2.5" />
+      <path d="M13.8 6.5l-1.1-.3a4.8 4.8 0 0 0-.4-.9l.5-1a.5.5 0 0 0-.1-.6l-.7-.7a.5.5 0 0 0-.6-.1l-1 .5a4.8 4.8 0 0 0-.9-.4l-.3-1.1a.5.5 0 0 0-.5-.4h-1a.5.5 0 0 0-.5.4l-.3 1.1a4.8 4.8 0 0 0-.9.4l-1-.5a.5.5 0 0 0-.6.1l-.7.7a.5.5 0 0 0-.1.6l.5 1a4.8 4.8 0 0 0-.4.9l-1.1.3a.5.5 0 0 0-.4.5v1a.5.5 0 0 0 .4.5l1.1.3a4.8 4.8 0 0 0 .4.9l-.5 1a.5.5 0 0 0 .1.6l.7.7a.5.5 0 0 0 .6.1l1-.5a4.8 4.8 0 0 0 .9.4l.3 1.1a.5.5 0 0 0 .5.4h1a.5.5 0 0 0 .5-.4l.3-1.1a4.8 4.8 0 0 0 .9-.4l1 .5a.5.5 0 0 0 .6-.1l.7-.7a.5.5 0 0 0 .1-.6l-.5-1a4.8 4.8 0 0 0 .4-.9l1.1-.3a.5.5 0 0 0 .4-.5v-1a.5.5 0 0 0-.4-.5z" />
+    </svg>
+  )
+}
+
 function ChevronLeftIcon() {
   return (
     <svg

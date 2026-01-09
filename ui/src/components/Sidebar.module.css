@@ -86,6 +86,42 @@
   margin: 0 0 var(--space-2) 0;
 }
 
+.boardListItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.boardListItem .boardSettingsButton {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.boardListItem:hover .boardSettingsButton {
+  opacity: 1;
+}
+
+.boardSettingsButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.boardSettingsButton:hover {
+  background-color: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
 .boardItem {
   width: 100%;
   display: flex;
