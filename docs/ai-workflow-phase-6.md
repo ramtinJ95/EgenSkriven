@@ -93,9 +93,9 @@
 - [x] 6.V.14: Default resume mode is "command"
 
 #### UI
-- [ ] 6.V.15: Resume mode selector works in board settings
-- [ ] 6.V.16: Auto-resume indicator shows in comments panel
-- [ ] 6.V.17: @agent mention shows appropriate visual feedback
+- [x] 6.V.15: Resume mode selector works in board settings
+- [x] 6.V.16: Auto-resume indicator shows in comments panel
+- [x] 6.V.17: @agent mention shows appropriate visual feedback
 
 #### Error Handling
 - [x] 6.V.18: Failures logged but don't break comment creation
