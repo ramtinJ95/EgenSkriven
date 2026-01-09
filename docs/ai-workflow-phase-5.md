@@ -6,6 +6,82 @@
 > **Estimated Effort**: 3-4 days  
 > **Prerequisites**: [Phase 4](./ai-workflow-phase-4.md) completed
 
+---
+
+## Todo List
+
+### Type Definitions
+- [x] **5.1.1** Create `ui/src/types/comment.ts` with Comment and CreateCommentInput interfaces
+- [ ] **5.1.2** Create `ui/src/types/session.ts` with AgentSession and SessionRecord interfaces
+
+### React Hooks
+- [ ] **5.2.1** Create `ui/src/hooks/useComments.ts` with useComments query hook
+- [ ] **5.2.2** Add useAddComment mutation hook to useComments.ts
+- [ ] **5.2.3** Add useCommentsSubscription real-time subscription hook
+- [ ] **5.2.4** Implement extractMentions helper function for @mentions
+- [ ] **5.5.1** Create `ui/src/hooks/useResume.ts` with resume mutation hook
+- [ ] **5.5.2** Implement buildContextPrompt function in useResume.ts
+- [ ] **5.5.3** Implement buildResumeCommand function for all 3 tools (opencode, claude-code, codex)
+
+### UI Components
+- [ ] **5.3.1** Create `ui/src/components/TaskDetail/CommentsPanel.tsx` component
+- [ ] **5.3.2** Implement CommentItem sub-component with agent/human styling
+- [ ] **5.3.3** Add loading state to CommentsPanel
+- [ ] **5.3.4** Add empty state to CommentsPanel
+- [ ] **5.3.5** Add comment submission form to CommentsPanel
+- [ ] **5.3.6** Add @agent mention warning indicator in textarea
+- [ ] **5.4.1** Create `ui/src/components/TaskDetail/SessionInfo.tsx` component
+- [ ] **5.4.2** Implement tool icon/name display (opencode, claude-code, codex)
+- [ ] **5.4.3** Add blocked/active status indicator
+- [ ] **5.4.4** Add Resume button for need_input tasks
+- [ ] **5.6.1** Create `ui/src/components/TaskDetail/ResumeModal.tsx` component
+- [ ] **5.6.2** Implement generate command functionality
+- [ ] **5.6.3** Add copy-to-clipboard functionality
+- [ ] **5.6.4** Display working directory and instructions
+
+### Task Card Updates
+- [ ] **5.7.1** Add pulsing orange dot indicator for need_input tasks in TaskCard.tsx
+- [ ] **5.7.2** Add "Needs Input" label badge for blocked tasks
+- [ ] **5.7.3** Add orange ring styling around blocked task cards
+
+### Kanban Board Updates
+- [ ] **5.8.1** Add need_input column to columnConfig with distinct styling
+- [ ] **5.8.2** Add pulsing indicator to need_input column header
+- [ ] **5.8.3** Ensure drag-and-drop works to/from need_input column
+
+### Integration
+- [ ] **5.9.1** Update `ui/src/components/TaskDetail/index.tsx` to integrate CommentsPanel
+- [ ] **5.9.2** Integrate SessionInfo component into TaskDetail
+- [ ] **5.9.3** Integrate ResumeModal with state management
+- [ ] **5.9.4** Add StatusBadge and PriorityBadge components if not existing
+
+### Testing
+- [ ] **5.10.1** Create `ui/src/components/TaskDetail/CommentsPanel.test.tsx`
+- [ ] **5.10.2** Write test: loading state displays correctly
+- [ ] **5.10.3** Write test: empty state shows when no comments
+- [ ] **5.10.4** Write test: comments display with author, time, content
+- [ ] **5.10.5** Write test: add comment form works
+- [ ] **5.10.6** Write test: @agent warning shows in textarea
+- [ ] **5.10.7** Create `ui/src/components/TaskDetail/SessionInfo.test.tsx`
+- [ ] **5.10.8** Create `ui/src/components/TaskDetail/ResumeModal.test.tsx`
+
+### Quality & Polish
+- [ ] **5.11.1** Ensure all new components support dark mode
+- [ ] **5.11.2** Add proper ARIA labels for accessibility
+- [ ] **5.11.3** Add keyboard navigation support
+- [ ] **5.11.4** Test on mobile viewport sizes (responsive design)
+- [ ] **5.11.5** Handle PocketBase SSE connection errors gracefully
+- [ ] **5.11.6** Add React.memo for comment items if rendering many comments
+
+### Verification
+- [ ] **5.12.1** Test: Real-time updates work (add comment in CLI, see in UI)
+- [ ] **5.12.2** Test: Resume button appears only for need_input tasks
+- [ ] **5.12.3** Test: Resume modal generates correct command for each tool
+- [ ] **5.12.4** Test: Copy button works in resume modal
+- [ ] **5.12.5** Test: Tasks draggable to/from need_input column
+
+---
+
 ## Overview
 
 This phase implements the Web UI components for the collaborative workflow. Humans need a visual interface to see blocked tasks, read agent questions, and add response comments.
@@ -16,9 +92,6 @@ This phase implements the Web UI components for the collaborative workflow. Huma
 - Resume button for blocked tasks
 - Visual indicator for tasks needing input
 - Real-time comment updates via PocketBase subscriptions
-
-**What we're NOT building yet:**
-- Auto-resume on @agent mention (Phase 6)
 
 ---
 
@@ -1058,17 +1131,6 @@ Before considering this phase complete:
 | `ui/src/components/TaskCard.tsx` | Modified | Need input indicator |
 | `ui/src/components/KanbanBoard.tsx` | Modified | Need input column |
 | `ui/src/components/TaskDetail/*.test.tsx` | New | Component tests |
-
----
-
-## Next Phase
-
-Once all tests pass, proceed to [Phase 6: Auto-Resume](./ai-workflow-phase-6.md).
-
-Phase 6 will implement:
-- @agent mention detection
-- Auto-resume trigger on comment creation
-- Board-level resume mode configuration
 
 ---
 
