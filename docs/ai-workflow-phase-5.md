@@ -50,9 +50,9 @@
 - [x] **5.8.3** Ensure drag-and-drop works to/from need_input column
 
 ### Integration
-- [ ] **5.9.1** Update `ui/src/components/TaskDetail/index.tsx` to integrate CommentsPanel
-- [ ] **5.9.2** Integrate SessionInfo component into TaskDetail
-- [ ] **5.9.3** Integrate ResumeModal with state management
+- [x] **5.9.1** Update `ui/src/components/TaskDetail/index.tsx` to integrate CommentsPanel
+- [x] **5.9.2** Integrate SessionInfo component into TaskDetail
+- [x] **5.9.3** Integrate ResumeModal with state management
 - [ ] **5.9.4** Add StatusBadge and PriorityBadge components if not existing
 
 ### Testing
