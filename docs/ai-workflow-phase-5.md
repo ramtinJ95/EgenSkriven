@@ -62,7 +62,7 @@
 - [x] **5.10.4** Write test: comments display with author, time, content
 - [x] **5.10.5** Write test: add comment form works
 - [x] **5.10.6** Write test: @agent warning shows in textarea
-- [ ] **5.10.7** Create `ui/src/components/TaskDetail/SessionInfo.test.tsx`
+- [x] **5.10.7** Create `ui/src/components/TaskDetail/SessionInfo.test.tsx`
 - [ ] **5.10.8** Create `ui/src/components/TaskDetail/ResumeModal.test.tsx`
 
 ### Quality & Polish
