@@ -156,23 +156,23 @@ This is the comprehensive task list for completing Phase 3. All items must be co
 
 ### 7. Unit Tests - Resume Command (`internal/commands/resume_test.go`)
 
-- [ ] **7.1** Create `internal/commands/resume_test.go` file
-- [ ] **7.2** Create `createTestTaskWithSession(t, app, title, tool, sessionRef)` helper
-- [ ] **7.3** Create `addTestComment(t, app, taskId, content, authorType, authorId)` helper
-- [ ] **7.4** Test: `resume` fails for task not in need_input state
+- [x] **7.1** Create `internal/commands/resume_test.go` file
+- [x] **7.2** Create `createTestTaskWithSession(t, app, title, tool, sessionRef)` helper
+- [x] **7.3** Create `addTestComment(t, app, taskId, content, authorType, authorId)` helper
+- [x] **7.4** Test: `resume` fails for task not in need_input state
   - Verify error message mentions current state
-- [ ] **7.5** Test: `resume` fails for task without agent_session linked
+- [x] **7.5** Test: `resume` fails for task without agent_session linked
   - Verify error message includes hint about session link command
-- [ ] **7.6** Test: `resume` prints command by default (no --exec)
+- [x] **7.6** Test: `resume` prints command by default (no --exec)
   - Verify output contains the resume command
   - Verify output mentions --exec flag
-- [ ] **7.7** Test: `resume --json` outputs valid JSON
+- [x] **7.7** Test: `resume --json` outputs valid JSON
   - Verify JSON parses successfully
   - Verify required fields present (tool, session_ref, command, prompt)
-- [ ] **7.8** Test: `resume --minimal` uses shorter prompt
+- [x] **7.8** Test: `resume --minimal` uses shorter prompt
   - Compare prompt_length between full and minimal modes
-- [ ] **7.9** Test: `resume --prompt "custom"` uses custom prompt override
-- [ ] **7.10** Test: `resume --exec --dry-run` shows command without executing
+- [x] **7.9** Test: `resume --prompt "custom"` uses custom prompt override
+- [x] **7.10** Test: `resume --exec --dry-run` shows command without executing
 
 ### 8. Integration Tests
 
