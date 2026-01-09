@@ -17,6 +17,17 @@ import { useComments } from '../hooks/useComments'
 
 const mockedUseComments = vi.mocked(useComments)
 
+// Default mock return value with all required fields
+const defaultMockReturn = {
+  comments: [] as Comment[],
+  loading: false,
+  error: null,
+  addComment: vi.fn(),
+  adding: false,
+  connectionError: null,
+  reconnecting: false,
+}
+
 // Mock comments for testing
 const mockComments: Comment[] = [
   {
@@ -53,11 +64,8 @@ describe('CommentsPanel', () => {
   describe('loading state', () => {
     it('displays loading skeleton when loading', () => {
       mockedUseComments.mockReturnValue({
-        comments: [],
+        ...defaultMockReturn,
         loading: true,
-        error: null,
-        addComment: vi.fn(),
-        adding: false,
       })
 
       render(<CommentsPanel taskId="task-123" />)
@@ -75,11 +83,7 @@ describe('CommentsPanel', () => {
   describe('empty state', () => {
     it('shows empty message when no comments', () => {
       mockedUseComments.mockReturnValue({
-        comments: [],
-        loading: false,
-        error: null,
-        addComment: vi.fn(),
-        adding: false,
+        ...defaultMockReturn,
       })
 
       render(<CommentsPanel taskId="task-123" />)
@@ -92,11 +96,8 @@ describe('CommentsPanel', () => {
   describe('comments display', () => {
     beforeEach(() => {
       mockedUseComments.mockReturnValue({
+        ...defaultMockReturn,
         comments: mockComments,
-        loading: false,
-        error: null,
-        addComment: vi.fn(),
-        adding: false,
       })
     })
 
@@ -134,11 +135,7 @@ describe('CommentsPanel', () => {
   describe('add comment form', () => {
     it('renders textarea and submit button', () => {
       mockedUseComments.mockReturnValue({
-        comments: [],
-        loading: false,
-        error: null,
-        addComment: vi.fn(),
-        adding: false,
+        ...defaultMockReturn,
       })
 
       render(<CommentsPanel taskId="task-123" />)
@@ -149,11 +146,7 @@ describe('CommentsPanel', () => {
 
     it('disables submit button when textarea is empty', () => {
       mockedUseComments.mockReturnValue({
-        comments: [],
-        loading: false,
-        error: null,
-        addComment: vi.fn(),
-        adding: false,
+        ...defaultMockReturn,
       })
 
       render(<CommentsPanel taskId="task-123" />)
@@ -164,11 +157,7 @@ describe('CommentsPanel', () => {
 
     it('enables submit button when textarea has content', async () => {
       mockedUseComments.mockReturnValue({
-        comments: [],
-        loading: false,
-        error: null,
-        addComment: vi.fn(),
-        adding: false,
+        ...defaultMockReturn,
       })
 
       render(<CommentsPanel taskId="task-123" />)
@@ -184,11 +173,8 @@ describe('CommentsPanel', () => {
       const mockAddComment = vi.fn().mockResolvedValue({})
 
       mockedUseComments.mockReturnValue({
-        comments: [],
-        loading: false,
-        error: null,
+        ...defaultMockReturn,
         addComment: mockAddComment,
-        adding: false,
       })
 
       render(<CommentsPanel taskId="task-123" />)
@@ -212,11 +198,8 @@ describe('CommentsPanel', () => {
       const mockAddComment = vi.fn().mockResolvedValue({})
 
       mockedUseComments.mockReturnValue({
-        comments: [],
-        loading: false,
-        error: null,
+        ...defaultMockReturn,
         addComment: mockAddComment,
-        adding: false,
       })
 
       render(<CommentsPanel taskId="task-123" />)
@@ -235,10 +218,7 @@ describe('CommentsPanel', () => {
 
     it('shows "Adding..." when submission is in progress', () => {
       mockedUseComments.mockReturnValue({
-        comments: [],
-        loading: false,
-        error: null,
-        addComment: vi.fn(),
+        ...defaultMockReturn,
         adding: true,
       })
 
@@ -252,11 +232,7 @@ describe('CommentsPanel', () => {
   describe('@agent mention warning', () => {
     beforeEach(() => {
       mockedUseComments.mockReturnValue({
-        comments: [],
-        loading: false,
-        error: null,
-        addComment: vi.fn(),
-        adding: false,
+        ...defaultMockReturn,
       })
     })
 
@@ -292,16 +268,51 @@ describe('CommentsPanel', () => {
   describe('error state', () => {
     it('displays error message when there is an error', () => {
       mockedUseComments.mockReturnValue({
-        comments: [],
-        loading: false,
+        ...defaultMockReturn,
         error: new Error('Failed to fetch'),
-        addComment: vi.fn(),
-        adding: false,
       })
 
       render(<CommentsPanel taskId="task-123" />)
 
       expect(screen.getByText('Failed to load comments')).toBeInTheDocument()
+    })
+  })
+
+  // Connection error state (SSE)
+  describe('connection error state', () => {
+    it('displays connection warning when connectionError exists', () => {
+      mockedUseComments.mockReturnValue({
+        ...defaultMockReturn,
+        connectionError: new Error('SSE connection failed'),
+      })
+
+      render(<CommentsPanel taskId="task-123" />)
+
+      expect(screen.getByText(/Real-time updates unavailable/)).toBeInTheDocument()
+    })
+
+    it('displays reconnecting message when reconnecting', () => {
+      mockedUseComments.mockReturnValue({
+        ...defaultMockReturn,
+        reconnecting: true,
+      })
+
+      render(<CommentsPanel taskId="task-123" />)
+
+      expect(screen.getByText(/Reconnecting to real-time updates/)).toBeInTheDocument()
+    })
+
+    it('does not show connection warning when connected', () => {
+      mockedUseComments.mockReturnValue({
+        ...defaultMockReturn,
+        connectionError: null,
+        reconnecting: false,
+      })
+
+      render(<CommentsPanel taskId="task-123" />)
+
+      expect(screen.queryByText(/Real-time updates/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Reconnecting/)).not.toBeInTheDocument()
     })
   })
 })

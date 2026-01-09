@@ -16,6 +16,10 @@ interface UseCommentsReturn {
   error: Error | null
   addComment: (input: CreateCommentInput) => Promise<Comment>
   adding: boolean
+  /** SSE connection error - null means connected, Error means connection failed */
+  connectionError: Error | null
+  /** Whether the SSE subscription is attempting to reconnect */
+  reconnecting: boolean
 }
 
 /**
@@ -59,11 +63,18 @@ interface UseCommentsReturn {
  * }
  * ```
  */
+// Maximum retry attempts for SSE reconnection
+const MAX_RETRY_ATTEMPTS = 5
+// Base delay for exponential backoff (ms)
+const BASE_RETRY_DELAY = 1000
+
 export function useComments(taskId: string): UseCommentsReturn {
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [adding, setAdding] = useState(false)
+  const [connectionError, setConnectionError] = useState<Error | null>(null)
+  const [reconnecting, setReconnecting] = useState(false)
 
   // Fetch comments on mount or when taskId changes
   useEffect(() => {
@@ -99,7 +110,7 @@ export function useComments(taskId: string): UseCommentsReturn {
     fetchComments()
   }, [taskId])
 
-  // Subscribe to real-time comment updates
+  // Subscribe to real-time comment updates with retry logic
   useEffect(() => {
     // Don't subscribe if no taskId
     if (!taskId) {
@@ -109,89 +120,125 @@ export function useComments(taskId: string): UseCommentsReturn {
     debugLog('Setting up real-time subscription for task:', taskId)
 
     let isSubscribed = false
+    let retryAttempt = 0
+    let retryTimeoutId: ReturnType<typeof setTimeout> | null = null
+    let isCancelled = false
 
-    // Subscribe to comments collection
-    pb.collection('comments')
-      .subscribe<Comment>('*', (event) => {
-        debugLog('========== COMMENT EVENT RECEIVED ==========')
-        debugLog('Action:', event.action)
-        debugLog('Record ID:', event.record.id)
-        debugLog('Record Task:', event.record.task)
-        debugLog('Current Task Filter:', taskId)
+    // Event handler for SSE events
+    const handleEvent = (event: { action: string; record: Comment }) => {
+      debugLog('========== COMMENT EVENT RECEIVED ==========')
+      debugLog('Action:', event.action)
+      debugLog('Record ID:', event.record.id)
+      debugLog('Record Task:', event.record.task)
+      debugLog('Current Task Filter:', taskId)
 
-        // Only process events for this task
-        const commentTaskId = event.record.task
-        const matchesTask = commentTaskId === taskId
-        debugLog('Matches Task:', matchesTask)
+      // Only process events for this task
+      const commentTaskId = event.record.task
+      const matchesTask = commentTaskId === taskId
+      debugLog('Matches Task:', matchesTask)
 
-        if (!matchesTask) {
-          debugLog('Ignoring event - different task')
-          return
-        }
+      if (!matchesTask) {
+        debugLog('Ignoring event - different task')
+        return
+      }
 
-        switch (event.action) {
-          case 'create':
-            debugLog('Adding new comment to state')
-            setComments((prev) => {
-              // Check if this comment already exists (from optimistic update)
-              const exists = prev.some((c) => c.id === event.record.id)
-              if (exists) {
-                debugLog('Comment already exists, skipping')
-                return prev
-              }
-              // Also check if we have an optimistic version (temp-*) that should be replaced
-              const hasOptimistic = prev.some(
-                (c) =>
-                  c.id.startsWith('temp-') &&
-                  c.content === event.record.content &&
-                  c.author_type === event.record.author_type
-              )
-              if (hasOptimistic) {
-                debugLog('Replacing optimistic comment with server version')
-                return prev.map((c) =>
-                  c.id.startsWith('temp-') &&
-                  c.content === event.record.content &&
-                  c.author_type === event.record.author_type
-                    ? event.record
-                    : c
-                )
-              }
-              // New comment from elsewhere (CLI, another user) - add it
-              const newComments = [...prev, event.record].sort(
-                (a, b) => new Date(a.created).getTime() - new Date(b.created).getTime()
-              )
-              debugLog('New comment count:', newComments.length)
-              return newComments
-            })
-            break
-
-          case 'update':
-            debugLog('Updating comment in state')
-            setComments((prev) =>
-              prev.map((c) => (c.id === event.record.id ? event.record : c))
+      switch (event.action) {
+        case 'create':
+          debugLog('Adding new comment to state')
+          setComments((prev) => {
+            // Check if this comment already exists (from optimistic update)
+            const exists = prev.some((c) => c.id === event.record.id)
+            if (exists) {
+              debugLog('Comment already exists, skipping')
+              return prev
+            }
+            // Also check if we have an optimistic version (temp-*) that should be replaced
+            const hasOptimistic = prev.some(
+              (c) =>
+                c.id.startsWith('temp-') &&
+                c.content === event.record.content &&
+                c.author_type === event.record.author_type
             )
-            break
+            if (hasOptimistic) {
+              debugLog('Replacing optimistic comment with server version')
+              return prev.map((c) =>
+                c.id.startsWith('temp-') &&
+                c.content === event.record.content &&
+                c.author_type === event.record.author_type
+                  ? event.record
+                  : c
+              )
+            }
+            // New comment from elsewhere (CLI, another user) - add it
+            const newComments = [...prev, event.record].sort(
+              (a, b) => new Date(a.created).getTime() - new Date(b.created).getTime()
+            )
+            debugLog('New comment count:', newComments.length)
+            return newComments
+          })
+          break
 
-          case 'delete':
-            debugLog('Removing deleted comment')
-            setComments((prev) => prev.filter((c) => c.id !== event.record.id))
-            break
+        case 'update':
+          debugLog('Updating comment in state')
+          setComments((prev) =>
+            prev.map((c) => (c.id === event.record.id ? event.record : c))
+          )
+          break
 
-          default:
-            debugLog('Unknown action:', event.action)
-        }
-        debugLog('=============================================')
-      })
-      .then(() => {
+        case 'delete':
+          debugLog('Removing deleted comment')
+          setComments((prev) => prev.filter((c) => c.id !== event.record.id))
+          break
+
+        default:
+          debugLog('Unknown action:', event.action)
+      }
+      debugLog('=============================================')
+    }
+
+    // Subscribe with retry logic
+    const subscribe = async () => {
+      if (isCancelled) return
+
+      try {
+        setReconnecting(retryAttempt > 0)
+
+        await pb.collection('comments').subscribe<Comment>('*', handleEvent)
+
         isSubscribed = true
+        retryAttempt = 0
+        setConnectionError(null)
+        setReconnecting(false)
         debugLog('Comments subscription established successfully')
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('[useComments] Subscription FAILED:', err)
-      })
+        const error = err instanceof Error ? err : new Error('SSE connection failed')
+        setConnectionError(error)
+
+        // Retry with exponential backoff
+        if (retryAttempt < MAX_RETRY_ATTEMPTS && !isCancelled) {
+          const delay = BASE_RETRY_DELAY * Math.pow(2, retryAttempt)
+          debugLog(`Retrying subscription in ${delay}ms (attempt ${retryAttempt + 1}/${MAX_RETRY_ATTEMPTS})`)
+          retryAttempt++
+          setReconnecting(true)
+          retryTimeoutId = setTimeout(subscribe, delay)
+        } else {
+          setReconnecting(false)
+          if (retryAttempt >= MAX_RETRY_ATTEMPTS) {
+            console.error('[useComments] Max retry attempts reached, giving up')
+          }
+        }
+      }
+    }
+
+    subscribe()
 
     // Cleanup subscription on unmount or taskId change
     return () => {
+      isCancelled = true
+      if (retryTimeoutId) {
+        clearTimeout(retryTimeoutId)
+      }
       debugLog('Cleaning up comments subscription, was subscribed:', isSubscribed)
       pb.collection('comments').unsubscribe('*')
     }
@@ -261,6 +308,8 @@ export function useComments(taskId: string): UseCommentsReturn {
     error,
     addComment,
     adding,
+    connectionError,
+    reconnecting,
   }
 }
 

@@ -62,6 +62,38 @@
   font-size: var(--text-sm, 13px);
 }
 
+/* Connection warning */
+.connectionWarning {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  background: var(--bg-warning, rgba(245, 158, 11, 0.1));
+  color: var(--status-need-input, #f59e0b);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--text-xs, 11px);
+  margin-bottom: var(--space-2, 8px);
+}
+
+.connectionIcon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* Spinning animation for reconnecting icon */
+.connectionWarning .connectionIcon {
+  animation: none;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Empty state */
 .empty {
   padding: var(--space-4, 16px);

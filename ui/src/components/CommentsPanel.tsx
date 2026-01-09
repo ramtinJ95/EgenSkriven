@@ -18,7 +18,7 @@ interface CommentsPanelProps {
  * - @agent mention warning indicator
  */
 export function CommentsPanel({ taskId }: CommentsPanelProps) {
-  const { comments, loading, error, addComment, adding } = useComments(taskId)
+  const { comments, loading, error, addComment, adding, connectionError, reconnecting } = useComments(taskId)
   const [newComment, setNewComment] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -93,6 +93,20 @@ export function CommentsPanel({ taskId }: CommentsPanelProps) {
           <span className={styles.count} aria-label={`${comments.length} comments`}>({comments.length})</span>
         )}
       </h3>
+
+      {/* Connection warning */}
+      {(connectionError || reconnecting) && (
+        <div className={styles.connectionWarning} role="alert">
+          <span className={styles.connectionIcon} aria-hidden="true">
+            {reconnecting ? '\u{1F504}' : '\u26A0\uFE0F'}
+          </span>
+          <span>
+            {reconnecting
+              ? 'Reconnecting to real-time updates...'
+              : 'Real-time updates unavailable. New comments may not appear automatically.'}
+          </span>
+        </div>
+      )}
 
       {/* Comments list */}
       <div className={styles.list} role="list" aria-label="Comment thread">
