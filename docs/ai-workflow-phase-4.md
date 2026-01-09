@@ -2,7 +2,7 @@
 
 > **Parent Document**: [ai-workflow-plan.md](./ai-workflow-plan.md)  
 > **Phase**: 4 of 7  
-> **Status**: Not Started  
+> **Status**: Complete  
 > **Estimated Effort**: 2-3 days  
 > **Prerequisites**: [Phase 3](./ai-workflow-phase-3.md) completed
 
@@ -993,12 +993,12 @@ This section provides a detailed checklist of all tasks required to complete Pha
 
 ### Task 4.7: Update Skills Documentation
 
-- [ ] Update `internal/commands/skills/egenskriven/SKILL.md`
-- [ ] Add "Tool Integrations" section
-- [ ] Document OpenCode integration setup and usage
-- [ ] Document Claude Code integration setup and usage
-- [ ] Document Codex CLI integration setup and usage
-- [ ] Include example commands for each tool
+- [x] Update `internal/commands/skills/egenskriven/SKILL.md`
+- [x] Add "Tool Integrations" section
+- [x] Document OpenCode integration setup and usage
+- [x] Document Claude Code integration setup and usage
+- [x] Document Codex CLI integration setup and usage
+- [x] Include example commands for each tool
 
 ### Testing Checklist
 
