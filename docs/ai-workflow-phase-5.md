@@ -40,9 +40,9 @@
 - [x] **5.6.4** Display working directory and instructions
 
 ### Task Card Updates
-- [ ] **5.7.1** Add pulsing orange dot indicator for need_input tasks in TaskCard.tsx
-- [ ] **5.7.2** Add "Needs Input" label badge for blocked tasks
-- [ ] **5.7.3** Add orange ring styling around blocked task cards
+- [x] **5.7.1** Add pulsing orange dot indicator for need_input tasks in TaskCard.tsx
+- [x] **5.7.2** Add "Needs Input" label badge for blocked tasks
+- [x] **5.7.3** Add orange ring styling around blocked task cards
 
 ### Kanban Board Updates
 - [ ] **5.8.1** Add need_input column to columnConfig with distinct styling
