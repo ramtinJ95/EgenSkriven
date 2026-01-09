@@ -24,12 +24,12 @@
 - [x] **5.5.3** Implement buildResumeCommand function for all 3 tools (opencode, claude-code, codex)
 
 ### UI Components
-- [ ] **5.3.1** Create `ui/src/components/TaskDetail/CommentsPanel.tsx` component
-- [ ] **5.3.2** Implement CommentItem sub-component with agent/human styling
-- [ ] **5.3.3** Add loading state to CommentsPanel
-- [ ] **5.3.4** Add empty state to CommentsPanel
-- [ ] **5.3.5** Add comment submission form to CommentsPanel
-- [ ] **5.3.6** Add @agent mention warning indicator in textarea
+- [x] **5.3.1** Create `ui/src/components/TaskDetail/CommentsPanel.tsx` component
+- [x] **5.3.2** Implement CommentItem sub-component with agent/human styling
+- [x] **5.3.3** Add loading state to CommentsPanel
+- [x] **5.3.4** Add empty state to CommentsPanel
+- [x] **5.3.5** Add comment submission form to CommentsPanel
+- [x] **5.3.6** Add @agent mention warning indicator in textarea
 - [ ] **5.4.1** Create `ui/src/components/TaskDetail/SessionInfo.tsx` component
 - [ ] **5.4.2** Implement tool icon/name display (opencode, claude-code, codex)
 - [ ] **5.4.3** Add blocked/active status indicator
