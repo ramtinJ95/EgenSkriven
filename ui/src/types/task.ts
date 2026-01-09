@@ -1,4 +1,5 @@
 import type { RecordModel } from 'pocketbase'
+import type { AgentSession } from './session'
 
 // Task type values
 export type TaskType = 'bug' | 'feature' | 'chore'
@@ -44,6 +45,7 @@ export interface Task extends RecordModel {
   history?: HistoryEntry[]    // Activity tracking array
   board?: string              // Board ID (relation to boards collection)
   seq?: number                // Per-board sequence number for display IDs
+  agent_session?: AgentSession // Current linked agent session (JSON field)
 }
 
 // All possible columns in display order
