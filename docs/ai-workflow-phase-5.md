@@ -19,9 +19,9 @@
 - [x] **5.2.2** Add useAddComment mutation hook to useComments.ts
 - [x] **5.2.3** Add useCommentsSubscription real-time subscription hook
 - [x] **5.2.4** Implement extractMentions helper function for @mentions
-- [ ] **5.5.1** Create `ui/src/hooks/useResume.ts` with resume mutation hook
-- [ ] **5.5.2** Implement buildContextPrompt function in useResume.ts
-- [ ] **5.5.3** Implement buildResumeCommand function for all 3 tools (opencode, claude-code, codex)
+- [x] **5.5.1** Create `ui/src/hooks/useResume.ts` with resume mutation hook
+- [x] **5.5.2** Implement buildContextPrompt function in useResume.ts
+- [x] **5.5.3** Implement buildResumeCommand function for all 3 tools (opencode, claude-code, codex)
 
 ### UI Components
 - [ ] **5.3.1** Create `ui/src/components/TaskDetail/CommentsPanel.tsx` component
