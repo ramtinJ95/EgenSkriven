@@ -1,21 +1,26 @@
-import { useEffect, useRef, useCallback } from 'react'
-import { 
-  COLUMN_NAMES, 
-  PRIORITY_NAMES, 
+import { useEffect, useRef, useCallback, useState } from 'react'
+import {
+  COLUMN_NAMES,
+  PRIORITY_NAMES,
   TYPE_NAMES,
   COLUMNS,
   PRIORITIES,
   TYPES,
-  type Task, 
+  type Task,
   type Column,
   type Priority,
   type TaskType,
 } from '../types/task'
+import type { Board } from '../types/board'
+import { formatDisplayId } from '../types/board'
 import { DatePicker } from './DatePicker'
 import { EpicPicker } from './EpicPicker'
 import { SubtaskList } from './SubtaskList'
 import { MarkdownEditor } from './MarkdownEditor'
 import { ActivityLog } from './ActivityLog'
+import { CommentsPanel } from './CommentsPanel'
+import { SessionInfo } from './SessionInfo'
+import { ResumeModal } from './ResumeModal'
 import styles from './TaskDetail.module.css'
 
 interface TaskDetailProps {
@@ -24,19 +29,24 @@ interface TaskDetailProps {
   onClose: () => void
   onUpdate: (id: string, data: Partial<Task>) => Promise<void>
   onTaskClick?: (task: Task) => void
+  currentBoard?: Board | null
 }
 
 /**
  * Slide-in panel showing full task details.
- * 
+ *
  * Features:
  * - Close with Esc or click outside
  * - Editable properties via dropdowns (status, priority, type)
  * - Editable description with Markdown rendering
  * - Display all task metadata
+ * - Comments panel for agent/human conversation
+ * - Session info for linked agent sessions
+ * - Resume modal for blocked tasks
  */
-export function TaskDetail({ task, tasks, onClose, onUpdate, onTaskClick }: TaskDetailProps) {
+export function TaskDetail({ task, tasks, onClose, onUpdate, onTaskClick, currentBoard }: TaskDetailProps) {
   const panelRef = useRef<HTMLDivElement>(null)
+  const [isResumeModalOpen, setIsResumeModalOpen] = useState(false)
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -282,8 +292,30 @@ export function TaskDetail({ task, tasks, onClose, onUpdate, onTaskClick }: Task
             history={task.history || []}
             created={task.created}
           />
+
+          {/* Agent Session Info */}
+          <SessionInfo
+            session={task.agent_session}
+            taskColumn={task.column}
+            onResume={() => setIsResumeModalOpen(true)}
+          />
+
+          {/* Comments Panel */}
+          <CommentsPanel taskId={task.id} />
         </div>
       </div>
+
+      {/* Resume Modal */}
+      <ResumeModal
+        isOpen={isResumeModalOpen}
+        onClose={() => setIsResumeModalOpen(false)}
+        taskId={task.id}
+        displayId={
+          currentBoard && task.seq
+            ? formatDisplayId(currentBoard.prefix, task.seq)
+            : task.id.slice(0, 8)
+        }
+      />
     </div>
   )
 }
