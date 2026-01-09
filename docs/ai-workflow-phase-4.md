@@ -947,37 +947,49 @@ This section provides a detailed checklist of all tasks required to complete Pha
 
 ### Task 4.6: Write Unit Tests
 
-- [ ] Create `internal/commands/init_test.go` file
-- [ ] Add `strings` import for content verification
-- [ ] Implement `TestGenerateOpenCodeIntegration` test
-  - [ ] Test file creation in temp directory
-  - [ ] Verify correct file path
-  - [ ] Verify file is not empty
-  - [ ] Verify file contains `context.sessionID`
-  - [ ] Verify file contains `egenskriven session link`
-- [ ] Implement `TestGenerateOpenCodeIntegrationNoOverwrite` test
-  - [ ] Test first generation succeeds
-  - [ ] Test second generation without force fails
-  - [ ] Verify error message mentions "already exists"
-  - [ ] Test generation with force succeeds
-- [ ] Implement `TestGenerateClaudeCodeIntegration` test
-  - [ ] Verify 2 files created (hook script + settings)
-  - [ ] Verify hook script content contains `CLAUDE_SESSION_ID`
-  - [ ] Verify hook script is executable
-  - [ ] Verify settings.json contains `SessionStart` hook
-- [ ] Implement `TestClaudeSettingsMerge` test
-  - [ ] Create existing settings.json with other settings
-  - [ ] Generate integration
-  - [ ] Verify existing settings preserved
-  - [ ] Verify new SessionStart hook added
-- [ ] Implement `TestGenerateCodexIntegration` test
-  - [ ] Verify 1 file created
-  - [ ] Verify script contains `CODEX_HOME`
-  - [ ] Verify script looks for `rollout-` files
-  - [ ] Verify script is executable
-- [ ] Implement `TestInitCommandAllFlag` test
-  - [ ] Test `--all` flag creates all integrations
-  - [ ] Verify all expected files exist
+- [x] Create `internal/commands/init_test.go` file
+- [x] Add `strings` import for content verification
+- [x] Implement `TestGenerateOpenCodeIntegration` test
+  - [x] Test file creation in temp directory
+  - [x] Verify correct file path
+  - [x] Verify file is not empty
+  - [x] Verify file contains `sessionID` (via context destructuring)
+  - [x] Verify file contains `egenskriven session link`
+- [x] Implement `TestGenerateOpenCodeIntegrationNoOverwrite` test
+  - [x] Test first generation succeeds
+  - [x] Test second generation without force fails
+  - [x] Verify error message mentions "already exists"
+  - [x] Test generation with force succeeds
+- [x] Implement `TestGenerateClaudeCodeIntegration` test
+  - [x] Verify 2 files created (hook script + settings)
+  - [x] Verify hook script content contains `CLAUDE_SESSION_ID`
+  - [x] Verify hook script is executable
+  - [x] Verify settings.json contains `SessionStart` hook
+- [x] Implement `TestClaudeSettingsMerge` test
+  - [x] Create existing settings.json with other settings
+  - [x] Generate integration
+  - [x] Verify existing settings preserved
+  - [x] Verify new SessionStart hook added
+- [x] Implement `TestGenerateCodexIntegration` test
+  - [x] Verify 1 file created
+  - [x] Verify script contains `CODEX_HOME`
+  - [x] Verify script looks for `rollout-` files
+  - [x] Verify script is executable
+- [x] Implement `TestInitCommandAllFlag` test (named `TestInitIntegrationsAllFlag`)
+  - [x] Test `--all` flag creates all integrations
+  - [x] Verify all expected files exist
+- [x] Additional tests implemented:
+  - [x] `TestClaudeSettingsMergeIdempotent` - ensures hooks aren't duplicated
+  - [x] `TestLoadClaudeSettings_NonExistent` - handles missing files
+  - [x] `TestLoadClaudeSettings_InvalidJSON` - handles invalid JSON
+  - [x] `TestLoadClaudeSettings_Valid` - loads valid settings
+  - [x] `TestMergeClaudeHooks_EmptySettings` - merges into empty settings
+  - [x] `TestMergeClaudeHooks_ExistingDifferentHooks` - preserves other hooks
+  - [x] `TestOpenCodeToolTemplateContent` - validates template structure
+  - [x] `TestClaudeCodeHookTemplateContent` - validates template structure
+  - [x] `TestCodexHelperTemplateContent` - validates template structure
+  - [x] `TestFilePermissions` - validates script permissions
+  - [x] `Test*DirectoryCreation` - validates directory structure
 
 ### Task 4.7: Update Skills Documentation
 
