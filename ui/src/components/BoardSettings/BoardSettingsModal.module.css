@@ -1,0 +1,219 @@
+/* Modal Overlay */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+/* Modal Container */
+.modal {
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.closeButton:hover:not(:disabled) {
+  background-color: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.closeButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Content */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-5);
+}
+
+/* Form Fields */
+.field {
+  margin-bottom: var(--space-4);
+}
+
+.field label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.field input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.field input:focus {
+  border-color: var(--accent);
+}
+
+.field input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Read-only field */
+.readOnly {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  background-color: var(--bg-card-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.hint {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+/* Color Picker */
+.colorPicker {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.colorOption {
+  width: 28px;
+  height: 28px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.colorOption:hover:not(:disabled) {
+  transform: scale(1.1);
+}
+
+.colorOption.colorSelected {
+  border-color: var(--text-primary);
+}
+
+.colorOption:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Divider */
+.divider {
+  height: 1px;
+  background-color: var(--border-subtle);
+  margin: var(--space-4) 0;
+}
+
+/* Error Message */
+.error {
+  margin-top: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  color: #ef4444;
+  font-size: var(--text-sm);
+}
+
+/* Footer */
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+  background-color: var(--bg-card);
+}
+
+/* Buttons */
+.buttonSecondary,
+.buttonPrimary {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.15s, opacity 0.15s;
+}
+
+.buttonSecondary {
+  background-color: var(--bg-card-hover);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+}
+
+.buttonSecondary:hover:not(:disabled) {
+  background-color: var(--bg-card-selected);
+}
+
+.buttonPrimary {
+  background-color: var(--accent);
+  color: white;
+  border: none;
+}
+
+.buttonPrimary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.buttonSecondary:disabled,
+.buttonPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
