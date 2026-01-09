@@ -113,7 +113,7 @@
 - [x] 7.V.5: All code examples are tested and work
 
 #### Testing
-- [ ] 7.V.6: `scripts/test-collaborative-workflow.sh` passes all tests
+- [x] 7.V.6: `scripts/test-collaborative-workflow.sh` passes all tests
 - [ ] 7.V.7: Manual test with OpenCode completed
 - [ ] 7.V.8: Manual test with Claude Code completed
 - [ ] 7.V.9: Manual test with Codex completed
