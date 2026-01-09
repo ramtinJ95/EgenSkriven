@@ -1,5 +1,8 @@
 import type { RecordModel } from 'pocketbase'
 
+/** Resume mode determines how blocked tasks should be resumed */
+export type ResumeMode = 'manual' | 'command' | 'auto'
+
 /**
  * Board record from PocketBase
  * All fields align with migrations/4_boards.go schema
@@ -9,6 +12,8 @@ export interface Board extends RecordModel {
   prefix: string
   columns: string[]
   color?: string
+  /** How blocked tasks should be resumed after human input */
+  resume_mode?: ResumeMode
   /** Internal sequence counter for task IDs - not typically used by UI */
   next_seq?: number
 }
