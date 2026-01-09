@@ -45,3 +45,56 @@ This project uses **light** workflow mode:
 - Update status as you progress
 - Complete tasks when done
 - Use `egenskriven suggest` to find next work
+
+## Human-AI Collaborative Workflow
+
+This project supports a collaborative workflow for AI agents using EgenSkriven
+as a control plane.
+
+### Quick Start
+
+1. **Initialize tool integration**:
+   ```bash
+   egenskriven init --opencode    # For OpenCode
+   egenskriven init --claude-code # For Claude Code
+   egenskriven init --codex       # For Codex CLI
+   ```
+
+2. **Link your session when starting work**:
+   ```bash
+   egenskriven session link <task> --tool <tool> --ref <session-id>
+   ```
+
+3. **Block when you need human input**:
+   ```bash
+   egenskriven block <task> "Your question"
+   ```
+
+4. **Human responds**, then resumes you with full context.
+
+### Session ID Discovery
+
+| Tool | Method |
+|------|--------|
+| OpenCode | Call `egenskriven-session` tool |
+| Claude Code | Use `$CLAUDE_SESSION_ID` env var |
+| Codex | Run `.codex/get-session-id.sh` |
+
+### Commands Reference
+
+| Command | Description |
+|---------|-------------|
+| `egenskriven block <task> "msg"` | Block task with question |
+| `egenskriven comment <task> "msg"` | Add comment to task |
+| `egenskriven comments <task>` | List comments |
+| `egenskriven session link <task>` | Link session to task |
+| `egenskriven session show <task>` | Show linked session |
+| `egenskriven resume <task>` | Resume blocked task |
+| `egenskriven list --need-input` | List blocked tasks |
+
+### Resume Modes
+
+This project uses **command** resume mode:
+- Run `egenskriven resume <task> --exec` to resume agent sessions
+- For manual mode: command is printed for you to copy
+- For auto mode: add comment with `@agent` to trigger auto-resume
