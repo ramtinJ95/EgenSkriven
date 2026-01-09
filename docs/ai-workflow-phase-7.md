@@ -1,10 +1,131 @@
 # Phase 7: Documentation & Polish
 
-> **Parent Document**: [ai-workflow-plan.md](./ai-workflow-plan.md)  
-> **Phase**: 7 of 7  
-> **Status**: Not Started  
-> **Estimated Effort**: 2-3 days  
+> **Parent Document**: [ai-workflow-plan.md](./ai-workflow-plan.md)
+> **Phase**: 7 of 7
+> **Status**: Not Started
 > **Prerequisites**: [Phase 6](./ai-workflow-phase-6.md) completed
+
+---
+
+## Phase 7 Todo List
+
+### Documentation Updates
+
+- [x] **Task 7.1: Update `egenskriven` Skill**
+  - [x] 7.1.1: Add "Human-AI Collaborative Workflow" section header
+  - [x] 7.1.2: Document workflow overview diagram
+  - [x] 7.1.3: Document tool integration setup for OpenCode
+  - [x] 7.1.4: Document tool integration setup for Claude Code
+  - [x] 7.1.5: Document tool integration setup for Codex
+  - [x] 7.1.6: Document session linking commands for each tool
+  - [x] 7.1.7: Document `egenskriven block` command with examples
+  - [x] 7.1.8: Document `egenskriven comment` command with examples
+  - [x] 7.1.9: Document `egenskriven comments` command with examples
+  - [x] 7.1.10: Document `egenskriven list --need-input` command
+  - [x] 7.1.11: Document resume modes table (manual, command, auto)
+  - [x] 7.1.12: Document `egenskriven resume` command with examples
+  - [x] 7.1.13: Add complete workflow example section
+  - [x] 7.1.14: Add tips section for best practices
+
+- [ ] **Task 7.2: Update `egenskriven-workflows` Skill**
+  - [ ] 7.2.1: Add "Resume Modes" section header
+  - [ ] 7.2.2: Document Manual Mode with example output
+  - [ ] 7.2.3: Document Command Mode with example output
+  - [ ] 7.2.4: Document Auto Mode with example output
+  - [ ] 7.2.5: Document `egenskriven board update --resume-mode` command
+  - [ ] 7.2.6: Add workflow recommendations table
+  - [ ] 7.2.7: Document collaborative mode integration with agent modes
+  - [ ] 7.2.8: Add example JSON configuration
+
+- [ ] **Task 7.3: Update Prime Template**
+  - [ ] 7.3.1: Add "Human-AI Collaborative Workflow" section
+  - [ ] 7.3.2: Add "Before Starting Work" subsection with session linking
+  - [ ] 7.3.3: Add tool-specific session linking using `.Tool` template variable
+  - [ ] 7.3.4: Document "When You Need Human Input" workflow
+  - [ ] 7.3.5: Document context format agent receives after resume
+  - [ ] 7.3.6: Add "Best Practices" subsection
+  - [ ] 7.3.7: Add complete workflow example with bash commands
+  - [ ] 7.3.8: Add "Checking for Responses" subsection
+
+- [ ] **Task 7.4: Update AGENTS.md**
+  - [ ] 7.4.1: Add "Human-AI Collaborative Workflow" section header
+  - [ ] 7.4.2: Add "Quick Start" subsection with numbered steps
+  - [ ] 7.4.3: Document tool initialization commands
+  - [ ] 7.4.4: Document session linking command pattern
+  - [ ] 7.4.5: Document block command pattern
+  - [ ] 7.4.6: Add "Session ID Discovery" table
+  - [ ] 7.4.7: Add "Commands Reference" table
+  - [ ] 7.4.8: Add "Resume Modes" section with mode-specific behavior
+
+### New Documentation Files
+
+- [ ] **Task 7.5: Create User Guide**
+  - [ ] 7.5.1: Create `docs/collaborative-workflow-guide.md` file
+  - [ ] 7.5.2: Add "Introduction" section
+  - [ ] 7.5.3: Add "Getting Started" section with prerequisites
+  - [ ] 7.5.4: Document setup steps (init, configure resume mode)
+  - [ ] 7.5.5: Add "Workflow" section - Step 1: Agent Starts Work
+  - [ ] 7.5.6: Add "Workflow" section - Step 2: Agent Gets Blocked
+  - [ ] 7.5.7: Add "Workflow" section - Step 3: Human Responds
+  - [ ] 7.5.8: Add "Workflow" section - Step 4: Resume the Agent
+  - [ ] 7.5.9: Add "Workflow" section - Step 5: Agent Continues
+  - [ ] 7.5.10: Add "Configuration" section with resume modes table
+  - [ ] 7.5.11: Add "Tips" section with best practices
+  - [ ] 7.5.12: Add "Troubleshooting" section with common errors
+
+### Testing & Verification
+
+- [ ] **Task 7.6: Create Final Test Script**
+  - [ ] 7.6.1: Create `scripts/test-collaborative-workflow.sh` file
+  - [ ] 7.6.2: Add color output functions (pass/fail)
+  - [ ] 7.6.3: Add setup section (temp dir, init egenskriven)
+  - [ ] 7.6.4: Implement Test 1: Basic block and comment
+  - [ ] 7.6.5: Implement Test 2: Session linking
+  - [ ] 7.6.6: Implement Test 3: Resume command generation
+  - [ ] 7.6.7: Implement Test 4: Tool integrations (OpenCode, Claude Code, Codex)
+  - [ ] 7.6.8: Implement Test 5: List --need-input filter
+  - [ ] 7.6.9: Add manual testing recommendations output
+  - [ ] 7.6.10: Make script executable
+
+- [ ] **Task 7.7: Performance Review**
+  - [ ] 7.7.1: Create `docs/performance-notes.md` file
+  - [ ] 7.7.2: Add "Expected Performance" table with targets
+  - [ ] 7.7.3: Document database indexes
+  - [ ] 7.7.4: Document optimizations
+
+- [ ] **Task 7.8: Create Release Checklist**
+  - [ ] 7.8.1: Create `docs/release-checklist.md` file
+  - [ ] 7.8.2: Add "Documentation" section checklist
+  - [ ] 7.8.3: Add "Unit Tests" section checklist
+  - [ ] 7.8.4: Add "Integration Tests" section checklist
+  - [ ] 7.8.5: Add "E2E Tests" section checklist
+  - [ ] 7.8.6: Add "Manual Verification" section checklist
+  - [ ] 7.8.7: Add "Performance" section checklist
+  - [ ] 7.8.8: Add "Cleanup" section checklist
+
+### Final Verification Checklist
+
+#### Documentation
+- [ ] 7.V.1: All skills documentation is accurate and complete
+- [ ] 7.V.2: Prime template works for all tools (OpenCode, Claude Code, Codex)
+- [ ] 7.V.3: AGENTS.md accurately reflects implementation
+- [ ] 7.V.4: User guide is comprehensive
+- [ ] 7.V.5: All code examples are tested and work
+
+#### Testing
+- [ ] 7.V.6: `scripts/test-collaborative-workflow.sh` passes all tests
+- [ ] 7.V.7: Manual test with OpenCode completed
+- [ ] 7.V.8: Manual test with Claude Code completed
+- [ ] 7.V.9: Manual test with Codex completed
+- [ ] 7.V.10: Auto-resume mode works with @agent mention
+
+#### Polish
+- [ ] 7.V.11: No typos in documentation
+- [ ] 7.V.12: Consistent terminology across all docs
+- [ ] 7.V.13: Clear error messages throughout
+- [ ] 7.V.14: Helpful tips and best practices included
+
+---
 
 ## Overview
 
@@ -378,7 +499,7 @@ Example context you'll receive:
 ## Conversation Thread
 
 [agent @ 10:30]: What authentication approach should I use?
-[human @ 11:45]: Use JWT with refresh tokens. The refresh token should 
+[human @ 11:45]: Use JWT with refresh tokens. The refresh token should
 have a 7-day expiry, and the access token should be 15 minutes.
 
 ## Instructions
@@ -403,7 +524,7 @@ egenskriven move WRK-42 in_progress
 # 2. Work on the task...
 
 # 3. Encounter a decision point
-egenskriven block WRK-42 "The API could use either REST or GraphQL. 
+egenskriven block WRK-42 "The API could use either REST or GraphQL.
 REST is simpler but GraphQL offers more flexibility for the frontend.
 Which approach should I implement first?"
 
@@ -502,7 +623,7 @@ for human-AI pair programming.
 
 ## Introduction
 
-The collaborative workflow enables AI coding assistants (OpenCode, Claude Code, 
+The collaborative workflow enables AI coding assistants (OpenCode, Claude Code,
 Codex) to request human input when they encounter decisions or blockers. This
 creates a seamless back-and-forth communication loop.
 
@@ -821,7 +942,7 @@ Create a release checklist:
 - [ ] Phase 6: Auto-resume tests pass
 
 ### Integration Tests
-- [ ] Full workflow: block → comment → resume
+- [ ] Full workflow: block -> comment -> resume
 - [ ] Session handoff between tools
 - [ ] Auto-resume with @agent mention
 
@@ -907,28 +1028,3 @@ After this phase:
 3. **Ready for release** as part of EgenSkriven v1.0.0
 
 Congratulations on completing the AI-Human Collaborative Workflow feature!
-```
-
----
-
-## Summary
-
-This implementation plan covers 8 phases:
-
-| Phase | Focus | Effort |
-|-------|-------|--------|
-| 0 | Schema Foundation | 1-2 days |
-| 1 | Core CLI Commands | 3-4 days |
-| 2 | Session Management | 2-3 days |
-| 3 | Resume Flow | 3-4 days |
-| 4 | Tool Integrations | 2-3 days |
-| 5 | Web UI | 3-4 days |
-| 6 | Auto-Resume | 2-3 days |
-| 7 | Documentation & Polish | 2-3 days |
-
-**Total estimated effort: 18-26 days**
-
-Each phase is designed to be:
-- Self-contained and testable
-- Buildable by any developer with the plan document
-- Incremental (each phase adds value)
