@@ -64,40 +64,40 @@ export function CommentsPanel({ taskId }: CommentsPanelProps) {
   // Loading state
   if (loading) {
     return (
-      <div className={styles.commentsPanel}>
-        <h3 className={styles.header}>Comments</h3>
-        <div className={styles.loading}>
+      <section className={styles.commentsPanel} aria-labelledby="comments-heading" aria-busy="true">
+        <h3 id="comments-heading" className={styles.header}>Comments</h3>
+        <div className={styles.loading} role="status" aria-label="Loading comments">
           <div className={styles.skeleton} />
           <div className={styles.skeleton} />
           <div className={styles.skeleton} />
         </div>
-      </div>
+      </section>
     )
   }
 
   // Error state
   if (error) {
     return (
-      <div className={styles.commentsPanel}>
-        <h3 className={styles.header}>Comments</h3>
-        <div className={styles.error}>Failed to load comments</div>
-      </div>
+      <section className={styles.commentsPanel} aria-labelledby="comments-heading-error">
+        <h3 id="comments-heading-error" className={styles.header}>Comments</h3>
+        <div className={styles.error} role="alert">Failed to load comments</div>
+      </section>
     )
   }
 
   return (
-    <div className={styles.commentsPanel}>
-      <h3 className={styles.header}>
+    <section className={styles.commentsPanel} aria-labelledby="comments-heading-main">
+      <h3 id="comments-heading-main" className={styles.header}>
         Comments
         {comments.length > 0 && (
-          <span className={styles.count}>({comments.length})</span>
+          <span className={styles.count} aria-label={`${comments.length} comments`}>({comments.length})</span>
         )}
       </h3>
 
       {/* Comments list */}
-      <div className={styles.list}>
+      <div className={styles.list} role="list" aria-label="Comment thread">
         {comments.length === 0 ? (
-          <div className={styles.empty}>No comments yet</div>
+          <div className={styles.empty} role="status">No comments yet</div>
         ) : (
           comments.map((comment) => (
             <CommentItem key={comment.id} comment={comment} />
@@ -106,7 +106,7 @@ export function CommentsPanel({ taskId }: CommentsPanelProps) {
       </div>
 
       {/* Add comment form */}
-      <form onSubmit={handleSubmit} className={styles.form}>
+      <form onSubmit={handleSubmit} className={styles.form} aria-label="Add comment">
         <textarea
           ref={textareaRef}
           value={newComment}
@@ -116,28 +116,31 @@ export function CommentsPanel({ taskId }: CommentsPanelProps) {
           className={styles.textarea}
           rows={2}
           disabled={adding}
+          aria-label="Comment text"
+          aria-describedby={hasAgentMention ? 'agent-mention-warning' : undefined}
         />
 
         {/* @agent mention warning */}
         {hasAgentMention && (
-          <div className={styles.mentionWarning}>
-            <span className={styles.warningIcon}>{'\u26A0\uFE0F'}</span>
+          <div id="agent-mention-warning" className={styles.mentionWarning} role="alert">
+            <span className={styles.warningIcon} aria-hidden="true">{'\u26A0\uFE0F'}</span>
             Will trigger auto-resume (if enabled)
           </div>
         )}
 
         <div className={styles.formFooter}>
-          <span className={styles.hint}>Ctrl+Enter to submit</span>
+          <span className={styles.hint} aria-hidden="true">Ctrl+Enter to submit</span>
           <button
             type="submit"
             disabled={!newComment.trim() || adding}
             className={styles.submitButton}
+            aria-busy={adding}
           >
             {adding ? 'Adding...' : 'Add Comment'}
           </button>
         </div>
       </form>
-    </div>
+    </section>
   )
 }
 
@@ -153,18 +156,22 @@ function CommentItem({ comment }: { comment: Comment }) {
   const mentions = comment.metadata?.mentions || []
 
   return (
-    <div className={`${styles.item} ${isAgent ? styles.agentItem : styles.humanItem}`}>
+    <article
+      className={`${styles.item} ${isAgent ? styles.agentItem : styles.humanItem}`}
+      role="listitem"
+      aria-label={`Comment by ${author}`}
+    >
       {/* Header with author and time */}
       <div className={styles.itemHeader}>
         <span className={styles.authorBadge} data-type={comment.author_type}>
-          <span className={styles.authorIcon}>
+          <span className={styles.authorIcon} aria-hidden="true">
             {isAgent ? '\u{1F916}' : '\u{1F464}'}
           </span>
           {author}
         </span>
-        <span className={styles.time}>{timeAgo}</span>
+        <time className={styles.time} dateTime={comment.created}>{timeAgo}</time>
         {mentions.length > 0 && (
-          <span className={styles.mentions}>
+          <span className={styles.mentions} aria-label="Mentions">
             {mentions.map((m) => (
               <span key={m} className={styles.mention}>
                 {m}
@@ -176,7 +183,7 @@ function CommentItem({ comment }: { comment: Comment }) {
 
       {/* Content */}
       <div className={styles.itemContent}>{comment.content}</div>
-    </div>
+    </article>
   )
 }
 

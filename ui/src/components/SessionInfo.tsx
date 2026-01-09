@@ -36,46 +36,54 @@ export function SessionInfo({ session, taskColumn, onResume }: SessionInfoProps)
   const isBlocked = taskColumn === 'need_input'
 
   return (
-    <div className={styles.sessionInfo}>
-      <h4 className={styles.header}>Agent Session</h4>
+    <section className={styles.sessionInfo} aria-labelledby="session-heading">
+      <h4 id="session-heading" className={styles.header}>Agent Session</h4>
 
       <div className={styles.content}>
         {/* Tool icon */}
-        <span className={styles.toolIcon} data-tool={session.tool}>
+        <span className={styles.toolIcon} data-tool={session.tool} aria-hidden="true">
           {tool.icon}
         </span>
 
         {/* Session details */}
         <div className={styles.details}>
           <div className={styles.toolName}>{tool.name}</div>
-          <div className={styles.sessionRef} title={session.ref}>
+          <div className={styles.sessionRef} title={session.ref} aria-label={`Session reference: ${session.ref}`}>
             {truncateMiddle(session.ref, 24)}
           </div>
-          <div className={styles.linkedTime}>Linked {linkedAgo}</div>
+          <time className={styles.linkedTime} dateTime={session.linked_at}>Linked {linkedAgo}</time>
         </div>
 
         {/* Status indicator */}
-        <div className={`${styles.status} ${isBlocked ? styles.blocked : styles.active}`}>
+        <div
+          className={`${styles.status} ${isBlocked ? styles.blocked : styles.active}`}
+          role="status"
+          aria-label={`Session status: ${isBlocked ? 'Blocked' : 'Active'}`}
+        >
           {isBlocked ? 'Blocked' : 'Active'}
         </div>
       </div>
 
       {/* Working directory */}
       <div className={styles.workingDir}>
-        <span className={styles.workingDirLabel}>Working Dir:</span>
-        <span className={styles.workingDirPath} title={session.working_dir}>
+        <span className={styles.workingDirLabel} id="working-dir-label">Working Dir:</span>
+        <span className={styles.workingDirPath} title={session.working_dir} aria-labelledby="working-dir-label">
           {truncatePath(session.working_dir, 40)}
         </span>
       </div>
 
       {/* Resume button */}
       {isBlocked && onResume && (
-        <button onClick={onResume} className={styles.resumeButton}>
+        <button
+          onClick={onResume}
+          className={styles.resumeButton}
+          aria-label={`Resume ${tool.name} agent session`}
+        >
           <PlayIcon className={styles.playIcon} />
           Resume Agent Session
         </button>
       )}
-    </div>
+    </section>
   )
 }
 
@@ -84,7 +92,7 @@ export function SessionInfo({ session, taskColumn, onResume }: SessionInfoProps)
  */
 function PlayIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 20 20" fill="currentColor">
+    <svg className={className} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path
         fillRule="evenodd"
         d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
