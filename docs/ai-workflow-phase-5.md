@@ -30,10 +30,10 @@
 - [x] **5.3.4** Add empty state to CommentsPanel
 - [x] **5.3.5** Add comment submission form to CommentsPanel
 - [x] **5.3.6** Add @agent mention warning indicator in textarea
-- [ ] **5.4.1** Create `ui/src/components/TaskDetail/SessionInfo.tsx` component
-- [ ] **5.4.2** Implement tool icon/name display (opencode, claude-code, codex)
-- [ ] **5.4.3** Add blocked/active status indicator
-- [ ] **5.4.4** Add Resume button for need_input tasks
+- [x] **5.4.1** Create `ui/src/components/TaskDetail/SessionInfo.tsx` component
+- [x] **5.4.2** Implement tool icon/name display (opencode, claude-code, codex)
+- [x] **5.4.3** Add blocked/active status indicator
+- [x] **5.4.4** Add Resume button for need_input tasks
 - [ ] **5.6.1** Create `ui/src/components/TaskDetail/ResumeModal.tsx` component
 - [ ] **5.6.2** Implement generate command functionality
 - [ ] **5.6.3** Add copy-to-clipboard functionality
