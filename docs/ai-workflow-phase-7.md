@@ -75,17 +75,17 @@
 
 ### Testing & Verification
 
-- [ ] **Task 7.6: Create Final Test Script**
-  - [ ] 7.6.1: Create `scripts/test-collaborative-workflow.sh` file
-  - [ ] 7.6.2: Add color output functions (pass/fail)
-  - [ ] 7.6.3: Add setup section (temp dir, init egenskriven)
-  - [ ] 7.6.4: Implement Test 1: Basic block and comment
-  - [ ] 7.6.5: Implement Test 2: Session linking
-  - [ ] 7.6.6: Implement Test 3: Resume command generation
-  - [ ] 7.6.7: Implement Test 4: Tool integrations (OpenCode, Claude Code, Codex)
-  - [ ] 7.6.8: Implement Test 5: List --need-input filter
-  - [ ] 7.6.9: Add manual testing recommendations output
-  - [ ] 7.6.10: Make script executable
+- [x] **Task 7.6: Create Final Test Script**
+  - [x] 7.6.1: Create `scripts/test-collaborative-workflow.sh` file
+  - [x] 7.6.2: Add color output functions (pass/fail)
+  - [x] 7.6.3: Add setup section (temp dir, init egenskriven)
+  - [x] 7.6.4: Implement Test 1: Basic block and comment
+  - [x] 7.6.5: Implement Test 2: Session linking
+  - [x] 7.6.6: Implement Test 3: Resume command generation
+  - [x] 7.6.7: Implement Test 4: Tool integrations (OpenCode, Claude Code, Codex)
+  - [x] 7.6.8: Implement Test 5: List --need-input filter
+  - [x] 7.6.9: Add manual testing recommendations output
+  - [x] 7.6.10: Make script executable
 
 - [ ] **Task 7.7: Performance Review**
   - [ ] 7.7.1: Create `docs/performance-notes.md` file
