@@ -50,6 +50,7 @@ Tasks can be referenced by:
 | `backlog` | Ideas and future work |
 | `todo` | Ready to start |
 | `in_progress` | Currently being worked on |
+| `need_input` | Blocked, waiting for human input |
 | `review` | Awaiting review |
 | `done` | Completed |
 
