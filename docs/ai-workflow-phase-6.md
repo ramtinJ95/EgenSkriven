@@ -87,10 +87,10 @@
 - [x] 6.V.10: Executes resume command in background
 
 #### Board Configuration
-- [ ] 6.V.11: `egenskriven board update --resume-mode` works
-- [ ] 6.V.12: `egenskriven board show` displays resume mode
-- [ ] 6.V.13: Invalid resume mode is rejected
-- [ ] 6.V.14: Default resume mode is "command"
+- [x] 6.V.11: `egenskriven board update --resume-mode` works
+- [x] 6.V.12: `egenskriven board show` displays resume mode
+- [x] 6.V.13: Invalid resume mode is rejected
+- [x] 6.V.14: Default resume mode is "command"
 
 #### UI
 - [ ] 6.V.15: Resume mode selector works in board settings
@@ -98,9 +98,9 @@
 - [ ] 6.V.17: @agent mention shows appropriate visual feedback
 
 #### Error Handling
-- [ ] 6.V.18: Failures logged but don't break comment creation
-- [ ] 6.V.19: Invalid session data handled gracefully
-- [ ] 6.V.20: Missing board handled gracefully
+- [x] 6.V.18: Failures logged but don't break comment creation
+- [x] 6.V.19: Invalid session data handled gracefully
+- [x] 6.V.20: Missing board handled gracefully
 
 ---
 
