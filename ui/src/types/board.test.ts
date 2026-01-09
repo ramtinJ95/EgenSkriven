@@ -52,18 +52,19 @@ describe('board type helpers', () => {
   })
 
   describe('DEFAULT_COLUMNS', () => {
-    it('has standard kanban columns', () => {
+    it('has standard kanban columns including need_input', () => {
       expect(DEFAULT_COLUMNS).toEqual([
         'backlog',
         'todo',
         'in_progress',
+        'need_input',
         'review',
         'done',
       ])
     })
 
-    it('has 5 columns', () => {
-      expect(DEFAULT_COLUMNS).toHaveLength(5)
+    it('has 6 columns', () => {
+      expect(DEFAULT_COLUMNS).toHaveLength(6)
     })
   })
 

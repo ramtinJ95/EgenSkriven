@@ -105,16 +105,17 @@ describe('QuickCreate', () => {
 
   // Test 1.4: Column selector works
   describe('column selector', () => {
-    it('shows all 5 columns in the dropdown', () => {
+    it('shows all 6 columns in the dropdown', () => {
       render(<QuickCreate isOpen={true} onClose={vi.fn()} onCreate={vi.fn()} />)
 
       const columnSelect = screen.getByRole('combobox')
       const options = columnSelect.querySelectorAll('option')
 
-      expect(options).toHaveLength(5)
+      expect(options).toHaveLength(6)
       expect(screen.getByText('Backlog')).toBeInTheDocument()
       expect(screen.getByText('Todo')).toBeInTheDocument()
       expect(screen.getByText('In Progress')).toBeInTheDocument()
+      expect(screen.getByText('Need Input')).toBeInTheDocument()
       expect(screen.getByText('Review')).toBeInTheDocument()
       expect(screen.getByText('Done')).toBeInTheDocument()
     })

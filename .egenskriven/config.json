@@ -1,11 +1,10 @@
 {
   "agent": {
-    "workflow": "strict",
+    "workflow": "light",
     "mode": "autonomous",
     "overrideTodoWrite": true,
     "requireSummary": false,
     "structuredSections": false
   },
-  "server": {},
-  "default_board": "CLITST"
+  "server": {}
 }

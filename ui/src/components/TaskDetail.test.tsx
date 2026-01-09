@@ -138,7 +138,7 @@ describe('TaskDetail', () => {
       const statusSelect = selects[0]
       const options = statusSelect.querySelectorAll('option')
 
-      expect(options).toHaveLength(5)
+      expect(options).toHaveLength(6)
     })
 
     it('shows all type options', () => {
