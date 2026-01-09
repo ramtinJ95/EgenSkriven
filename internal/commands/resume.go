@@ -224,7 +224,7 @@ func updateTaskForResume(app *pocketbase.PocketBase, task *core.Record) error {
 	task.Set("column", "in_progress")
 
 	// Add history entry
-	addHistoryEntry(task, "resumed", "user", map[string]any{
+	addHistoryEntry(task, "resumed", "", map[string]any{
 		"column": map[string]any{
 			"from": "need_input",
 			"to":   "in_progress",
