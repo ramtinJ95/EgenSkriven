@@ -87,11 +87,11 @@
   - [x] 7.6.9: Add manual testing recommendations output
   - [x] 7.6.10: Make script executable
 
-- [ ] **Task 7.7: Performance Review**
-  - [ ] 7.7.1: Create `docs/performance-notes.md` file
-  - [ ] 7.7.2: Add "Expected Performance" table with targets
-  - [ ] 7.7.3: Document database indexes
-  - [ ] 7.7.4: Document optimizations
+- [x] **Task 7.7: Performance Review**
+  - [x] 7.7.1: Create `docs/performance-notes.md` file
+  - [x] 7.7.2: Add "Expected Performance" table with targets
+  - [x] 7.7.3: Document database indexes
+  - [x] 7.7.4: Document optimizations
 
 - [ ] **Task 7.8: Create Release Checklist**
   - [ ] 7.8.1: Create `docs/release-checklist.md` file
