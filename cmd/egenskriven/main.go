@@ -9,6 +9,7 @@ import (
 
 	"github.com/ramtinJ95/EgenSkriven/internal/board"
 	"github.com/ramtinJ95/EgenSkriven/internal/commands"
+	"github.com/ramtinJ95/EgenSkriven/internal/hooks"
 	_ "github.com/ramtinJ95/EgenSkriven/migrations" // Auto-register migrations
 	"github.com/ramtinJ95/EgenSkriven/ui"
 )
@@ -29,6 +30,9 @@ func main() {
 
 	// Register custom CLI commands
 	commands.Register(app)
+
+	// Register comment hooks for auto-resume functionality
+	hooks.RegisterCommentHooks(app)
 
 	// Hook: Assign sequence number to tasks created via API
 	// This ensures the UI doesn't need to handle sequence assignment,

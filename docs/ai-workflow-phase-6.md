@@ -23,12 +23,12 @@
   - [x] 6.1.9: Implement `logAutoResume()` for debugging/logging
   - [x] 6.1.10: Implement `ensureHistorySlice()` helper
 
-- [ ] **Task 6.2: Register Comment Hook**
-  - [ ] 6.2.1: Create `internal/hooks/comments.go`
-  - [ ] 6.2.2: Implement `RegisterCommentHooks()` function
-  - [ ] 6.2.3: Add `OnRecordAfterCreateSuccess` hook for comments collection
-  - [ ] 6.2.4: Ensure hook runs auto-resume check in goroutine (non-blocking)
-  - [ ] 6.2.5: Register hook in main/app initialization
+- [x] **Task 6.2: Register Comment Hook**
+  - [x] 6.2.1: Create `internal/hooks/comments.go`
+  - [x] 6.2.2: Implement `RegisterCommentHooks()` function
+  - [x] 6.2.3: Add `OnRecordAfterCreateSuccess` hook for comments collection
+  - [x] 6.2.4: Ensure hook runs auto-resume check in goroutine (non-blocking)
+  - [x] 6.2.5: Register hook in main/app initialization
 
 - [ ] **Task 6.3: Add Board Resume Mode Configuration**
   - [ ] 6.3.1: Update `internal/commands/board.go` with `--resume-mode` flag
