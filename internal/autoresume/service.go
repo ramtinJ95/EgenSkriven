@@ -91,9 +91,19 @@ func (s *Service) CheckAndResume(comment *core.Record) error {
 
 // triggerResume executes the resume flow.
 func (s *Service) triggerResume(task *core.Record, triggerComment *core.Record) error {
-	sessionMap, ok := task.Get("agent_session").(map[string]any)
-	if !ok {
-		return fmt.Errorf("invalid agent_session format")
+	// Parse session data, handling both map[string]any and types.JSONRaw
+	sessionData := task.Get("agent_session")
+	var sessionMap map[string]any
+
+	switch v := sessionData.(type) {
+	case map[string]any:
+		sessionMap = v
+	default:
+		// Try to parse as JSON (handles types.JSONRaw)
+		raw := []byte(fmt.Sprintf("%s", sessionData))
+		if err := json.Unmarshal(raw, &sessionMap); err != nil {
+			return fmt.Errorf("invalid agent_session format: %w", err)
+		}
 	}
 
 	tool, _ := sessionMap["tool"].(string)
