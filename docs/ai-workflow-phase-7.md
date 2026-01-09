@@ -59,19 +59,19 @@
 
 ### New Documentation Files
 
-- [ ] **Task 7.5: Create User Guide**
-  - [ ] 7.5.1: Create `docs/collaborative-workflow-guide.md` file
-  - [ ] 7.5.2: Add "Introduction" section
-  - [ ] 7.5.3: Add "Getting Started" section with prerequisites
-  - [ ] 7.5.4: Document setup steps (init, configure resume mode)
-  - [ ] 7.5.5: Add "Workflow" section - Step 1: Agent Starts Work
-  - [ ] 7.5.6: Add "Workflow" section - Step 2: Agent Gets Blocked
-  - [ ] 7.5.7: Add "Workflow" section - Step 3: Human Responds
-  - [ ] 7.5.8: Add "Workflow" section - Step 4: Resume the Agent
-  - [ ] 7.5.9: Add "Workflow" section - Step 5: Agent Continues
-  - [ ] 7.5.10: Add "Configuration" section with resume modes table
-  - [ ] 7.5.11: Add "Tips" section with best practices
-  - [ ] 7.5.12: Add "Troubleshooting" section with common errors
+- [x] **Task 7.5: Create User Guide**
+  - [x] 7.5.1: Create `docs/collaborative-workflow-guide.md` file
+  - [x] 7.5.2: Add "Introduction" section
+  - [x] 7.5.3: Add "Getting Started" section with prerequisites
+  - [x] 7.5.4: Document setup steps (init, configure resume mode)
+  - [x] 7.5.5: Add "Workflow" section - Step 1: Agent Starts Work
+  - [x] 7.5.6: Add "Workflow" section - Step 2: Agent Gets Blocked
+  - [x] 7.5.7: Add "Workflow" section - Step 3: Human Responds
+  - [x] 7.5.8: Add "Workflow" section - Step 4: Resume the Agent
+  - [x] 7.5.9: Add "Workflow" section - Step 5: Agent Continues
+  - [x] 7.5.10: Add "Configuration" section with resume modes table
+  - [x] 7.5.11: Add "Tips" section with best practices
+  - [x] 7.5.12: Add "Troubleshooting" section with common errors
 
 ### Testing & Verification
 
