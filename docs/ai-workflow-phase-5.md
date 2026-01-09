@@ -75,7 +75,7 @@
 ### Verification
 - [x] **5.12.1** Test: Real-time updates work (add comment in CLI, see in UI)
 - [x] **5.12.2** Test: Resume button appears only for need_input tasks
-- [ ] **5.12.3** Test: Resume modal generates correct command for each tool
+- [x] **5.12.3** Test: Resume modal generates correct command for each tool
 - [ ] **5.12.4** Test: Copy button works in resume modal
 - [ ] **5.12.5** Test: Tasks draggable to/from need_input column
 
