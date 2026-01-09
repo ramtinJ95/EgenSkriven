@@ -5,6 +5,10 @@ import styles from './CommentsPanel.module.css'
 
 interface CommentsPanelProps {
   taskId: string
+  /** Current board's resume mode setting */
+  boardResumeMode?: string
+  /** Current task's column status */
+  taskColumn?: string
 }
 
 /**
@@ -17,10 +21,13 @@ interface CommentsPanelProps {
  * - Comment submission form
  * - @agent mention warning indicator
  */
-export function CommentsPanel({ taskId }: CommentsPanelProps) {
+export function CommentsPanel({ taskId, boardResumeMode, taskColumn }: CommentsPanelProps) {
   const { comments, loading, error, addComment, adding, connectionError, reconnecting } = useComments(taskId)
   const [newComment, setNewComment] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Check if auto-resume is enabled for this task
+  const isAutoResumeEnabled = boardResumeMode === 'auto' && taskColumn === 'need_input'
 
   // Auto-resize textarea
   useEffect(() => {
@@ -105,6 +112,17 @@ export function CommentsPanel({ taskId }: CommentsPanelProps) {
               ? 'Reconnecting to real-time updates...'
               : 'Real-time updates unavailable. New comments may not appear automatically.'}
           </span>
+        </div>
+      )}
+
+      {/* Auto-resume indicator */}
+      {isAutoResumeEnabled && (
+        <div className={styles.autoResumeIndicator} role="status" aria-live="polite">
+          <span className={styles.pulsingDot} aria-hidden="true">
+            <span className={styles.pulsingDotPing} />
+            <span className={styles.pulsingDotCore} />
+          </span>
+          <span>Auto-resume enabled. Add a comment with <code className={styles.agentMentionCode}>@agent</code> to trigger.</span>
         </div>
       )}
 

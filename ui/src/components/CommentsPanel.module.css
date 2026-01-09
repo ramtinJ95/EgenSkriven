@@ -282,3 +282,61 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Auto-resume indicator */
+.autoResumeIndicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  background: var(--bg-success, rgba(34, 197, 94, 0.1));
+  color: var(--status-done, #22c55e);
+  border-radius: var(--radius-md, 6px);
+  font-size: var(--text-xs, 11px);
+  margin-bottom: var(--space-2, 8px);
+}
+
+/* Pulsing dot animation */
+.pulsingDot {
+  position: relative;
+  display: inline-flex;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+}
+
+.pulsingDotPing {
+  position: absolute;
+  display: inline-flex;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  background-color: var(--status-done, #22c55e);
+  opacity: 0.75;
+  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.pulsingDotCore {
+  position: relative;
+  display: inline-flex;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background-color: var(--status-done, #22c55e);
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* @agent mention code styling in indicator */
+.agentMentionCode {
+  background: var(--bg-success-code, rgba(34, 197, 94, 0.2));
+  padding: 1px 6px;
+  border-radius: var(--radius-sm, 4px);
+  font-family: monospace;
+  font-size: var(--text-xs, 11px);
+}

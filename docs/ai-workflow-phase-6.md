@@ -45,12 +45,12 @@
   - [x] 6.4.4: Add warning indicator when auto mode is selected
   - [x] 6.4.5: Integrate component into board settings view
 
-- [ ] **Task 6.5: Update Comments Panel with Auto-Resume Indicator**
-  - [ ] 6.5.1: Update `ui/src/components/TaskDetail/CommentsPanel.tsx`
-  - [ ] 6.5.2: Add `boardResumeMode` and `taskColumn` props
-  - [ ] 6.5.3: Implement auto-resume enabled indicator (green pulsing dot)
-  - [ ] 6.5.4: Show "@agent to trigger" hint when auto-resume is enabled
-  - [ ] 6.5.5: Add visual feedback for auto-resume capable state
+- [x] **Task 6.5: Update Comments Panel with Auto-Resume Indicator**
+  - [x] 6.5.1: Update `ui/src/components/TaskDetail/CommentsPanel.tsx`
+  - [x] 6.5.2: Add `boardResumeMode` and `taskColumn` props
+  - [x] 6.5.3: Implement auto-resume enabled indicator (green pulsing dot)
+  - [x] 6.5.4: Show "@agent to trigger" hint when auto-resume is enabled
+  - [x] 6.5.5: Add visual feedback for auto-resume capable state
 
 ### Testing
 
