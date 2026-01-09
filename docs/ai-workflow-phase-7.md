@@ -37,15 +37,15 @@
   - [x] 7.2.7: Document collaborative mode integration with agent modes
   - [x] 7.2.8: Add example JSON configuration
 
-- [ ] **Task 7.3: Update Prime Template**
-  - [ ] 7.3.1: Add "Human-AI Collaborative Workflow" section
-  - [ ] 7.3.2: Add "Before Starting Work" subsection with session linking
-  - [ ] 7.3.3: Add tool-specific session linking using `.Tool` template variable
-  - [ ] 7.3.4: Document "When You Need Human Input" workflow
-  - [ ] 7.3.5: Document context format agent receives after resume
-  - [ ] 7.3.6: Add "Best Practices" subsection
-  - [ ] 7.3.7: Add complete workflow example with bash commands
-  - [ ] 7.3.8: Add "Checking for Responses" subsection
+- [x] **Task 7.3: Update Prime Template**
+  - [x] 7.3.1: Add "Human-AI Collaborative Workflow" section
+  - [x] 7.3.2: Add "Before Starting Work" subsection with session linking
+  - [x] 7.3.3: Add tool-specific session linking using `.Tool` template variable
+  - [x] 7.3.4: Document "When You Need Human Input" workflow
+  - [x] 7.3.5: Document context format agent receives after resume
+  - [x] 7.3.6: Add "Best Practices" subsection
+  - [x] 7.3.7: Add complete workflow example with bash commands
+  - [x] 7.3.8: Add "Checking for Responses" subsection
 
 - [ ] **Task 7.4: Update AGENTS.md**
   - [ ] 7.4.1: Add "Human-AI Collaborative Workflow" section header
