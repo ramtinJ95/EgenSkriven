@@ -47,15 +47,15 @@
   - [x] 7.3.7: Add complete workflow example with bash commands
   - [x] 7.3.8: Add "Checking for Responses" subsection
 
-- [ ] **Task 7.4: Update AGENTS.md**
-  - [ ] 7.4.1: Add "Human-AI Collaborative Workflow" section header
-  - [ ] 7.4.2: Add "Quick Start" subsection with numbered steps
-  - [ ] 7.4.3: Document tool initialization commands
-  - [ ] 7.4.4: Document session linking command pattern
-  - [ ] 7.4.5: Document block command pattern
-  - [ ] 7.4.6: Add "Session ID Discovery" table
-  - [ ] 7.4.7: Add "Commands Reference" table
-  - [ ] 7.4.8: Add "Resume Modes" section with mode-specific behavior
+- [x] **Task 7.4: Update AGENTS.md**
+  - [x] 7.4.1: Add "Human-AI Collaborative Workflow" section header
+  - [x] 7.4.2: Add "Quick Start" subsection with numbered steps
+  - [x] 7.4.3: Document tool initialization commands
+  - [x] 7.4.4: Document session linking command pattern
+  - [x] 7.4.5: Document block command pattern
+  - [x] 7.4.6: Add "Session ID Discovery" table
+  - [x] 7.4.7: Add "Commands Reference" table
+  - [x] 7.4.8: Add "Resume Modes" section with mode-specific behavior
 
 ### New Documentation Files
 
