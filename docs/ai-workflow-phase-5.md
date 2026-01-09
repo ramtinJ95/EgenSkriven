@@ -34,10 +34,10 @@
 - [x] **5.4.2** Implement tool icon/name display (opencode, claude-code, codex)
 - [x] **5.4.3** Add blocked/active status indicator
 - [x] **5.4.4** Add Resume button for need_input tasks
-- [ ] **5.6.1** Create `ui/src/components/TaskDetail/ResumeModal.tsx` component
-- [ ] **5.6.2** Implement generate command functionality
-- [ ] **5.6.3** Add copy-to-clipboard functionality
-- [ ] **5.6.4** Display working directory and instructions
+- [x] **5.6.1** Create `ui/src/components/TaskDetail/ResumeModal.tsx` component
+- [x] **5.6.2** Implement generate command functionality
+- [x] **5.6.3** Add copy-to-clipboard functionality
+- [x] **5.6.4** Display working directory and instructions
 
 ### Task Card Updates
 - [ ] **5.7.1** Add pulsing orange dot indicator for need_input tasks in TaskCard.tsx
