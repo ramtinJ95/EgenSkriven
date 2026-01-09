@@ -176,17 +176,17 @@ This is the comprehensive task list for completing Phase 3. All items must be co
 
 ### 8. Integration Tests
 
-- [ ] **8.1** Test: Full workflow block → comment → resume --exec
+- [x] **8.1** Test: Full workflow block → comment → resume --exec
   - Create task in in_progress
   - Block task with question
   - Add human comment response
   - Resume with --exec
   - Verify each step completes successfully
-- [ ] **8.2** Verify task moves from need_input to in_progress after resume --exec
-- [ ] **8.3** Verify history is updated with "resumed" action
+- [x] **8.2** Verify task moves from need_input to in_progress after resume --exec
+- [x] **8.3** Verify history is updated with "resumed" action
   - Check timestamp is present
   - Check actor is correct
-- [ ] **8.4** Verify session status is updated to "active" in sessions collection
+- [x] **8.4** Verify session status is updated to "active" in sessions collection
 
 ### 9. Final Validation
 

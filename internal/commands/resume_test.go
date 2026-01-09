@@ -515,3 +515,221 @@ func TestResumeCommand_PromptWithSpecialChars(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, resumeCmd.Command)
 }
+
+// ========== Integration Tests (Section 8) ==========
+
+// TestIntegration_FullWorkflowBlockCommentResume tests the complete workflow:
+// Task 8.1: Full workflow block → comment → resume --exec
+// 1. Create task in in_progress
+// 2. Block task with question
+// 3. Add human comment response
+// 4. Resume with --exec (simulated without actual tool spawn)
+// 5. Verify each step completes successfully
+func TestIntegration_FullWorkflowBlockCommentResume(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	SetupTasksCollectionWithAgentSession(t, app)
+	SetupCommentsCollectionWithAutodate(t, app)
+	SetupSessionsCollection(t, app)
+
+	// Step 1: Create a task in in_progress state
+	task := CreateTestTask(t, app, "Implement authentication", "in_progress")
+	require.NotEmpty(t, task.Id, "task should have an ID")
+	assert.Equal(t, "in_progress", task.GetString("column"), "task should start in in_progress column")
+
+	// Link a session to the task (simulating an agent working on it)
+	tool := "opencode"
+	sessionRef := "workflow-test-session-abc123"
+	workingDir := "/tmp/test-project"
+	session := SimulateSessionLink(t, app, task, tool, sessionRef, workingDir)
+	require.NotNil(t, session, "session record should be created")
+
+	// Re-fetch task to get updated data
+	task, err := app.FindRecordById("tasks", task.Id)
+	require.NoError(t, err)
+	assert.Equal(t, "in_progress", task.GetString("column"))
+
+	// Verify session was linked
+	sessionData := task.Get("agent_session")
+	parsedSession, err := output.ParseAgentSession(sessionData)
+	require.NoError(t, err)
+	require.NotNil(t, parsedSession)
+	assert.Equal(t, sessionRef, parsedSession["ref"])
+
+	// Step 2: Block the task with a question (simulates block command)
+	agentQuestion := "What authentication approach should I use? JWT tokens, sessions, or OAuth2?"
+	agentName := "opencode-build"
+	simulateBlockTaskWithComment(t, app, task, agentQuestion, agentName)
+
+	// Re-fetch task and verify it's blocked
+	task, err = app.FindRecordById("tasks", task.Id)
+	require.NoError(t, err)
+	assert.Equal(t, "need_input", task.GetString("column"), "task should be in need_input after blocking")
+
+	// Verify blocking created a comment
+	comments := GetCommentsForTask(t, app, task.Id)
+	require.Len(t, comments, 1, "blocking should create exactly one comment")
+	assert.Equal(t, agentQuestion, comments[0].GetString("content"))
+	assert.Equal(t, "agent", comments[0].GetString("author_type"))
+	assert.Equal(t, agentName, comments[0].GetString("author_id"))
+
+	// Verify history was updated with 'blocked' action
+	history := getHistoryFromTask(t, task)
+	require.Greater(t, len(history), 0, "task should have history")
+	foundBlocked := false
+	for _, entry := range history {
+		if entry["action"] == "blocked" {
+			foundBlocked = true
+			break
+		}
+	}
+	assert.True(t, foundBlocked, "history should contain 'blocked' action")
+
+	// Step 3: Add human comment response
+	humanResponse := "@agent Use JWT with refresh tokens. Access tokens expire in 15 minutes, refresh tokens in 7 days."
+	humanAuthor := "senior-developer"
+	CreateTestComment(t, app, task.Id, humanResponse, "human", humanAuthor)
+
+	// Verify both comments exist
+	comments = GetCommentsForTask(t, app, task.Id)
+	require.Len(t, comments, 2, "should have 2 comments now")
+
+	// Step 4: Simulate resume --exec (without actually spawning the tool)
+	// First, verify preconditions for resume
+	task, err = app.FindRecordById("tasks", task.Id)
+	require.NoError(t, err)
+
+	// Validate task state - should be in need_input
+	column := task.GetString("column")
+	assert.Equal(t, "need_input", column, "task should be in need_input before resume")
+
+	// Validate session exists
+	sessionData = task.Get("agent_session")
+	parsedSession, err = output.ParseAgentSession(sessionData)
+	require.NoError(t, err)
+	require.NotNil(t, parsedSession, "task should have agent_session linked")
+	assert.Equal(t, sessionRef, parsedSession["ref"])
+
+	// Fetch comments for resume context
+	resumeComments, err := fetchCommentsForResume(app, task.Id)
+	require.NoError(t, err)
+	require.Len(t, resumeComments, 2, "should fetch 2 comments for resume")
+
+	// Build context prompt
+	prompt := resume.BuildContextPrompt(task, resumeComments)
+	assert.Contains(t, prompt, "Task Context", "prompt should contain Task Context header")
+	assert.Contains(t, prompt, agentQuestion, "prompt should contain agent's question")
+	assert.Contains(t, prompt, "JWT with refresh tokens", "prompt should contain human's response")
+
+	// Build resume command
+	resumeCmd, err := resume.BuildResumeCommand(
+		parsedSession["tool"].(string),
+		parsedSession["ref"].(string),
+		parsedSession["working_dir"].(string),
+		prompt,
+	)
+	require.NoError(t, err)
+	assert.Contains(t, resumeCmd.Command, "opencode run", "should be opencode command")
+	assert.Contains(t, resumeCmd.Command, sessionRef, "should contain session ref")
+
+	// Simulate the task update that happens during --exec (updateTaskForResume)
+	err = updateTaskForResume(app, task)
+	require.NoError(t, err, "updateTaskForResume should succeed")
+
+	// Step 5: Verify everything completed successfully
+	// Re-fetch task one final time
+	task, err = app.FindRecordById("tasks", task.Id)
+	require.NoError(t, err)
+
+	// Task 8.2: Verify task moves from need_input to in_progress after resume --exec
+	assert.Equal(t, "in_progress", task.GetString("column"),
+		"task should move to in_progress after resume --exec")
+
+	// Task 8.3: Verify history is updated with "resumed" action
+	history = getHistoryFromTask(t, task)
+	foundResumed := false
+	var resumedEntry map[string]any
+	for _, entry := range history {
+		if entry["action"] == "resumed" {
+			foundResumed = true
+			resumedEntry = entry
+			break
+		}
+	}
+	assert.True(t, foundResumed, "history should contain 'resumed' action")
+
+	if resumedEntry != nil {
+		// Verify timestamp is present
+		assert.NotEmpty(t, resumedEntry["timestamp"], "resumed entry should have timestamp")
+
+		// Verify actor
+		assert.Equal(t, "cli", resumedEntry["actor"], "actor should be 'cli'")
+
+		// Verify changes contain column transition
+		changes, ok := resumedEntry["changes"].(map[string]any)
+		if assert.True(t, ok, "changes should be a map") {
+			columnChange, ok := changes["column"].(map[string]any)
+			if assert.True(t, ok, "column change should be a map") {
+				assert.Equal(t, "need_input", columnChange["from"], "column.from should be 'need_input'")
+				assert.Equal(t, "in_progress", columnChange["to"], "column.to should be 'in_progress'")
+			}
+		}
+	}
+
+	// Task 8.4: Verify session status is updated to "active" in sessions collection
+	sessions := GetSessionsForTask(t, app, task.Id)
+	require.Greater(t, len(sessions), 0, "should have at least one session record")
+
+	// Find the session that matches our session ref
+	var targetSession *core.Record
+	for _, s := range sessions {
+		if s.GetString("external_ref") == sessionRef {
+			targetSession = s
+			break
+		}
+	}
+	require.NotNil(t, targetSession, "should find session with matching external_ref")
+	assert.Equal(t, "active", targetSession.GetString("status"),
+		"session status should be 'active' after resume")
+}
+
+// TestIntegration_ResumeUpdatesSessionStatus verifies that resume --exec
+// updates the session status in the sessions collection to "active".
+// This corresponds to Task 8.4 in the phase 3 checklist.
+func TestIntegration_ResumeUpdatesSessionStatus(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	SetupTasksCollectionWithAgentSession(t, app)
+	SetupCommentsCollectionWithAutodate(t, app)
+	SetupSessionsCollection(t, app)
+
+	// Create task and link session
+	task := CreateTestTask(t, app, "Session status test", "need_input")
+	sessionRef := "status-test-session-xyz"
+
+	// Set agent_session on task
+	session := map[string]any{
+		"tool":        "opencode",
+		"ref":         sessionRef,
+		"ref_type":    "uuid",
+		"working_dir": "/tmp/test",
+		"linked_at":   "2026-01-08T12:00:00Z",
+	}
+	task.Set("agent_session", session)
+	require.NoError(t, app.Save(task))
+
+	// Create session record with status "paused"
+	CreateTestSession(t, app, task.Id, "opencode", sessionRef, "uuid", "/tmp/test", "paused")
+
+	// Verify session is paused
+	sessions := GetSessionsForTask(t, app, task.Id)
+	require.Len(t, sessions, 1)
+	assert.Equal(t, "paused", sessions[0].GetString("status"))
+
+	// Call updateSessionStatusInHistory (simulates what resume --exec does)
+	updateSessionStatusInHistory(app, task.Id, sessionRef, "active")
+
+	// Verify session status changed to active
+	sessions = GetSessionsForTask(t, app, task.Id)
+	require.Len(t, sessions, 1)
+	assert.Equal(t, "active", sessions[0].GetString("status"),
+		"session status should be updated to 'active' after resume")
+}
