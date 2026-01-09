@@ -27,15 +27,15 @@
   - [x] 7.1.13: Add complete workflow example section
   - [x] 7.1.14: Add tips section for best practices
 
-- [ ] **Task 7.2: Update `egenskriven-workflows` Skill**
-  - [ ] 7.2.1: Add "Resume Modes" section header
-  - [ ] 7.2.2: Document Manual Mode with example output
-  - [ ] 7.2.3: Document Command Mode with example output
-  - [ ] 7.2.4: Document Auto Mode with example output
-  - [ ] 7.2.5: Document `egenskriven board update --resume-mode` command
-  - [ ] 7.2.6: Add workflow recommendations table
-  - [ ] 7.2.7: Document collaborative mode integration with agent modes
-  - [ ] 7.2.8: Add example JSON configuration
+- [x] **Task 7.2: Update `egenskriven-workflows` Skill**
+  - [x] 7.2.1: Add "Resume Modes" section header
+  - [x] 7.2.2: Document Manual Mode with example output
+  - [x] 7.2.3: Document Command Mode with example output
+  - [x] 7.2.4: Document Auto Mode with example output
+  - [x] 7.2.5: Document `egenskriven board update --resume-mode` command
+  - [x] 7.2.6: Add workflow recommendations table
+  - [x] 7.2.7: Document collaborative mode integration with agent modes
+  - [x] 7.2.8: Add example JSON configuration
 
 - [ ] **Task 7.3: Update Prime Template**
   - [ ] 7.3.1: Add "Human-AI Collaborative Workflow" section
