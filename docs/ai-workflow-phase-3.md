@@ -136,23 +136,23 @@ This is the comprehensive task list for completing Phase 3. All items must be co
 
 ### 6. Unit Tests - Command Builder (`internal/resume/command_test.go`)
 
-- [ ] **6.1** Create `internal/resume/command_test.go` file
-- [ ] **6.2** Test: `BuildResumeCommand` generates correct command for opencode
+- [x] **6.1** Create `internal/resume/command_test.go` file
+- [x] **6.2** Test: `BuildResumeCommand` generates correct command for opencode
   - Verify command contains "opencode run"
   - Verify session ref is included
-- [ ] **6.3** Test: `BuildResumeCommand` generates correct command for claude-code
+- [x] **6.3** Test: `BuildResumeCommand` generates correct command for claude-code
   - Verify command contains "claude --resume"
   - Verify session ref is included
-- [ ] **6.4** Test: `BuildResumeCommand` generates correct command for codex
+- [x] **6.4** Test: `BuildResumeCommand` generates correct command for codex
   - Verify command contains "codex exec resume"
   - Verify session ref is included
-- [ ] **6.5** Test: `BuildResumeCommand` returns error for unknown tools
-- [ ] **6.6** Test: Command properly escapes special characters
+- [x] **6.5** Test: `BuildResumeCommand` returns error for unknown tools
+- [x] **6.6** Test: Command properly escapes special characters
   - Test single quotes in prompt
   - Test double quotes in prompt
   - Verify no unbalanced quotes in output
-- [ ] **6.7** Test: `ValidateSessionRef` rejects empty refs
-- [ ] **6.8** Test: `ValidateSessionRef` rejects refs shorter than 8 chars
+- [x] **6.7** Test: `ValidateSessionRef` rejects empty refs
+- [x] **6.8** Test: `ValidateSessionRef` rejects refs shorter than 8 chars
 
 ### 7. Unit Tests - Resume Command (`internal/commands/resume_test.go`)
 
