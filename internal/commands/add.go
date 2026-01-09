@@ -744,11 +744,26 @@ func deleteRecordHybrid(app *pocketbase.PocketBase, record *core.Record, out *ou
 
 // recordToTaskData converts a core.Record to TaskData for API calls.
 func recordToTaskData(record *core.Record) TaskData {
-	// Get labels as string slice
+	// Get labels as string slice (handle multiple types like getTaskBlockedBy)
 	var labels []string
 	if rawLabels := record.Get("labels"); rawLabels != nil {
-		if l, ok := rawLabels.([]string); ok {
+		// Handle []any type (common from JSON)
+		if l, ok := rawLabels.([]any); ok {
+			labels = make([]string, 0, len(l))
+			for _, item := range l {
+				if s, ok := item.(string); ok {
+					labels = append(labels, s)
+				}
+			}
+		} else if l, ok := rawLabels.([]string); ok {
+			// Handle []string type
 			labels = l
+		} else if jsonRaw, ok := rawLabels.(interface{ String() string }); ok {
+			// Handle types.JSONRaw (from database)
+			jsonStr := jsonRaw.String()
+			if jsonStr != "" && jsonStr != "null" {
+				_ = json.Unmarshal([]byte(jsonStr), &labels)
+			}
 		}
 	}
 
