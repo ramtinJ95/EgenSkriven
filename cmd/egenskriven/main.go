@@ -16,6 +16,17 @@ import (
 func main() {
 	app := pocketbase.New()
 
+	// Hook: Run app migrations after bootstrap
+	// Bootstrap() only runs system migrations, so we need to explicitly
+	// run app migrations (our custom collections like tasks, comments, etc.)
+	app.OnBootstrap().BindFunc(func(e *core.BootstrapEvent) error {
+		if err := e.Next(); err != nil {
+			return err
+		}
+		// Run app migrations after system migrations complete
+		return e.App.RunAppMigrations()
+	})
+
 	// Register custom CLI commands
 	commands.Register(app)
 

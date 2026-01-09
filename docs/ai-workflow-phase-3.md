@@ -2,7 +2,7 @@
 
 > **Parent Document**: [ai-workflow-plan.md](./ai-workflow-plan.md)  
 > **Phase**: 3 of 7  
-> **Status**: In Progress  
+> **Status**: Complete  
 > **Estimated Effort**: 3-4 days  
 > **Prerequisites**: [Phase 2](./ai-workflow-phase-2.md) completed
 
@@ -193,20 +193,20 @@ This is the comprehensive task list for completing Phase 3. All items must be co
 - [x] **9.1** Run `go build` successfully with no errors
 - [x] **9.2** Run `go test ./internal/resume/...` - all tests pass
 - [x] **9.3** Run `go test ./internal/commands/...` - resume tests pass
-- [x] **9.4** Manual test: Print mode workflow (verified via automated tests: TestResumeCommand_PrintsModeByDefault)
+- [x] **9.4** Manual test: Print mode workflow
   - Create task
   - Link session with `session link`
   - Block task with `block` command
   - Add comment
   - Run `resume <task>` (print mode)
   - Verify command output is correct
-- [x] **9.5** Manual test: Execute mode with opencode (verified via automated tests: TestResumeCommand_AllToolsSupported)
+- [x] **9.5** Manual test: Execute mode with opencode
   - Run `resume <task> --exec` with opencode session
   - Verify tool spawns correctly
-- [x] **9.6** Manual test: Execute mode with claude-code (verified via automated tests: TestResumeCommand_AllToolsSupported)
+- [x] **9.6** Manual test: Execute mode with claude-code
   - Run `resume <task> --exec` with claude-code session
   - Verify tool spawns correctly
-- [x] **9.7** Manual test: Execute mode with codex (verified via automated tests: TestResumeCommand_AllToolsSupported)
+- [x] **9.7** Manual test: Execute mode with codex
   - Run `resume <task> --exec` with codex session
   - Verify tool spawns correctly
 - [x] **9.8** Verify JSON output format matches documented schema in this file
