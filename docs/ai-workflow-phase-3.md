@@ -121,18 +121,18 @@ This is the comprehensive task list for completing Phase 3. All items must be co
 
 ### 5. Unit Tests - Context Builder (`internal/resume/context_test.go`)
 
-- [ ] **5.1** Create `internal/resume/context_test.go` file
-- [ ] **5.2** Create mock record helper for testing (implements GetString, GetInt, Get methods)
-- [ ] **5.3** Test: `BuildContextPrompt` includes task title
-- [ ] **5.4** Test: `BuildContextPrompt` includes task priority
-- [ ] **5.5** Test: `BuildContextPrompt` includes all comments in chronological order
-- [ ] **5.6** Test: `BuildContextPrompt` formats authors correctly
+- [x] **5.1** Create `internal/resume/context_test.go` file
+- [x] **5.2** Create mock record helper for testing (implements GetString, GetInt, Get methods)
+- [x] **5.3** Test: `BuildContextPrompt` includes task title
+- [x] **5.4** Test: `BuildContextPrompt` includes task priority
+- [x] **5.5** Test: `BuildContextPrompt` includes all comments in chronological order
+- [x] **5.6** Test: `BuildContextPrompt` formats authors correctly
   - Use authorId when present
   - Fall back to authorType when authorId is empty
-- [ ] **5.7** Test: `BuildContextPrompt` handles empty comments with placeholder text
-- [ ] **5.8** Test: `BuildContextPrompt` truncates descriptions over 500 chars
-- [ ] **5.9** Test: `BuildMinimalPrompt` only includes last 3 comments when >3 exist
-- [ ] **5.10** Test: `BuildMinimalPrompt` truncates comments over 200 chars
+- [x] **5.7** Test: `BuildContextPrompt` handles empty comments with placeholder text
+- [x] **5.8** Test: `BuildContextPrompt` truncates descriptions over 500 chars
+- [x] **5.9** Test: `BuildMinimalPrompt` only includes last 3 comments when >3 exist
+- [x] **5.10** Test: `BuildMinimalPrompt` truncates comments over 200 chars
 
 ### 6. Unit Tests - Command Builder (`internal/resume/command_test.go`)
 
