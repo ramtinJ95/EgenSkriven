@@ -22,6 +22,12 @@ export const STATUS_OPTIONS: PropertyOption<string>[] = [
     color: 'var(--status-in-progress, #F59E0B)',
   },
   {
+    value: 'need_input',
+    label: 'Need Input',
+    icon: '●',
+    color: 'var(--status-need-input, #EF4444)',
+  },
+  {
     value: 'review',
     label: 'Review',
     icon: '●',

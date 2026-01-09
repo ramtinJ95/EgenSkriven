@@ -134,6 +134,7 @@ function AppContent() {
       backlog: [],
       todo: [],
       in_progress: [],
+      need_input: [],
       review: [],
       done: [],
     }

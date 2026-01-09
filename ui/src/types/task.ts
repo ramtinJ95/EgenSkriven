@@ -7,7 +7,7 @@ export type TaskType = 'bug' | 'feature' | 'chore'
 export type Priority = 'urgent' | 'high' | 'medium' | 'low'
 
 // Column/status values (ordered by workflow)
-export type Column = 'backlog' | 'todo' | 'in_progress' | 'review' | 'done'
+export type Column = 'backlog' | 'todo' | 'in_progress' | 'need_input' | 'review' | 'done'
 
 // Creator type
 export type CreatedBy = 'user' | 'agent' | 'cli'
@@ -51,6 +51,7 @@ export const COLUMNS: Column[] = [
   'backlog',
   'todo',
   'in_progress',
+  'need_input',
   'review',
   'done',
 ]
@@ -60,6 +61,7 @@ export const COLUMN_NAMES: Record<Column, string> = {
   backlog: 'Backlog',
   todo: 'Todo',
   in_progress: 'In Progress',
+  need_input: 'Need Input',
   review: 'Review',
   done: 'Done',
 }

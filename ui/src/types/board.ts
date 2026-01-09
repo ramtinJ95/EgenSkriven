@@ -14,7 +14,7 @@ export interface Board extends RecordModel {
 }
 
 // Default columns for new boards
-export const DEFAULT_COLUMNS = ['backlog', 'todo', 'in_progress', 'review', 'done']
+export const DEFAULT_COLUMNS = ['backlog', 'todo', 'in_progress', 'need_input', 'review', 'done']
 
 // Default board colors for the color picker
 export const BOARD_COLORS = [
