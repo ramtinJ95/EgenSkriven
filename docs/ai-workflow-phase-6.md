@@ -38,12 +38,12 @@
 
 ### Frontend Implementation
 
-- [ ] **Task 6.4: Add Resume Mode UI Component**
-  - [ ] 6.4.1: Create `ui/src/components/BoardSettings/ResumeModeSelector.tsx`
-  - [ ] 6.4.2: Implement radio button selection for manual/command/auto modes
-  - [ ] 6.4.3: Add mode descriptions for each option
-  - [ ] 6.4.4: Add warning indicator when auto mode is selected
-  - [ ] 6.4.5: Integrate component into board settings view
+- [x] **Task 6.4: Add Resume Mode UI Component**
+  - [x] 6.4.1: Create `ui/src/components/BoardSettings/ResumeModeSelector.tsx`
+  - [x] 6.4.2: Implement radio button selection for manual/command/auto modes
+  - [x] 6.4.3: Add mode descriptions for each option
+  - [x] 6.4.4: Add warning indicator when auto mode is selected
+  - [x] 6.4.5: Integrate component into board settings view
 
 - [ ] **Task 6.5: Update Comments Panel with Auto-Resume Indicator**
   - [ ] 6.5.1: Update `ui/src/components/TaskDetail/CommentsPanel.tsx`
