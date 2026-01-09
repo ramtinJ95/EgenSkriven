@@ -2,7 +2,7 @@
 
 > **Parent Document**: [ai-workflow-plan.md](./ai-workflow-plan.md)  
 > **Phase**: 5 of 7  
-> **Status**: In Progress  
+> **Status**: Complete  
 > **Estimated Effort**: 3-4 days  
 > **Prerequisites**: [Phase 4](./ai-workflow-phase-4.md) completed
 
@@ -77,7 +77,7 @@
 - [x] **5.12.2** Test: Resume button appears only for need_input tasks
 - [x] **5.12.3** Test: Resume modal generates correct command for each tool
 - [x] **5.12.4** Test: Copy button works in resume modal
-- [ ] **5.12.5** Test: Tasks draggable to/from need_input column
+- [x] **5.12.5** Test: Tasks draggable to/from need_input column
 
 ---
 
