@@ -900,14 +900,14 @@ This section provides a detailed checklist of all tasks required to complete Pha
 
 ### Task 4.2: Implement OpenCode Integration Generator
 
-- [ ] Create `internal/commands/init_opencode.go` file
-- [ ] Define `openCodeToolTemplate` constant with TypeScript template
-- [ ] Implement `generateOpenCodeIntegration(force bool)` function
-- [ ] Create `.opencode/tool/` directory if not exists
-- [ ] Write `egenskriven-session.ts` file with correct permissions (0644)
-- [ ] Handle existing file detection (error without `--force`)
-- [ ] Verify template includes `context.sessionID` reference
-- [ ] Verify template includes `link_command` instructions
+- [x] Create `internal/commands/init_opencode.go` file
+- [x] Define `openCodeToolTemplate` constant with TypeScript template
+- [x] Implement `generateOpenCodeIntegration(force bool)` function
+- [x] Create `.opencode/tool/` directory if not exists
+- [x] Write `egenskriven-session.ts` file with correct permissions (0644)
+- [x] Handle existing file detection (error without `--force`)
+- [x] Verify template includes `context.sessionID` reference
+- [x] Verify template includes `link_command` instructions
 
 ### Task 4.3: Implement Claude Code Integration Generator
 
@@ -939,11 +939,11 @@ This section provides a detailed checklist of all tasks required to complete Pha
 
 - [x] Add `--force` / `-f` flag to init command (completed in Task 4.1)
 - [x] Pass `force` parameter to all generator functions (completed in Task 4.1)
-- [x] Update `generateOpenCodeIntegration` to accept `force` parameter (stub created)
+- [x] Update `generateOpenCodeIntegration` to accept `force` parameter (completed in Task 4.2)
 - [x] Update `generateClaudeCodeIntegration` to accept `force` parameter (stub created)
 - [x] Update `generateCodexIntegration` to accept `force` parameter (stub created)
-- [ ] When file exists and `force=false`, return appropriate error message
-- [ ] When file exists and `force=true`, overwrite without error
+- [x] When file exists and `force=false`, return appropriate error message (verified for OpenCode)
+- [x] When file exists and `force=true`, overwrite without error (verified for OpenCode)
 
 ### Task 4.6: Write Unit Tests
 
@@ -992,12 +992,12 @@ This section provides a detailed checklist of all tasks required to complete Pha
 
 #### OpenCode Integration Testing
 
-- [ ] `init --opencode` creates `.opencode/tool/egenskriven-session.ts`
-- [ ] Generated tool file is valid TypeScript (no syntax errors)
-- [ ] Tool correctly references `context.sessionID`
-- [ ] Tool provides helpful usage instructions
-- [ ] Re-running without `--force` fails with appropriate error
-- [ ] Re-running with `--force` overwrites successfully
+- [x] `init --opencode` creates `.opencode/tool/egenskriven-session.ts`
+- [x] Generated tool file is valid TypeScript (no syntax errors)
+- [x] Tool correctly references `context.sessionID`
+- [x] Tool provides helpful usage instructions
+- [x] Re-running without `--force` fails with appropriate error
+- [x] Re-running with `--force` overwrites successfully
 
 #### Claude Code Integration Testing
 
