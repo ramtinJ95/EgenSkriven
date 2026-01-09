@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { pb } from '../lib/pb'
 import type { Board } from '../types/board'
+import { DEFAULT_COLUMNS } from '../types/board'
 
 interface UseBoardsReturn {
   boards: Board[]
@@ -17,8 +18,7 @@ interface CreateBoardInput {
   columns?: string[]
 }
 
-// Default columns for new boards
-const DEFAULT_COLUMNS = ['backlog', 'todo', 'in_progress', 'review', 'done']
+// Note: DEFAULT_COLUMNS is imported from types/board.ts to ensure consistency
 
 /**
  * Hook for managing boards with real-time updates.

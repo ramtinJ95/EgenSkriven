@@ -301,7 +301,11 @@ export function TaskDetail({ task, tasks, onClose, onUpdate, onTaskClick, curren
           />
 
           {/* Comments Panel */}
-          <CommentsPanel taskId={task.id} />
+          <CommentsPanel
+            taskId={task.id}
+            boardResumeMode={currentBoard?.resume_mode}
+            taskColumn={task.column}
+          />
         </div>
       </div>
 
