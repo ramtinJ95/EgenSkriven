@@ -183,7 +183,8 @@ func TestResumeCommand_JSONOutput(t *testing.T) {
 	require.NoError(t, err)
 
 	// Build prompt
-	prompt := resume.BuildContextPrompt(task, comments)
+	displayId := getTaskDisplayID(app, task)
+	prompt := resume.BuildContextPrompt(task, displayId, comments)
 
 	// Simulate JSON output structure
 	jsonResult := map[string]any{
@@ -233,8 +234,9 @@ func TestResumeCommand_MinimalPromptIsShorter(t *testing.T) {
 	require.Len(t, comments, 10, "should have 10 comments")
 
 	// Build full and minimal prompts
-	fullPrompt := resume.BuildContextPrompt(task, comments)
-	minimalPrompt := resume.BuildMinimalPrompt(task, comments)
+	displayId := getTaskDisplayID(app, task)
+	fullPrompt := resume.BuildContextPrompt(task, displayId, comments)
+	minimalPrompt := resume.BuildMinimalPrompt(task, displayId, comments)
 
 	// Verify minimal is shorter
 	assert.Less(t, len(minimalPrompt), len(fullPrompt),
@@ -296,7 +298,8 @@ func TestResumeCommand_DryRunShowsCommandWithoutExecuting(t *testing.T) {
 	// Fetch comments and build prompt
 	comments, err := fetchCommentsForResume(app, task.Id)
 	require.NoError(t, err)
-	prompt := resume.BuildContextPrompt(task, comments)
+	displayId := getTaskDisplayID(app, task)
+	prompt := resume.BuildContextPrompt(task, displayId, comments)
 
 	// Build resume command
 	sessionData := task.Get("agent_session")
@@ -384,7 +387,8 @@ func TestResumeCommand_ContextIncludesAllComments(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, comments, 4, "should have 4 comments")
 
-	prompt := resume.BuildContextPrompt(task, comments)
+	displayId := getTaskDisplayID(app, task)
+	prompt := resume.BuildContextPrompt(task, displayId, comments)
 
 	// Verify all comments are in the prompt
 	assert.Contains(t, prompt, "First question from agent")
@@ -504,7 +508,8 @@ func TestResumeCommand_PromptWithSpecialChars(t *testing.T) {
 	comments, err := fetchCommentsForResume(app, task.Id)
 	require.NoError(t, err)
 
-	prompt := resume.BuildContextPrompt(task, comments)
+	displayId := getTaskDisplayID(app, task)
+	prompt := resume.BuildContextPrompt(task, displayId, comments)
 
 	// Verify special chars are in prompt
 	assert.Contains(t, prompt, "single quotes")
@@ -615,7 +620,8 @@ func TestIntegration_FullWorkflowBlockCommentResume(t *testing.T) {
 	require.Len(t, resumeComments, 2, "should fetch 2 comments for resume")
 
 	// Build context prompt
-	prompt := resume.BuildContextPrompt(task, resumeComments)
+	displayId := getTaskDisplayID(app, task)
+	prompt := resume.BuildContextPrompt(task, displayId, resumeComments)
 	assert.Contains(t, prompt, "Task Context", "prompt should contain Task Context header")
 	assert.Contains(t, prompt, agentQuestion, "prompt should contain agent's question")
 	assert.Contains(t, prompt, "JWT with refresh tokens", "prompt should contain human's response")

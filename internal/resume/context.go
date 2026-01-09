@@ -19,10 +19,11 @@ type Comment struct {
 
 // BuildContextPrompt creates the full context prompt for resume.
 // It includes task information and the complete conversation thread.
-func BuildContextPrompt(task *core.Record, comments []Comment) string {
+// The displayId should be pre-computed using the proper display ID logic
+// (e.g., getTaskDisplayID from commands package).
+func BuildContextPrompt(task *core.Record, displayId string, comments []Comment) string {
 	var sb strings.Builder
 
-	displayId := getDisplayId(task)
 	title := task.GetString("title")
 	priority := task.GetString("priority")
 	description := task.GetString("description")
@@ -72,10 +73,11 @@ func BuildContextPrompt(task *core.Record, comments []Comment) string {
 
 // BuildMinimalPrompt creates a shorter prompt for token-constrained scenarios.
 // It only includes the last 3 comments and truncates long comments at 200 chars.
-func BuildMinimalPrompt(task *core.Record, comments []Comment) string {
+// The displayId should be pre-computed using the proper display ID logic
+// (e.g., getTaskDisplayID from commands package).
+func BuildMinimalPrompt(task *core.Record, displayId string, comments []Comment) string {
 	var sb strings.Builder
 
-	displayId := getDisplayId(task)
 	title := task.GetString("title")
 
 	sb.WriteString(fmt.Sprintf("Task %s: %s\n\n", displayId, title))
@@ -113,25 +115,4 @@ func formatAuthorLabel(authorType, authorId string) string {
 		return authorId
 	}
 	return authorType
-}
-
-// getDisplayId extracts or constructs a display ID for the task.
-// It checks for display_id field first, then falls back to WRK-{seq} format,
-// and finally to the first 8 chars of the ID.
-func getDisplayId(task *core.Record) string {
-	// Check for display_id field first
-	if displayId := task.GetString("display_id"); displayId != "" {
-		return displayId
-	}
-	// Fall back to WRK-{seq} format
-	seq := task.GetInt("seq")
-	if seq > 0 {
-		return fmt.Sprintf("WRK-%d", seq)
-	}
-	// Fall back to first 8 chars of ID
-	id := task.Id
-	if len(id) > 8 {
-		return id[:8]
-	}
-	return id
 }

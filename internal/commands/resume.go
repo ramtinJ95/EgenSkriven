@@ -121,9 +121,9 @@ which is injected into the agent's session.`,
 			if customPrompt != "" {
 				prompt = customPrompt
 			} else if minimal {
-				prompt = resume.BuildMinimalPrompt(task, comments)
+				prompt = resume.BuildMinimalPrompt(task, displayId, comments)
 			} else {
-				prompt = resume.BuildContextPrompt(task, comments)
+				prompt = resume.BuildContextPrompt(task, displayId, comments)
 			}
 
 			// Build resume command
