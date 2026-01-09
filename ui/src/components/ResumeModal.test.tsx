@@ -585,4 +585,154 @@ describe('ResumeModal', () => {
       expect(screen.getByText('Resume Session for PROJ-789')).toBeInTheDocument()
     })
   })
+
+  // 5.12.3: Test resume modal generates correct command for each tool
+  describe('tool-specific commands', () => {
+    it('displays correct command format for claude-code', async () => {
+      const claudeCodeResult: ResumeResult = {
+        command: "claude --resume abc123 'Continue the task'",
+        prompt: '## Task Context\n\nContinue working...',
+        tool: 'claude-code',
+        sessionRef: 'abc123',
+        workingDir: '/home/user/project',
+      }
+      const mockResume = vi.fn().mockResolvedValue(claudeCodeResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText('claude-code')).toBeInTheDocument()
+        // Verify command starts with claude --resume
+        expect(screen.getByText(claudeCodeResult.command)).toBeInTheDocument()
+        expect(claudeCodeResult.command).toMatch(/^claude --resume/)
+      })
+    })
+
+    it('displays correct command format for opencode', async () => {
+      const opencodeResult: ResumeResult = {
+        command: "opencode run 'Continue the task' --session xyz789",
+        prompt: '## Task Context\n\nContinue working...',
+        tool: 'opencode',
+        sessionRef: 'xyz789',
+        workingDir: '/workspace/app',
+      }
+      const mockResume = vi.fn().mockResolvedValue(opencodeResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText('opencode')).toBeInTheDocument()
+        // Verify command starts with opencode run
+        expect(screen.getByText(opencodeResult.command)).toBeInTheDocument()
+        expect(opencodeResult.command).toMatch(/^opencode run/)
+        expect(opencodeResult.command).toContain('--session')
+      })
+    })
+
+    it('displays correct command format for codex', async () => {
+      const codexResult: ResumeResult = {
+        command: "codex exec resume thread-456 'Continue the task'",
+        prompt: '## Task Context\n\nContinue working...',
+        tool: 'codex',
+        sessionRef: 'thread-456',
+        workingDir: '/projects/codex-app',
+      }
+      const mockResume = vi.fn().mockResolvedValue(codexResult)
+      mockedUseResume.mockReturnValue({
+        resume: mockResume,
+        loading: false,
+        error: null,
+      })
+
+      render(
+        <ResumeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          taskId="task-123"
+          displayId="WRK-123"
+        />
+      )
+
+      await userEvent.click(screen.getByText('Generate Resume Command'))
+
+      await waitFor(() => {
+        expect(screen.getByText('codex')).toBeInTheDocument()
+        // Verify command starts with codex exec resume
+        expect(screen.getByText(codexResult.command)).toBeInTheDocument()
+        expect(codexResult.command).toMatch(/^codex exec resume/)
+      })
+    })
+
+    it('displays session ref for each tool', async () => {
+      const tools = [
+        { tool: 'claude-code' as const, ref: 'claude-session-id' },
+        { tool: 'opencode' as const, ref: 'opencode-session-id' },
+        { tool: 'codex' as const, ref: 'codex-thread-id' },
+      ]
+
+      for (const { tool, ref } of tools) {
+        vi.clearAllMocks()
+
+        const result: ResumeResult = {
+          command: `test-command-${tool}`,
+          prompt: 'Test prompt',
+          tool,
+          sessionRef: ref,
+          workingDir: '/test/path',
+        }
+        const mockResume = vi.fn().mockResolvedValue(result)
+        mockedUseResume.mockReturnValue({
+          resume: mockResume,
+          loading: false,
+          error: null,
+        })
+
+        const { unmount } = render(
+          <ResumeModal
+            isOpen={true}
+            onClose={vi.fn()}
+            taskId="task-123"
+            displayId="WRK-123"
+          />
+        )
+
+        await userEvent.click(screen.getByText('Generate Resume Command'))
+
+        await waitFor(() => {
+          expect(screen.getByText(tool)).toBeInTheDocument()
+          expect(screen.getByText(result.command)).toBeInTheDocument()
+        })
+
+        unmount()
+      }
+    })
+  })
 })
