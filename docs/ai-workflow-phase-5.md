@@ -66,7 +66,7 @@
 - [x] **5.10.8** Create `ui/src/components/TaskDetail/ResumeModal.test.tsx`
 
 ### Quality & Polish
-- [ ] **5.11.1** Ensure all new components support dark mode
+- [x] **5.11.1** Ensure all new components support dark mode
 - [ ] **5.11.2** Add proper ARIA labels for accessibility
 - [ ] **5.11.3** Add keyboard navigation support
 - [ ] **5.11.4** Test on mobile viewport sizes (responsive design)
