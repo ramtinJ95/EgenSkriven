@@ -30,11 +30,11 @@
   - [x] 6.2.4: Ensure hook runs auto-resume check in goroutine (non-blocking)
   - [x] 6.2.5: Register hook in main/app initialization
 
-- [ ] **Task 6.3: Add Board Resume Mode Configuration**
-  - [ ] 6.3.1: Update `internal/commands/board.go` with `--resume-mode` flag
-  - [ ] 6.3.2: Add resume mode validation (manual, command, auto)
-  - [ ] 6.3.3: Update `board show` command to display resume mode
-  - [ ] 6.3.4: Ensure default resume mode is "command"
+- [x] **Task 6.3: Add Board Resume Mode Configuration**
+  - [x] 6.3.1: Update `internal/commands/board.go` with `--resume-mode` flag
+  - [x] 6.3.2: Add resume mode validation (manual, command, auto)
+  - [x] 6.3.3: Update `board show` command to display resume mode
+  - [x] 6.3.4: Ensure default resume mode is "command"
 
 ### Frontend Implementation
 
