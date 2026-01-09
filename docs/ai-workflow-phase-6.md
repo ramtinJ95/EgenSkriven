@@ -66,25 +66,25 @@
   - [x] 6.6.9: Test: `hasAgentMention()` helper function
   - [x] 6.6.10: Create test helpers (createTestComment, etc.)
 
-- [ ] **Task 6.7: Add E2E Tests**
-  - [ ] 6.7.1: Create `tests/e2e/autoresume_test.go`
-  - [ ] 6.7.2: Test full auto-resume workflow end-to-end
-  - [ ] 6.7.3: Verify task moves to in_progress after trigger
-  - [ ] 6.7.4: Verify history contains auto_resumed action
+- [x] **Task 6.7: Add E2E Tests**
+  - [x] 6.7.1: Create `tests/e2e/autoresume_test.go`
+  - [x] 6.7.2: Test full auto-resume workflow end-to-end
+  - [x] 6.7.3: Verify task moves to in_progress after trigger
+  - [x] 6.7.4: Verify history contains auto_resumed action
 
 ### Verification Checklist
 
 #### Auto-Resume Logic
-- [ ] 6.V.1: Triggers when ALL conditions are met
-- [ ] 6.V.2: Does NOT trigger for agent comments
-- [ ] 6.V.3: Does NOT trigger without @agent mention
-- [ ] 6.V.4: Does NOT trigger when resume_mode is manual
-- [ ] 6.V.5: Does NOT trigger when resume_mode is command
-- [ ] 6.V.6: Does NOT trigger without linked session
-- [ ] 6.V.7: Does NOT trigger when task not in need_input
-- [ ] 6.V.8: Updates task column to in_progress
-- [ ] 6.V.9: Adds history entry with auto_resumed action
-- [ ] 6.V.10: Executes resume command in background
+- [x] 6.V.1: Triggers when ALL conditions are met
+- [x] 6.V.2: Does NOT trigger for agent comments
+- [x] 6.V.3: Does NOT trigger without @agent mention
+- [x] 6.V.4: Does NOT trigger when resume_mode is manual
+- [x] 6.V.5: Does NOT trigger when resume_mode is command
+- [x] 6.V.6: Does NOT trigger without linked session
+- [x] 6.V.7: Does NOT trigger when task not in need_input
+- [x] 6.V.8: Updates task column to in_progress
+- [x] 6.V.9: Adds history entry with auto_resumed action
+- [x] 6.V.10: Executes resume command in background
 
 #### Board Configuration
 - [ ] 6.V.11: `egenskriven board update --resume-mode` works
