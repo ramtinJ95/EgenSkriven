@@ -17,7 +17,7 @@
 ### React Hooks
 - [x] **5.2.1** Create `ui/src/hooks/useComments.ts` with useComments query hook
 - [x] **5.2.2** Add useAddComment mutation hook to useComments.ts
-- [ ] **5.2.3** Add useCommentsSubscription real-time subscription hook
+- [x] **5.2.3** Add useCommentsSubscription real-time subscription hook
 - [x] **5.2.4** Implement extractMentions helper function for @mentions
 - [ ] **5.5.1** Create `ui/src/hooks/useResume.ts` with resume mutation hook
 - [ ] **5.5.2** Implement buildContextPrompt function in useResume.ts
