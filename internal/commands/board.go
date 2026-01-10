@@ -166,12 +166,12 @@ func newBoardShowCmd(app *pocketbase.PocketBase) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			out := getFormatter()
 			if err := app.Bootstrap(); err != nil {
-				return err
+				return out.Error(ExitGeneralError, fmt.Sprintf("failed to bootstrap: %v", err), nil)
 			}
 
 			record, err := board.GetByNameOrPrefix(app, args[0])
 			if err != nil {
-				return err
+				return out.Error(ExitNotFound, fmt.Sprintf("board not found: %s", args[0]), nil)
 			}
 
 			b := board.RecordToBoard(record)
