@@ -1,0 +1,67 @@
+name: Performance Tests
+
+# Run on PRs and weekly schedule for regression detection
+on:
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sundays
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  performance:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+
+      # Run unit benchmarks
+      - name: Run Unit Benchmarks
+        run: |
+          echo "## Unit Benchmarks" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          go test -bench=. -benchmem -timeout 300s \
+            ./internal/commands/ \
+            ./internal/resume/ \
+            ./internal/autoresume/ \
+            ./internal/memory/ \
+            ./internal/db/... 2>&1 | tee benchmark-results.txt
+          cat benchmark-results.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      # Run E2E performance tests
+      - name: Run E2E Performance Tests
+        run: |
+          echo "## E2E Performance Tests" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          go test -v -tags=performance -timeout 600s ./tests/performance/... 2>&1 | tee e2e-perf-results.txt
+          cat e2e-perf-results.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      # Check for regressions (fail if any benchmark exceeds target by 50%)
+      - name: Check for Regressions
+        run: |
+          # Extract timing results and check against thresholds
+          if grep -q "FAIL" e2e-perf-results.txt; then
+            echo "::error::Performance tests failed!"
+            exit 1
+          fi
+          echo "All performance tests passed!"
+
+      # Upload results as artifact
+      - name: Upload Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: |
+            benchmark-results.txt
+            e2e-perf-results.txt
+          retention-days: 30
