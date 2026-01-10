@@ -4,6 +4,20 @@ A local-first kanban task manager with CLI and web UI. Built with agentic workfl
 
 > **Early Access**: This project is functional but still in development. Feedback welcome!
 
+## Technology Stack
+
+| Component | Technology | Version |
+|-----------|------------|---------|
+| Backend | Go | 1.25.5+ |
+| Framework | PocketBase | 0.35.0 |
+| Database | SQLite | embedded |
+| CLI | Cobra | 1.10.2 |
+| Frontend | React | 19.2.0 |
+| Build Tool | Vite | 7.2.4 |
+| State | Zustand | 5.0.9 |
+| Drag & Drop | dnd-kit | 6.3.1 |
+| Testing | Vitest + Playwright | 4.0.16 / 1.57.0 |
+
 ## Features
 
 ### Core
@@ -16,7 +30,7 @@ A local-first kanban task manager with CLI and web UI. Built with agentic workfl
 - **Full task management** - Add, list, show, move, update, delete tasks
 - **Batch operations** - Create multiple tasks from JSON via stdin or file
 - **Advanced filtering** - Filter by column, type, priority, labels, search, and more
-- **Flexible task references** - Reference tasks by ID, ID prefix, or title substring
+- **Flexible task references** - Reference tasks by ID, ID prefix, display ID (WRK-123), or title substring
 
 ### Multi-Board Support
 - **Multiple boards** - Create and manage separate boards for different projects
@@ -25,13 +39,22 @@ A local-first kanban task manager with CLI and web UI. Built with agentic workfl
 - **Board switcher** - Quick switch between boards in UI sidebar
 
 ### Agent Integration (AI-Native)
-- **First-class AI agent support** - Designed for Claude, GPT, OpenCode, Cursor, etc.
+- **First-class AI agent support** - Designed for Claude Code, OpenCode, Cursor, Codex, etc.
+- **Human-AI collaboration** - Session linking, blocking flow, resume workflow
 - **Prime command** - Generate context-aware instructions for agents
 - **Configurable workflows** - Strict, light, or minimal enforcement modes
 - **Agent modes** - Autonomous, collaborative, or supervised agent behavior
 - **Suggest command** - AI-friendly task prioritization
 - **Context command** - Project state summary for agents
-- **Override TodoWrite** - Replace built-in agent task systems
+- **Skills system** - On-demand instruction loading for token efficiency
+
+### Human-AI Collaborative Workflow
+- **Session linking** - Agents link their sessions to tasks for tracking
+- **Blocking flow** - When stuck, agents block tasks with questions for human input
+- **Resume flow** - Humans answer questions, then resume agent with full context
+- **Auto-resume** - Optional automatic resume when human comments with @agent
+- **Resume modes** - command (print command), manual (copy command), auto (trigger on comment)
+- **Comments** - Human-AI conversation threads on tasks
 
 ### Task Dependencies
 - **Blocking relationships** - Track task dependencies with `--blocked-by`
@@ -59,28 +82,27 @@ A local-first kanban task manager with CLI and web UI. Built with agentic workfl
 - **Task linking** - Link tasks to epics with `--epic` flag
 - **UI features** - Epic picker, sidebar list, detail view with progress
 
-> **Breaking Change**: Epics are now board-scoped instead of global. Existing global epics were removed during migration.
-
 ### Web UI
 - **Kanban board** - Drag and drop tasks between columns
 - **List view** - Toggle between board and table view with `Ctrl+B`
+- **Virtualized columns** - Handles large task lists (50+ tasks) efficiently
 - **Command palette** - Quick actions with `Cmd+K` and fuzzy search
-- **Keyboard-driven** - Full keyboard navigation (j/k/h/l, shortcuts)
+- **Keyboard-driven** - Full keyboard navigation (j/k/h/l, vim-style shortcuts)
 - **Task detail panel** - View and edit task properties with Markdown description support
 - **Quick create** - Press `C` to create tasks instantly
 - **Peek preview** - Press `Space` for quick task preview
 - **Property pickers** - Keyboard shortcuts for status (S), priority (P), type (T)
 - **Filter builder** - Advanced filtering with `F` key, supports multiple conditions
 - **Saved views** - Save filter configurations as reusable views with favorites
-- **Shortcuts help** - Press `?` to see all keyboard shortcuts
-- **Sidebar** - Board navigation, saved views, epic list, and board creation
-- **Markdown editor** - Rich text editing with toolbar and preview mode
+- **Comments panel** - Human-AI conversation threads on tasks
+- **Session info** - Track linked AI agent sessions
 - **Activity log** - Task history with relative timestamps and actor tracking
+- **Markdown editor** - Rich text editing with toolbar and preview mode
 - **Date picker** - Calendar picker with shortcuts (Today, Tomorrow, Next Week)
 - **Epic management** - Epic picker, sidebar list, and detail view with progress
 
 ### Theming
-- **Multiple built-in themes** - Dark, Light, Gruvbox Dark, Catppuccin Mocha, Nord, Tokyo Night
+- **7 built-in themes** - Dark, Light, Gruvbox Dark, Catppuccin Mocha, Nord, Tokyo Night, Purple Dream
 - **Custom themes** - Import your own JSON theme files with full color customization
 - **System mode** - Follow OS dark/light preference with configurable theme per mode
 - **Accent colors** - 8 preset accent colors or use theme's default
@@ -109,7 +131,7 @@ Download the latest release for your platform from [Releases](https://github.com
 ### Build from Source
 
 **Prerequisites:**
-- Go 1.21+
+- Go 1.25.5+
 - Node.js 18+ (for building UI)
 
 ```bash
@@ -151,8 +173,9 @@ This creates a single `./egenskriven` binary with the UI embedded.
 ./egenskriven list --column todo
 ./egenskriven list --type bug --priority urgent
 
-# Show task details (use ID, ID prefix, or title)
+# Show task details (use ID, ID prefix, display ID, or title)
 ./egenskriven show abc123
+./egenskriven show WRK-123
 ./egenskriven show "dark mode"
 
 # Move between columns
@@ -181,9 +204,6 @@ This creates a single `./egenskriven` binary with the UI embedded.
 | `move <ref> <column>` | Move task to column |
 | `update <ref>` | Update task properties |
 | `delete <ref>` | Delete a task |
-| `version` | Show version info |
-| `completion <shell>` | Generate shell completions |
-| `self-upgrade` | Upgrade to latest version |
 
 ### Board Management
 
@@ -204,12 +224,18 @@ This creates a single `./egenskriven` binary with the UI embedded.
 | `epic show <ref>` | Show epic details |
 | `epic delete <ref>` | Delete an epic |
 
-### Export/Import
+### Human-AI Collaboration
 
 | Command | Description |
 |---------|-------------|
-| `export` | Export tasks and boards to JSON or CSV |
-| `import <file>` | Import from backup file |
+| `block <task> "message"` | Block task with question for human input |
+| `comment <task> "message"` | Add comment to task |
+| `comments <task>` | List task comments |
+| `session link <task>` | Link agent session to task |
+| `session show <task>` | Show linked session for task |
+| `session history <task>` | Show session history |
+| `session unlink <task>` | Unlink session from task |
+| `resume <task>` | Resume blocked task with context |
 
 ### Agent Integration
 
@@ -223,60 +249,28 @@ This creates a single `./egenskriven` binary with the UI embedded.
 | `skill uninstall` | Remove installed skills |
 | `skill status` | Show skill installation status |
 
+### Data Management
+
+| Command | Description |
+|---------|-------------|
+| `export` | Export tasks and boards to JSON or CSV |
+| `import <file>` | Import from backup file |
+| `backup` | Create database backup |
+
+### Utilities
+
+| Command | Description |
+|---------|-------------|
+| `version` | Show version info |
+| `completion <shell>` | Generate shell completions (bash, zsh, fish, powershell) |
+| `self-upgrade` | Update to latest version |
+
 ### Global Flags
 
 - `--json`, `-j` - Output in JSON format (machine-readable)
 - `--quiet`, `-q` - Suppress non-essential output
 - `--verbose`, `-v` - Show detailed output including connection method
 - `--direct` - Skip HTTP API, use direct database access (faster, works offline)
-
-### Shell Completions
-
-Enable tab completion for your shell:
-
-```bash
-# Bash (Linux)
-egenskriven completion bash > /etc/bash_completion.d/egenskriven
-
-# Bash (macOS with bash-completion@2)
-egenskriven completion bash > $(brew --prefix)/etc/bash_completion.d/egenskriven
-
-# Zsh
-egenskriven completion zsh > "${fpath[1]}/_egenskriven"
-
-# Fish
-egenskriven completion fish > ~/.config/fish/completions/egenskriven.fish
-
-# PowerShell
-egenskriven completion powershell >> $PROFILE
-```
-
-Restart your shell or source the completion file after installing.
-
-### Self-Upgrade
-
-Update EgenSkriven to the latest version:
-
-```bash
-# Check for updates and install if available
-egenskriven self-upgrade
-
-# Only check for updates (don't install)
-egenskriven self-upgrade --check
-
-# Force reinstall current version
-egenskriven self-upgrade --force
-
-# JSON output for scripting
-egenskriven self-upgrade --check --json
-```
-
-### Task Reference
-
-Tasks can be referenced by:
-1. Full ID (e.g., `abc123def456`)
-2. ID prefix (e.g., `abc`) - must be unique
-3. Title substring (e.g., `"dark mode"`) - must be unique
 
 ## Task Properties
 
@@ -298,15 +292,99 @@ Tasks can be referenced by:
 - `review` - Awaiting review
 - `done` - Completed
 
+### Task Reference
+
+Tasks can be referenced by:
+1. Full ID (e.g., `abc123def456`)
+2. ID prefix (e.g., `abc`) - must be unique
+3. Display ID (e.g., `WRK-123`)
+4. Title substring (e.g., `"dark mode"`) - must be unique
+
+## Human-AI Collaborative Workflow
+
+EgenSkriven provides a complete workflow for AI agents to collaborate with humans asynchronously.
+
+### How It Works
+
+1. **Agent starts work**: Agent links its session to a task
+2. **Agent gets stuck**: Agent blocks the task with a question
+3. **Human responds**: Human sees blocked task, adds a comment with the answer
+4. **Agent resumes**: Human resumes the agent with full context injected
+
+### Session Linking
+
+When an AI agent starts working on a task, it links its session:
+
+```bash
+# Link current session to task
+egenskriven session link <task> --tool opencode --ref <session-id>
+
+# Show linked session
+egenskriven session show <task>
+
+# View session history
+egenskriven session history <task>
+```
+
+### Blocking Flow
+
+When an agent needs human input:
+
+```bash
+# Block task with a question
+egenskriven block <task> "Should I use PostgreSQL or SQLite for this feature?"
+
+# List tasks needing human input
+egenskriven list --need-input
+```
+
+### Resume Flow
+
+After human provides input:
+
+```bash
+# Add comment with answer
+egenskriven comment <task> "Use SQLite for simplicity"
+
+# Resume the agent (injects full context)
+egenskriven resume <task>
+
+# Or with auto-execution (if configured)
+egenskriven resume <task> --exec
+```
+
+### Resume Modes
+
+Configure how resume works in board settings:
+
+| Mode | Behavior |
+|------|----------|
+| `command` | Prints the resume command for you to run |
+| `manual` | Shows command to copy |
+| `auto` | Automatically triggers on @agent comments |
+
+### Session ID Discovery
+
+| Tool | Method |
+|------|--------|
+| OpenCode | Call `egenskriven-session` tool |
+| Claude Code | Use `$CLAUDE_SESSION_ID` env var |
+| Codex | Run `.codex/get-session-id.sh` |
+
 ## Agent Integration
 
-EgenSkriven is designed to work seamlessly with AI coding agents like Claude Code, OpenCode, Cursor, etc.
+EgenSkriven is designed to work seamlessly with AI coding agents like Claude Code, OpenCode, Cursor, Codex, etc.
 
 ### Initialize Configuration
 
 ```bash
 # Create .egenskriven/config.json
 ./egenskriven init --workflow strict --mode autonomous
+
+# Initialize for specific tools
+./egenskriven init --opencode
+./egenskriven init --claude-code
+./egenskriven init --codex
 ```
 
 **Workflow modes:**
@@ -340,44 +418,15 @@ The `prime` command outputs formatted instructions that tell the agent how to us
 # Find ready tasks (unblocked, in todo/backlog)
 ./egenskriven list --ready --json
 
+# Find tasks needing human input
+./egenskriven list --need-input --json
+
 # Create task with agent tracking
 ./egenskriven add "Fix bug" --agent claude --json
 
 # All commands support JSON output
 ./egenskriven list --json --fields id,title,column
 ```
-
-### Example: Claude Code Hook
-
-Add to your Claude Code settings (`.claude/settings.json`):
-
-```json
-{
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          { "type": "command", "command": "egenskriven prime --agent claude" }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          { "type": "command", "command": "egenskriven prime --agent claude" }
-        ]
-      }
-    ]
-  }
-}
-```
-
-This injects task tracking instructions into Claude's context at session start and before context compaction.
-
-**Recommended setup (skills + prime):**
-1. Install skills globally: `egenskriven skill install --global`
-2. Add the prime hook above for guaranteed context injection
-3. Skills provide on-demand detailed instructions, prime provides baseline context
 
 ### Skills System
 
@@ -414,95 +463,34 @@ egenskriven skill install --force
 | `egenskriven-workflows` | Workflow modes and agent behaviors | Configuring workflow/agent modes |
 | `egenskriven-advanced` | Epics, dependencies, sub-tasks, batch ops | Complex task relationships |
 
-#### Check Installation Status
+### Example: Claude Code Hook
 
-```bash
-egenskriven skill status
+Add to your Claude Code settings (`.claude/settings.json`):
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "egenskriven prime --agent claude" }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          { "type": "command", "command": "egenskriven prime --agent claude" }
+        ]
+      }
+    ]
+  }
+}
 ```
-
-#### Uninstall Skills
-
-```bash
-# Remove from all locations
-egenskriven skill uninstall
-
-# Remove from specific location
-egenskriven skill uninstall --global
-egenskriven skill uninstall --project
-```
-
-### AGENTS.md
-
-EgenSkriven includes an `AGENTS.md` file that provides minimal always-loaded context for AI agents. This file is automatically read by agents supporting the AGENTS.md standard (Claude Code, OpenCode, Cursor, Codex, etc.).
-
-**Customize AGENTS.md for your project:**
-
-1. **Workflow mode**: Change "light" to "strict" or "minimal" in the Workflow section
-2. **Quick commands**: Add project-specific common operations
-3. **Board info**: If using multiple boards, mention the default board
-4. **Project conventions**: Add any project-specific task naming or labeling conventions
-
-The AGENTS.md file points agents to the skills system for detailed documentation, keeping always-loaded context minimal.
-
-### Skills vs Prime Command
-
-| Feature | Skills | Prime |
-|---------|--------|-------|
-| Token efficiency | High (on-demand) | Medium (~1-2k always) |
-| Agent support | Claude Code, OpenCode | Any agent with hooks |
-| Loading | Agent decides | Hook-injected |
-| Best for | Modern agents | Legacy/hook workflows |
-
-Use both together: Skills provide on-demand detail, prime provides hook-based injection.
-
-### Migrating from Prime-Only to Skills
-
-If you were using only the `prime` command before:
-
-1. **Install skills**: `egenskriven skill install --global`
-2. **Keep your prime hook**: The prime command continues to work alongside skills
-3. **Benefits of adding skills**:
-   - On-demand loading reduces context usage
-   - More detailed instructions when needed
-   - Agent can load specific skill based on task type
-
-**No changes required to existing setups** - skills are additive, not a replacement.
-
-### Skills Troubleshooting
-
-**Skills not discovered by agent:**
-1. Verify installation with `egenskriven skill status`
-2. Check the agent is reading from the correct location (global vs project)
-3. Restart the agent after installing skills
-4. Ensure skill files have correct YAML frontmatter with `name` and `description`
-
-**Skills installed but not loading:**
-- Agent loads skills on-demand based on keywords in conversation
-- Mention "task", "kanban", "egenskriven" to trigger skill loading
-- Some agents show available skills in their tool descriptions
-
-**Permission errors during install:**
-- Global install requires write access to `~/.claude/skills/` and `~/.config/opencode/skill/`
-- Try project install (`--project`) if global fails
-- Check directory permissions: `ls -la ~/.claude/` and `ls -la ~/.config/opencode/`
-
-**Updating skills after EgenSkriven upgrade:**
-- Run `egenskriven skill install --force` to update embedded skills
-- This overwrites existing skill files with the latest versions
 
 ## Web UI
 
-The web UI provides a full-featured kanban board with:
-
-- **Kanban board** - Tasks organized in columns (Backlog, Todo, In Progress, Review, Done)
-- **Drag and drop** - Move tasks between columns with visual feedback
-- **Real-time updates** - Changes from CLI appear instantly via subscriptions
-- **Task details** - Click or press Enter to view/edit task properties
-- **Quick create** - Press `C` to create new task with defaults
-- **Peek preview** - Press `Space` on selected task for quick preview
-- **Command palette** - Press `Cmd+K` for quick actions and search
-- **Sidebar** - Board switcher with color indicators
-- **Property pickers** - Quick property changes via keyboard
+The web UI provides a full-featured kanban board accessible at `http://localhost:8090` when the server is running.
 
 ### Keyboard Shortcuts
 
@@ -535,7 +523,14 @@ The web UI provides a full-featured kanban board with:
 | `P` | Change priority |
 | `T` | Change type |
 
-**Markdown Editor (in description field):**
+**Selection:**
+| Key | Action |
+|-----|--------|
+| `X` | Toggle select |
+| `Shift+X` | Select range |
+| `Cmd+A` | Select all visible |
+
+**Markdown Editor:**
 | Key | Action |
 |-----|--------|
 | `Ctrl+B` | Bold |
@@ -545,30 +540,7 @@ The web UI provides a full-featured kanban board with:
 | `Ctrl+Enter` | Save description |
 | `Escape` | Cancel editing |
 
-**Selection:**
-| Key | Action |
-|-----|--------|
-| `X` | Toggle select |
-| `Shift+X` | Select range |
-| `Cmd+A` | Select all visible |
-
-### Saved Views
-
-Save commonly used filter configurations as reusable views:
-
-1. **Create a view**: Apply filters using the filter builder (`F`), then click "+ Save" in the sidebar
-2. **Name the view**: Enter a descriptive name for your filter configuration
-3. **Access views**: Saved views appear in the sidebar under "Views"
-4. **Favorite views**: Star important views to pin them to the "Favorites" section
-5. **Delete views**: Click the `×` button on any saved view to remove it
-
-Views are board-specific and persist across sessions.
-
 ### Themes
-
-EgenSkriven supports a comprehensive theme system with built-in themes and custom theme support.
-
-#### Built-in Themes
 
 | Theme | Style | Description |
 |-------|-------|-------------|
@@ -578,37 +550,11 @@ EgenSkriven supports a comprehensive theme system with built-in themes and custo
 | Catppuccin Mocha | Dark | Soothing pastel colors |
 | Nord | Dark | Cool arctic bluish tones |
 | Tokyo Night | Dark | Purple-ish city lights inspired |
-
-#### Theme Selection
-
-1. Open Settings with `Ctrl+,` or click the settings icon
-2. Choose a theme from the grid (includes System option)
-3. Theme applies instantly with all colors updating
-
-#### System Mode
-
-When "System" is selected, the app follows your OS dark/light preference:
-- Configure which theme to use for dark mode (default: Dark)
-- Configure which theme to use for light mode (default: Light)
-- Automatically switches when your OS preference changes
-
-#### Accent Colors
-
-Customize the accent color used for buttons, links, and highlights:
-- **Theme Default** - Use the theme's carefully chosen accent color (indicated by "T" badge)
-- **8 preset colors** - Blue, Purple, Green, Orange, Pink, Cyan, Red, Yellow
-- Accent color resets to theme default when switching themes
+| Purple Dream | Dark | Vibrant purple aesthetic |
 
 #### Custom Themes
 
-Import your own themes via JSON files:
-
-1. Click "Import Theme" in Settings
-2. Select a valid JSON theme file
-3. Theme appears in the selection grid and can be applied
-4. Remove custom themes with the × button
-
-**Custom Theme JSON Format:**
+Import your own themes via JSON files in Settings. Required format:
 
 ```json
 {
@@ -654,19 +600,7 @@ Import your own themes via JSON files:
 }
 ```
 
-All color properties are required. Use hex colors (`#RRGGBB`) for most values, and `rgba()` for overlay/muted colors.
-
-### Filter Builder (Web UI)
-
-Press `F` to open the filter builder with support for:
-
-- **Multiple conditions**: Add multiple filters that combine with AND logic
-- **Filter types**: Status, Priority, Type, Labels, Due Date, Epic, Title
-- **Operators**: is, is not, is any of, is set, is not set
-- **Active filter pills**: Visual indicators showing active filters with quick remove
-- **Clear all**: Remove all filters with one click
-
-## Filtering Tasks (CLI)
+## Filtering Tasks
 
 The `list` command supports powerful filtering:
 
@@ -687,6 +621,7 @@ The `list` command supports powerful filtering:
 ./egenskriven list --is-blocked      # Show blocked tasks
 ./egenskriven list --not-blocked     # Show unblocked tasks
 ./egenskriven list --ready           # Unblocked in todo/backlog
+./egenskriven list --need-input      # Tasks blocked awaiting human input
 
 # Due date filters
 ./egenskriven list --due-before "2025-01-15"
@@ -713,16 +648,49 @@ The `list` command supports powerful filtering:
 ./egenskriven list --json --fields id,title,column
 ```
 
+## Multi-Board Support
+
+Organize tasks across multiple boards:
+
+```bash
+# Create boards
+./egenskriven board add "Work" --prefix WRK
+./egenskriven board add "Personal" --prefix PER --color "#22C55E"
+
+# List boards
+./egenskriven board list
+
+# Set default board
+./egenskriven board use work
+
+# Create task in specific board
+./egenskriven add "Fix bug" --board work
+
+# List tasks from specific board
+./egenskriven list --board work
+
+# List tasks from all boards
+./egenskriven list --all-boards
+
+# Show board details
+./egenskriven board show work
+
+# Delete board (with confirmation)
+./egenskriven board delete work --force
+```
+
+Task IDs include board prefix (e.g., `WRK-123`, `PER-456`).
+
 ## Epics
 
 Group related tasks into epics:
 
 ```bash
-# Create an epic
-./egenskriven epic add "Q1 Launch" --color "#3B82F6"
+# Create an epic (board-scoped)
+./egenskriven epic add "Q1 Launch" --board work --color "#3B82F6"
 
 # List epics
-./egenskriven epic list
+./egenskriven epic list --board work
 
 # Link task to epic
 ./egenskriven add "Implement auth" --epic "Q1 Launch"
@@ -770,38 +738,43 @@ echo '{"title":"Fix bug"}' | ./egenskriven add --stdin --agent claude
 }
 ```
 
-## Multi-Board Support
+## Export/Import/Backup
 
-Organize tasks across multiple boards:
+### Export
 
 ```bash
-# Create boards
-./egenskriven board add "Work" --prefix WRK
-./egenskriven board add "Personal" --prefix PER --color "#22C55E"
+# Export all data to JSON
+./egenskriven export --format json > backup.json
 
-# List boards
-./egenskriven board list
+# Export tasks only to CSV
+./egenskriven export --format csv > tasks.csv
 
-# Set default board
-./egenskriven board use work
-
-# Create task in specific board
-./egenskriven add "Fix bug" --board work
-
-# List tasks from specific board
-./egenskriven list --board work
-
-# List tasks from all boards
-./egenskriven list --all-boards
-
-# Show board details
-./egenskriven board show work
-
-# Delete board (with confirmation)
-./egenskriven board delete work --force
+# Export specific board
+./egenskriven export --board work -o work-backup.json
 ```
 
-Task IDs include board prefix (e.g., `WRK-123`, `PER-456`).
+### Import
+
+```bash
+# Import with merge strategy (skip existing, add new)
+./egenskriven import backup.json
+
+# Import with replace strategy (overwrite existing)
+./egenskriven import backup.json --strategy replace
+
+# Preview import without making changes
+./egenskriven import backup.json --dry-run
+```
+
+### Backup
+
+```bash
+# Create database backup
+./egenskriven backup
+
+# Backup to specific location
+./egenskriven backup --output /path/to/backup/
+```
 
 ## Hybrid Mode (Online/Offline)
 
@@ -827,13 +800,6 @@ EgenSkriven supports a hybrid mode that allows the CLI to work both when the ser
 ./egenskriven move abc123 done --direct
 ```
 
-### When to Use `--direct`
-
-- **Offline work**: When you don't have the server running
-- **Performance**: Direct DB access is slightly faster (no HTTP overhead)
-- **Scripting**: When you don't need real-time UI updates
-- **CI/CD**: In automated pipelines where server may not be available
-
 ### Trade-offs
 
 | Mode | Real-time UI Updates | Speed | Requires Server |
@@ -841,62 +807,43 @@ EgenSkriven supports a hybrid mode that allows the CLI to work both when the ser
 | HTTP API (default) | Yes | Normal | Yes (with fallback) |
 | Direct (`--direct`) | No | Faster | No |
 
-> **Note**: Changes made via `--direct` mode are persisted to the database and will be visible in the UI when you refresh or restart the server.
+## Shell Completions
 
-## Export/Import
-
-Backup and migrate your data:
+Enable tab completion for your shell:
 
 ```bash
-# Export all data to JSON
-./egenskriven export --format json > backup.json
+# Bash (Linux)
+egenskriven completion bash > /etc/bash_completion.d/egenskriven
 
-# Export tasks only to CSV
-./egenskriven export --format csv > tasks.csv
+# Bash (macOS with bash-completion@2)
+egenskriven completion bash > $(brew --prefix)/etc/bash_completion.d/egenskriven
 
-# Export specific board
-./egenskriven export --board work -o work-backup.json
+# Zsh
+egenskriven completion zsh > "${fpath[1]}/_egenskriven"
 
-# Import with merge strategy (skip existing, add new)
-./egenskriven import backup.json
+# Fish
+egenskriven completion fish > ~/.config/fish/completions/egenskriven.fish
 
-# Import with replace strategy (overwrite existing)
-./egenskriven import backup.json --strategy replace
-
-# Preview import without making changes
-./egenskriven import backup.json --dry-run
+# PowerShell
+egenskriven completion powershell >> $PROFILE
 ```
 
-**Export formats:**
-- `json` - Full data export (boards, epics, tasks) - suitable for backup/restore
-- `csv` - Tasks only - suitable for spreadsheet analysis
+## Self-Upgrade
 
-**Import strategies:**
-- `merge` (default) - Skip records that already exist, add new ones
-- `replace` - Overwrite existing records with same ID
-
-## Blocking Dependencies
-
-Track task dependencies to identify parallelizable work:
+Update EgenSkriven to the latest version:
 
 ```bash
-# Mark task as blocked
-./egenskriven update abc123 --blocked-by def456
+# Check for updates and install if available
+egenskriven self-upgrade
 
-# Add multiple blockers
-./egenskriven update abc123 --add-blocked-by ghi789
+# Only check for updates (don't install)
+egenskriven self-upgrade --check
 
-# Remove blocker
-./egenskriven update abc123 --remove-blocked-by def456
+# Force reinstall current version
+egenskriven self-upgrade --force
 
-# Find blocked tasks
-./egenskriven list --is-blocked
-
-# Find unblocked tasks
-./egenskriven list --not-blocked
-
-# Find ready work (unblocked + in todo/backlog)
-./egenskriven list --ready
+# JSON output for scripting
+egenskriven self-upgrade --check --json
 ```
 
 ## Development
@@ -925,9 +872,11 @@ make dev-ui   # React dev server (port 5173)
 ### Testing
 
 ```bash
-make test     # Run Go tests
-make test-ui  # Run UI tests
+make test       # Run Go unit tests
+make test-ui    # Run UI unit tests (Vitest)
 ```
+
+E2E tests use Playwright and can be run from the `ui/` directory.
 
 ### Build
 
@@ -940,26 +889,46 @@ make clean    # Remove build artifacts
 
 ```
 .
-├── cmd/egenskriven/     # Main entry point
+├── cmd/egenskriven/        # Main entry point
 ├── internal/
-│   ├── board/           # Board management logic
-│   ├── commands/        # CLI commands (add, list, move, etc.)
-│   ├── config/          # Configuration management
-│   ├── output/          # Output formatting (human/JSON)
-│   ├── resolver/        # Task reference resolution
-│   └── testutil/        # Test utilities
-├── migrations/          # Database migrations
-├── ui/                  # React frontend
+│   ├── autoresume/         # Auto-resume AI sessions on @agent comments
+│   ├── board/              # Board management logic
+│   ├── commands/           # CLI commands
+│   │   └── skills/         # Embedded skill files for AI agents
+│   ├── config/             # Configuration management
+│   ├── db/                 # Database utilities
+│   ├── hooks/              # PocketBase event hooks
+│   ├── output/             # Output formatting (human/JSON)
+│   ├── resolver/           # Task reference resolution
+│   ├── resume/             # Resume command building
+│   └── testutil/           # Test utilities
+├── migrations/             # Database migrations (18 total)
+├── ui/                     # React frontend
 │   ├── src/
-│   │   ├── components/  # React components (Board, TaskCard, CommandPalette, etc.)
-│   │   ├── contexts/    # React contexts (ThemeContext, BoardContext, etc.)
-│   │   ├── hooks/       # Custom hooks (useTasks, useKeyboard, useSelection, etc.)
-│   │   ├── themes/      # Theme system (types, builtin themes, validation)
-│   │   ├── types/       # TypeScript types
-│   │   └── lib/         # PocketBase client
-│   └── ...
-└── docs/                # Documentation
+│   │   ├── components/     # React components
+│   │   ├── contexts/       # React contexts
+│   │   ├── hooks/          # Custom hooks
+│   │   ├── stores/         # Zustand stores
+│   │   ├── themes/         # Theme system
+│   │   ├── types/          # TypeScript types
+│   │   └── lib/            # PocketBase client
+│   └── embed.go            # Embeds UI into Go binary
+├── tests/
+│   ├── e2e/                # End-to-end tests
+│   └── performance/        # Performance benchmarks
+└── docs/                   # Documentation
 ```
+
+## Database Schema
+
+| Collection | Purpose |
+|------------|---------|
+| `tasks` | Core task storage with history tracking |
+| `boards` | Multi-board support with resume modes |
+| `epics` | Task grouping (board-scoped) |
+| `comments` | Task discussions (human-AI threads) |
+| `sessions` | AI agent session tracking |
+| `views` | Saved filter configurations |
 
 ## Configuration
 
@@ -974,6 +943,9 @@ Project configuration is stored in `.egenskriven/config.json`:
     "overrideTodoWrite": true,
     "requireSummary": false,
     "structuredSections": false
+  },
+  "server": {
+    "url": "http://localhost:8090"
   }
 }
 ```
