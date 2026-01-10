@@ -560,3 +560,217 @@ func BenchmarkCommentsByTaskWithIndex(b *testing.B) {
 		}
 	}
 }
+
+// ========== Session Benchmarks ==========
+
+// setupBenchmarkSessionsCollection creates the sessions collection for benchmarks.
+func setupBenchmarkSessionsCollection(b *testing.B, app *pocketbase.PocketBase) {
+	b.Helper()
+
+	_, err := app.FindCollectionByNameOrId("sessions")
+	if err == nil {
+		return
+	}
+
+	// Get tasks collection for relation
+	tasks, err := app.FindCollectionByNameOrId("tasks")
+	if err != nil {
+		b.Fatalf("tasks collection must exist before sessions: %v", err)
+	}
+
+	collection := core.NewBaseCollection("sessions")
+
+	collection.Fields.Add(&core.RelationField{
+		Name:          "task",
+		CollectionId:  tasks.Id,
+		MaxSelect:     1,
+		Required:      true,
+		CascadeDelete: true,
+	})
+	collection.Fields.Add(&core.SelectField{
+		Name:     "tool",
+		Required: true,
+		Values:   []string{"opencode", "claude-code", "codex"},
+	})
+	collection.Fields.Add(&core.TextField{
+		Name:     "external_ref",
+		Required: true,
+		Max:      500,
+	})
+	collection.Fields.Add(&core.SelectField{
+		Name:     "ref_type",
+		Required: true,
+		Values:   []string{"uuid", "path"},
+	})
+	collection.Fields.Add(&core.TextField{
+		Name:     "working_dir",
+		Required: true,
+		Max:      1000,
+	})
+	collection.Fields.Add(&core.SelectField{
+		Name:     "status",
+		Required: true,
+		Values:   []string{"active", "paused", "completed", "abandoned"},
+	})
+	collection.Fields.Add(&core.AutodateField{
+		Name:     "created",
+		OnCreate: true,
+	})
+	collection.Fields.Add(&core.DateField{
+		Name: "ended_at",
+	})
+
+	if err := app.Save(collection); err != nil {
+		b.Fatalf("failed to create sessions collection: %v", err)
+	}
+}
+
+// BenchmarkSessionLink measures the performance of linking a session to a task.
+// Target: < 50ms
+// Tests: single record update (task) + create (session) in transaction
+func BenchmarkSessionLink(b *testing.B) {
+	app := setupBenchmarkEnv(b)
+	setupBenchmarkSessionsCollection(b, app)
+
+	sessionsCollection, err := app.FindCollectionByNameOrId("sessions")
+	if err != nil {
+		b.Fatalf("sessions collection not found: %v", err)
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		// Create a fresh task for each iteration
+		task := createBenchmarkTask(b, app, fmt.Sprintf("Session benchmark task %d", i), "in_progress")
+		b.StartTimer()
+
+		// Simulate session link operation (same as session.go:124-176)
+		err := app.RunInTransaction(func(txApp core.App) error {
+			// Update task with agent_session
+			newSession := map[string]any{
+				"tool":        "claude-code",
+				"ref":         fmt.Sprintf("benchmark-session-%d", i),
+				"ref_type":    "uuid",
+				"working_dir": "/tmp/benchmark",
+				"linked_at":   "2024-01-01T00:00:00Z",
+			}
+			task.Set("agent_session", newSession)
+
+			// Add history entry
+			addHistoryEntry(task, "session_linked", "agent", map[string]any{
+				"tool":        "claude-code",
+				"session_ref": fmt.Sprintf("benchmark-session-%d", i),
+			})
+
+			if err := txApp.Save(task); err != nil {
+				return err
+			}
+
+			// Create session record
+			sessionRecord := core.NewRecord(sessionsCollection)
+			sessionRecord.Set("task", task.Id)
+			sessionRecord.Set("tool", "claude-code")
+			sessionRecord.Set("external_ref", fmt.Sprintf("benchmark-session-%d", i))
+			sessionRecord.Set("ref_type", "uuid")
+			sessionRecord.Set("working_dir", "/tmp/benchmark")
+			sessionRecord.Set("status", "active")
+
+			return txApp.Save(sessionRecord)
+		})
+
+		if err != nil {
+			b.Fatalf("session link failed: %v", err)
+		}
+	}
+}
+
+// BenchmarkSessionLookupByRef measures looking up a session by external reference.
+func BenchmarkSessionLookupByRef(b *testing.B) {
+	app := setupBenchmarkEnv(b)
+	setupBenchmarkSessionsCollection(b, app)
+
+	sessionsCollection, err := app.FindCollectionByNameOrId("sessions")
+	if err != nil {
+		b.Fatalf("sessions collection not found: %v", err)
+	}
+
+	// Create tasks and sessions
+	refs := make([]string, 50)
+	for i := 0; i < 50; i++ {
+		task := createBenchmarkTask(b, app, fmt.Sprintf("Session lookup task %d", i), "in_progress")
+		ref := fmt.Sprintf("session-ref-%d", i)
+		refs[i] = ref
+
+		session := core.NewRecord(sessionsCollection)
+		session.Set("task", task.Id)
+		session.Set("tool", "claude-code")
+		session.Set("external_ref", ref)
+		session.Set("ref_type", "uuid")
+		session.Set("working_dir", "/tmp")
+		session.Set("status", "active")
+		if err := app.Save(session); err != nil {
+			b.Fatalf("failed to create session: %v", err)
+		}
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		ref := refs[i%len(refs)]
+		_, err := app.FindRecordsByFilter(
+			"sessions",
+			"external_ref = {:ref}",
+			"",
+			1,
+			0,
+			dbx.Params{"ref": ref},
+		)
+		if err != nil {
+			b.Fatalf("session lookup failed: %v", err)
+		}
+	}
+}
+
+// BenchmarkSessionStatusUpdate measures updating session status.
+func BenchmarkSessionStatusUpdate(b *testing.B) {
+	app := setupBenchmarkEnv(b)
+	setupBenchmarkSessionsCollection(b, app)
+
+	sessionsCollection, err := app.FindCollectionByNameOrId("sessions")
+	if err != nil {
+		b.Fatalf("sessions collection not found: %v", err)
+	}
+
+	// Create a task and sessions
+	task := createBenchmarkTask(b, app, "Status update benchmark task", "in_progress")
+	sessions := make([]*core.Record, 20)
+	for i := 0; i < 20; i++ {
+		session := core.NewRecord(sessionsCollection)
+		session.Set("task", task.Id)
+		session.Set("tool", "claude-code")
+		session.Set("external_ref", fmt.Sprintf("status-update-ref-%d", i))
+		session.Set("ref_type", "uuid")
+		session.Set("working_dir", "/tmp")
+		session.Set("status", "active")
+		if err := app.Save(session); err != nil {
+			b.Fatalf("failed to create session: %v", err)
+		}
+		sessions[i] = session
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		session := sessions[i%len(sessions)]
+		// Toggle between paused and active
+		newStatus := "paused"
+		if session.GetString("status") == "paused" {
+			newStatus = "active"
+		}
+		session.Set("status", newStatus)
+		if err := app.Save(session); err != nil {
+			b.Fatalf("session status update failed: %v", err)
+		}
+	}
+}

@@ -37,19 +37,19 @@ Create benchmarks for each operation with target verification:
 | Session link | < 50ms | `BenchmarkSessionLink` |
 | List --need-input | < 100ms | `BenchmarkListNeedInput` |
 
-- [ ] `BenchmarkBlockTask` - Test atomic transaction (move + comment)
+- [x] `BenchmarkBlockTask` - Test atomic transaction (move + comment)
   - Location: `internal/commands/block.go:103-138`
-- [ ] `BenchmarkAddComment` - Test with mention extraction
+- [x] `BenchmarkAddComment` - Test with mention extraction
   - Location: `internal/commands/comment.go:102-113`
-- [ ] `BenchmarkListComments` - Test up to 100 comments per task
+- [x] `BenchmarkListComments` - Test up to 100 comments per task
   - Location: `internal/commands/comments.go:73-83`
-- [ ] `BenchmarkResumeGeneration` - Test context building
+- [x] `BenchmarkResumeGeneration` - Test context building (as `BenchmarkBuildContextPrompt`)
   - Location: `internal/resume/context.go:20-72`
-- [ ] `BenchmarkAutoResumeTrigger` - Test goroutine execution
+- [x] `BenchmarkAutoResumeTrigger` - Test goroutine execution (as `BenchmarkCheckAndResume`)
   - Location: `internal/autoresume/service.go:34-90`
-- [ ] `BenchmarkSessionLink` - Test single record update
+- [x] `BenchmarkSessionLink` - Test single record update
   - Location: `internal/commands/session.go:124-176`
-- [ ] `BenchmarkListNeedInput` - Test indexed query
+- [x] `BenchmarkListNeedInput` - Test indexed query
   - Location: `internal/commands/list.go:118-120`
 
 ### Subtask 1.3: Implement Scaling Benchmarks
