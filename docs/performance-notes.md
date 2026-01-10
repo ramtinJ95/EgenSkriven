@@ -15,7 +15,7 @@ workflow feature.
 
 - [x] Create `internal/commands/benchmark_test.go` for command benchmarks
 - [x] Create `internal/resume/benchmark_test.go` for context building benchmarks
-- [ ] Create `internal/autoresume/benchmark_test.go` for auto-resume benchmarks
+- [x] Create `internal/autoresume/benchmark_test.go` for auto-resume benchmarks
 - [x] Add benchmark helper utilities for database seeding
 
 **Files to create/modify**:
