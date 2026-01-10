@@ -91,10 +91,12 @@ Verify indexes defined in migrations:
 
 ### Subtask 2.2: Create Index Verification Tests
 
-- [ ] Create `internal/db/index_test.go` with tests that verify:
-  - Indexes exist after migration
-  - Queries use expected indexes (EXPLAIN QUERY PLAN)
-  - Index performance vs table scan comparison
+- [x] Create `internal/db/index_test.go` with tests that verify:
+  - Indexes exist after migration ✓ (`TestCommentsIndexesExist`, `TestSessionsIndexesExist`)
+  - Queries use expected indexes ✓ (`TestCommentsQueryUsesTaskIndex`, `TestSessionsQueryUsesExternalRefIndex`, `TestSessionsQueryUsesStatusIndex`)
+  - Index performance vs table scan comparison ✓ (`TestIndexedQueryPerformance`)
+
+**Note**: `TestTasksColumnIndexExists` reports that tasks collection lacks explicit column index.
 
 ### Subtask 2.3: Add Missing Indexes
 
