@@ -300,13 +300,17 @@ go test -benchmem -bench=Memory ./internal/memory/
 
 **Goal**: Verify and optimize auto-resume goroutine execution.
 
-**Status**: Partially Implemented
+**Status**: Mostly Complete (Subtasks 7.1, 7.2 done; 7.3 optimization not needed)
 
 ### Subtask 7.1: Verify Current Implementation
 
 - [x] Goroutine execution: `internal/hooks/comments.go:19-27`
 - [x] Background resume: `internal/autoresume/service.go:145`
-- [ ] Single trigger guard: Verify in `internal/autoresume/service.go:254-286`
+- [x] Single trigger guard: Verified via state machine design
+  - Column check: `service.go:57` - task must be in `need_input`
+  - State transition: `service.go:152` - task moves to `in_progress` before resume
+  - Guard mechanism: Once task is `in_progress`, subsequent @agent mentions don't trigger
+  - Note: Race condition possible with rapid concurrent comments (no mutex/lock)
 
 ### Subtask 7.2: Benchmark Auto-Resume Path
 
