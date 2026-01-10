@@ -64,7 +64,7 @@
 .dropdown {
   position: absolute;
   top: 100%;
-  left: 0;
+  right: 0;
   z-index: 1000;
   margin-top: var(--space-1, 4px);
   padding: var(--space-3, 12px);
