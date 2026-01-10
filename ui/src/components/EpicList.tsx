@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
 import { useEpics } from '../hooks/useEpics'
 import type { Task } from '../types/task'
 import { EPIC_COLORS } from '../types/epic'
@@ -28,7 +28,8 @@ interface EpicListProps {
  * - Loading and error states
  */
 export function EpicList({ boardId, tasks, selectedEpicId, onSelectEpic, onEpicDetailClick }: EpicListProps) {
-  const { epics, loading, error } = useEpics(boardId)
+  const { epics, loading, error, createEpic } = useEpics(boardId)
+  const [showNewEpic, setShowNewEpic] = useState(false)
 
   // Calculate task counts per epic
   const epicCounts = useMemo(() => {
@@ -136,6 +137,25 @@ export function EpicList({ boardId, tasks, selectedEpicId, onSelectEpic, onEpicD
       {epics.length === 0 && (
         <div className={styles.empty}>No epics yet</div>
       )}
+
+      {/* New Epic Button */}
+      {boardId && (
+        <button
+          className={styles.newEpicButton}
+          onClick={() => setShowNewEpic(true)}
+        >
+          + New epic
+        </button>
+      )}
+
+      {/* New Epic Modal */}
+      {showNewEpic && boardId && (
+        <NewEpicModal
+          onClose={() => setShowNewEpic(false)}
+          createEpic={createEpic}
+          boardId={boardId}
+        />
+      )}
     </section>
   )
 }
@@ -196,5 +216,139 @@ function DetailIcon() {
       <path d="M8 6v4" />
       <circle cx="8" cy="11" r="0.5" fill="currentColor" />
     </svg>
+  )
+}
+
+// Modal for creating a new epic
+interface NewEpicModalProps {
+  onClose: () => void
+  createEpic: (input: { title: string; description?: string; color?: string; board: string }) => Promise<unknown>
+  boardId: string
+}
+
+function NewEpicModal({ onClose, createEpic, boardId }: NewEpicModalProps) {
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [color, setColor] = useState(EPIC_COLORS[0])
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  // Handle Escape key to close modal
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape' && !submitting) {
+      onClose()
+    }
+  }, [onClose, submitting])
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [handleKeyDown])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    if (!title.trim()) {
+      setError('Title is required')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      await createEpic({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        color,
+        board: boardId,
+      })
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create epic')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div
+        className={styles.modal}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="new-epic-modal-title"
+      >
+        <h2 id="new-epic-modal-title" className={styles.modalTitle}>Create New Epic</h2>
+        <form onSubmit={handleSubmit}>
+          <div className={styles.formField}>
+            <label htmlFor="epic-title">Title</label>
+            <input
+              id="epic-title"
+              type="text"
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value)
+                if (error) setError('')
+              }}
+              placeholder="e.g., User Authentication"
+              autoFocus
+              disabled={submitting}
+              maxLength={200}
+            />
+          </div>
+
+          <div className={styles.formField}>
+            <label htmlFor="epic-description">Description (optional)</label>
+            <textarea
+              id="epic-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe what this epic covers..."
+              disabled={submitting}
+              maxLength={5000}
+              rows={3}
+            />
+          </div>
+
+          <div className={styles.formField}>
+            <label>Color</label>
+            <div className={styles.colorPicker}>
+              {EPIC_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={`${styles.colorOption} ${color === c ? styles.colorSelected : ''}`}
+                  style={{ backgroundColor: c }}
+                  onClick={() => setColor(c)}
+                  disabled={submitting}
+                  aria-label={`Select color ${c}`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {error && <div className={styles.formError}>{error}</div>}
+
+          <div className={styles.modalActions}>
+            <button
+              type="button"
+              className={styles.buttonSecondary}
+              onClick={onClose}
+              disabled={submitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className={styles.buttonPrimary}
+              disabled={submitting}
+            >
+              {submitting ? 'Creating...' : 'Create Epic'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }
