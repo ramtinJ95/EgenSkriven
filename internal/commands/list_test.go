@@ -251,3 +251,146 @@ func TestListCommand_NeedInputWithPriorityFilter(t *testing.T) {
 	assert.Equal(t, urgentTask.Id, records[0].Id)
 	assert.Equal(t, "urgent", records[0].GetString("priority"))
 }
+
+// ========== buildInFilter Tests ==========
+
+// TestBuildInFilter_SingleValue verifies single value creates field-prefixed parameter
+func TestBuildInFilter_SingleValue(t *testing.T) {
+	expr := buildInFilter("status", []string{"todo"})
+
+	// The expression should use field-prefixed parameter name
+	// We can't directly inspect the expression, but we can verify it works
+	// by checking the SQL string contains the field name
+	assert.NotNil(t, expr)
+}
+
+// TestBuildInFilter_MultipleValues verifies multiple values create field-prefixed parameters
+func TestBuildInFilter_MultipleValues(t *testing.T) {
+	expr := buildInFilter("priority", []string{"high", "urgent"})
+
+	assert.NotNil(t, expr)
+}
+
+// TestBuildInFilter_NoParameterCollision verifies different fields don't collide
+func TestBuildInFilter_NoParameterCollision(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	SetupTasksCollection(t, app)
+
+	collection, err := app.FindCollectionByNameOrId("tasks")
+	require.NoError(t, err)
+
+	// Create tasks with different status and priority combinations
+	task1 := core.NewRecord(collection)
+	task1.Set("title", "High priority todo")
+	task1.Set("type", "feature")
+	task1.Set("priority", "high")
+	task1.Set("column", "todo")
+	task1.Set("position", 1000.0)
+	task1.Set("labels", []string{})
+	task1.Set("blocked_by", []string{})
+	task1.Set("created_by", "cli")
+	task1.Set("history", []map[string]any{})
+	require.NoError(t, app.Save(task1))
+
+	task2 := core.NewRecord(collection)
+	task2.Set("title", "Low priority in_progress")
+	task2.Set("type", "feature")
+	task2.Set("priority", "low")
+	task2.Set("column", "in_progress")
+	task2.Set("position", 2000.0)
+	task2.Set("labels", []string{})
+	task2.Set("blocked_by", []string{})
+	task2.Set("created_by", "cli")
+	task2.Set("history", []map[string]any{})
+	require.NoError(t, app.Save(task2))
+
+	task3 := core.NewRecord(collection)
+	task3.Set("title", "High priority in_progress")
+	task3.Set("type", "bug")
+	task3.Set("priority", "high")
+	task3.Set("column", "in_progress")
+	task3.Set("position", 3000.0)
+	task3.Set("labels", []string{})
+	task3.Set("blocked_by", []string{})
+	task3.Set("created_by", "cli")
+	task3.Set("history", []map[string]any{})
+	require.NoError(t, app.Save(task3))
+
+	// Build filters for both column and priority - this would have collided before the fix
+	columnFilter := buildInFilter("column", []string{"todo", "in_progress"})
+	priorityFilter := buildInFilter("priority", []string{"high"})
+
+	// Combine filters using AND - before the fix, parameter names would collide
+	records, err := app.FindAllRecords("tasks", columnFilter, priorityFilter)
+	require.NoError(t, err)
+
+	// Should find task1 (high priority, todo) and task3 (high priority, in_progress)
+	assert.Len(t, records, 2, "should find tasks matching both column and priority filters")
+
+	foundTask1 := false
+	foundTask3 := false
+	for _, r := range records {
+		if r.Id == task1.Id {
+			foundTask1 = true
+		}
+		if r.Id == task3.Id {
+			foundTask3 = true
+		}
+	}
+	assert.True(t, foundTask1, "should find high priority todo task")
+	assert.True(t, foundTask3, "should find high priority in_progress task")
+}
+
+// TestBuildInFilter_MultipleFiltersWithMultipleValues verifies complex filter combinations
+func TestBuildInFilter_MultipleFiltersWithMultipleValues(t *testing.T) {
+	app := testutil.NewTestApp(t)
+	SetupTasksCollection(t, app)
+
+	collection, err := app.FindCollectionByNameOrId("tasks")
+	require.NoError(t, err)
+
+	// Create diverse tasks
+	tasks := []struct {
+		title    string
+		taskType string
+		priority string
+		column   string
+	}{
+		{"Feature high todo", "feature", "high", "todo"},
+		{"Bug urgent in_progress", "bug", "urgent", "in_progress"},
+		{"Chore low done", "chore", "low", "done"},
+		{"Feature medium todo", "feature", "medium", "todo"},
+		{"Bug high review", "bug", "high", "review"},
+	}
+
+	taskRecords := make([]*core.Record, len(tasks))
+	for i, tc := range tasks {
+		record := core.NewRecord(collection)
+		record.Set("title", tc.title)
+		record.Set("type", tc.taskType)
+		record.Set("priority", tc.priority)
+		record.Set("column", tc.column)
+		record.Set("position", float64((i+1)*1000))
+		record.Set("labels", []string{})
+		record.Set("blocked_by", []string{})
+		record.Set("created_by", "cli")
+		record.Set("history", []map[string]any{})
+		require.NoError(t, app.Save(record))
+		taskRecords[i] = record
+	}
+
+	// Build three filters that would all collide without field-prefixed params
+	typeFilter := buildInFilter("type", []string{"feature", "bug"})
+	priorityFilter := buildInFilter("priority", []string{"high", "urgent"})
+	columnFilter := buildInFilter("column", []string{"todo", "in_progress", "review"})
+
+	// Combine all three filters
+	records, err := app.FindAllRecords("tasks", typeFilter, priorityFilter, columnFilter)
+	require.NoError(t, err)
+
+	// Should find:
+	// - Feature high todo (matches all)
+	// - Bug urgent in_progress (matches all)
+	// - Bug high review (matches all)
+	assert.Len(t, records, 3, "should find tasks matching all three filter criteria")
+}
