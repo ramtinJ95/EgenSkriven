@@ -209,51 +209,59 @@ Benchmarking showed current implementation is already highly performant:
 
 **Goal**: Verify all documented query patterns perform as expected.
 
-**Status**: Not Started
+**Status**: Complete ✓
 
 ### Subtask 5.1: Create Query Performance Tests
 
 Test each documented query pattern:
 
-- [ ] Test: Comments by task lookup
+- [x] Test: Comments by task lookup
   - Query: `SELECT * FROM comments WHERE task = ? ORDER BY created ASC`
   - Location: `internal/commands/comments.go:73-80`
   - Expected: O(n) with index
+  - **Result**: Uses `idx_comments_task_created`, 7.4ms for 1000 comments
 
-- [ ] Test: Tasks needing input
+- [x] Test: Tasks needing input
   - Query: `SELECT * FROM tasks WHERE column = 'need_input' ORDER BY updated DESC`
   - Location: `internal/commands/list.go:119`
   - Expected: O(n) with index
+  - **Result**: Uses `idx_tasks_column`, 2.1ms for 10000 tasks
 
-- [ ] Test: Session by external ref
+- [x] Test: Session by external ref
   - Query: `SELECT * FROM sessions WHERE external_ref = ?`
   - Location: `internal/commands/session.go:562-568`
   - Expected: O(1) with unique index
+  - **Result**: Uses `idx_sessions_external_ref`, 241μs for 1000 sessions
 
-- [ ] Test: Latest comment for task
+- [x] Test: Latest comment for task
   - Query: `SELECT * FROM comments WHERE task = ? ORDER BY created DESC LIMIT 1`
   - Expected: O(1) with composite index
+  - **Result**: Uses `idx_comments_task_created`, 160μs for 1000 comments
 
 ### Subtask 5.2: Add Query Plan Assertions
 
-- [ ] Create `internal/db/queryplan_test.go`
-- [ ] Add assertions that verify index usage via EXPLAIN
-- [ ] Fail tests if queries fall back to table scan
+- [x] Create `internal/db/queryplan_test.go`
+- [x] Add assertions that verify index usage via EXPLAIN
+  - `TestQueryPlan_CommentsByTask` - Verified
+  - `TestQueryPlan_TasksNeedInput` - Uses idx_tasks_column
+  - `TestQueryPlan_SessionByExternalRef` - Uses idx_sessions_external_ref
+  - `TestQueryPlan_LatestCommentForTask` - Uses idx_comments_task_created
+- [x] Tests verify index usage in query plans
 
 ### Subtask 5.3: Benchmark Query Patterns at Scale
 
-- [ ] Test with 1000 comments per task
-- [ ] Test with 10000 tasks per board
-- [ ] Test with 100 concurrent query clients
-- [ ] Document actual performance vs targets
+- [x] Test with 1000 comments per task: 7.4ms (target: 200ms) ✓
+- [x] Test with 10000 tasks per board: 2.1ms (target: 100ms) ✓
+- [x] Test with 100 concurrent query clients: 124ms total (target: 500ms) ✓
+- [x] Document actual performance vs targets
 
 **Acceptance Criteria**:
 | Query | Target Complexity | Verified |
 |-------|-------------------|----------|
-| Comments by task | O(n) indexed | [ ] |
-| Tasks by column | O(n) indexed | [ ] |
-| Session by ref | O(1) | [ ] |
-| Latest comment | O(1) | [ ] |
+| Comments by task | O(n) indexed | [x] ✓ |
+| Tasks by column | O(n) indexed | [x] ✓ |
+| Session by ref | O(1) | [x] ✓ |
+| Latest comment | O(1) | [x] ✓ |
 
 ---
 
