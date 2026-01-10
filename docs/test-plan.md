@@ -745,7 +745,7 @@ Task(
 | 3 | ✅ DONE | 4 | 0 | All subtasks passed (3.1-3.4). Cards, columns, selection, loading verified |
 | 4 | ✅ DONE | 4 | 0 | All subtasks passed (4.1-4.4). Panel, properties, markdown, comments verified |
 | 5 | ✅ DONE | 3 | 0 | All subtasks passed (5.1-5.3). Drag initiation, visual feedback, drop verified |
-| 6 | Pending | - | - | - |
+| 6 | ✅ DONE | 4 | 0 | All subtasks passed (6.1-6.4). Search, filters, pills, views verified |
 | 7 | Pending | - | - | - |
 | 8 | Pending | - | - | - |
 | 9 | Pending | - | - | - |
