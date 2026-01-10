@@ -747,7 +747,7 @@ Task(
 | 5 | ✅ DONE | 3 | 0 | All subtasks passed (5.1-5.3). Drag initiation, visual feedback, drop verified |
 | 6 | ✅ DONE | 4 | 0 | All subtasks passed (6.1-6.4). Search, filters, pills, views verified |
 | 7 | ✅ DONE | 4 | 0 | All subtasks passed (7.1-7.4). Quick create, command palette, display, boards verified |
-| 8 | Pending | - | - | - |
+| 8 | ✅ DONE | 4 | 0 | All subtasks passed (8.1-8.4). Minor focus trap issues in modals noted |
 | 9 | Pending | - | - | - |
 | 10 | Pending | - | - | - |
 | 11 | Pending | - | - | - |
