@@ -16,6 +16,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
+## [0.2.0] - 2026-01-10
+
+### Added
+
+#### Human-AI Collaborative Workflow
+- **CLI**: `block` command for AI agents to pause tasks and request human input
+- **CLI**: `comment` command to add comments to tasks
+- **CLI**: `comments` command to list task comments
+- **CLI**: `resume` command to continue blocked tasks with context
+- **CLI**: `session link` and `session show` commands for agent session tracking
+- **CLI**: `--need-input` flag for list command to filter blocked tasks
+- **CLI**: Agent session display in `show` command
+- **CLI**: `board update` command with `--resume-mode` configuration
+- **CLI**: `backup` command for database migrations
+- **Schema**: Comments collection for task discussions
+- **Schema**: Sessions collection for agent session tracking
+- **Schema**: `need_input` column for blocked tasks requiring human input
+- **Schema**: `agent_session` JSON field on tasks
+- **Schema**: `resume_mode` field on boards (command, manual, auto)
+- **Init**: `--opencode`, `--claude-code`, `--codex` flags for tool integration setup
+- **Auto-resume**: Service to automatically resume agent sessions on comment with `@agent`
+- **Hooks**: Comment hook registration for auto-resume trigger
+
+#### Web UI - Collaborative Workflow
+- **UI**: CommentsPanel component for viewing/adding task comments
+- **UI**: SessionInfo component displaying linked agent sessions
+- **UI**: ResumeModal component for generating resume commands
+- **UI**: `need_input` column in kanban board with visual indicators
+- **UI**: BoardSettingsModal for configuring resume mode
+- **UI**: ResumeModeSelector component for board settings
+- **UI**: Auto-resume indicator in CommentsPanel
+- **UI**: Real-time comment subscriptions via PocketBase SSE
+- **UI**: Reusable StatusBadge and PriorityBadge components
+
+#### Performance & Testing
+- **Database**: Performance indexes migration for improved query speed
+- **Benchmark**: Command benchmark test infrastructure
+- **Benchmark**: Resume context building benchmarks
+- **Benchmark**: Auto-resume and session link benchmarks
+- **Benchmark**: Scaling benchmarks for all operations
+- **Tests**: E2E performance test suite
+- **Tests**: Memory usage verification tests
+- **Tests**: Query performance verification tests
+- **Tests**: Index verification tests
+- **Tests**: Comprehensive unit tests for block, comment, resume commands
+- **Tests**: Auto-resume service unit and E2E tests
+- **Tests**: UI component tests (CommentsPanel, SessionInfo, ResumeModal)
+
+#### Documentation
+- **Docs**: Human-AI Collaborative Workflow user guide
+- **Docs**: Performance tuning guide
+- **Docs**: Release checklist for collaborative workflow
+- **Docs**: Performance notes documentation
+- **Docs**: Updated AGENTS.md with collaborative workflow section
+- **Skills**: Updated egenskriven, egenskriven-workflows skills with workflow documentation
+- **Skills**: `need_input` column documentation in workflow states
+
+### Changed
+- Migration files now use timestamp prefixes for correct ordering
+- Prime command template includes Tool field for agent identification
+- Resume command accepts displayId as parameter (refactored from duplicate getDisplayId)
+
+### Fixed
+- **CLI**: Include `due_date` field in API task creation
+- **CLI**: Resolve edge case bugs found in E2E testing (buildInFilter parameter collision, display ID resolution in move command, self-blocking validation)
+- **CLI**: Handle multiple types for labels in `recordToTaskData`
+- **CLI**: Add Tool field to PrimeTemplateData for prime command
+- **CLI**: Use proper type handling for `blocked_by` in API calls
+- **CLI**: Include parent field in API task data for sub-tasks
+- **CLI**: Support display IDs in `--parent` and `--blocked-by` flags
+- **Resume**: Add 'no comments' indicator in BuildMinimalPrompt
+- **Resume**: Log error when session status update fails
+- **Resume**: Use empty actor_detail for consistency with move command
+- **Init**: Address code review issues for tool integrations
+- **UI**: Pass currentBoard prop chain for auto-resume indicator
+- **UI**: Add escape key handler and accessibility improvements to NewBoardModal
+- **UI**: Align CSS variables with theme system for dark mode
+- **UI**: Add need_input column to kanban board
+- **UI**: Handle PocketBase SSE connection errors gracefully
+- **Schema**: Add updated field to collections, use named constants
+- **Schema**: Add idempotency check and nil pointer guard
+
+### Improved
+- **UI**: ARIA labels for accessibility
+- **UI**: Keyboard navigation support (arrow keys, Enter, Escape)
+- **UI**: React.memo optimization for CommentItem render performance
+
 ## [0.1.1] - 2026-01-07
 
 ### Added
