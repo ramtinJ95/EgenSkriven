@@ -14,7 +14,7 @@ workflow feature.
 ### Subtask 1.1: Create Benchmark Test Infrastructure
 
 - [x] Create `internal/commands/benchmark_test.go` for command benchmarks
-- [ ] Create `internal/resume/benchmark_test.go` for context building benchmarks
+- [x] Create `internal/resume/benchmark_test.go` for context building benchmarks
 - [ ] Create `internal/autoresume/benchmark_test.go` for auto-resume benchmarks
 - [x] Add benchmark helper utilities for database seeding
 
