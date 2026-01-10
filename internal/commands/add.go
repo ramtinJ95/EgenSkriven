@@ -499,6 +499,17 @@ func addBatch(app *pocketbase.PocketBase, out *output.Formatter, useStdin bool, 
 			record.Set("epic", epicRecord.Id)
 		}
 
+		// Handle due date
+		if input.DueDate != "" {
+			parsedDate, err := parseDate(input.DueDate)
+			if err != nil {
+				errors = append(errors, fmt.Sprintf("task %d (%s): invalid due date '%s': %v",
+					i+1, input.Title, input.DueDate, err))
+				continue
+			}
+			record.Set("due_date", parsedDate)
+		}
+
 		// Set creator info
 		createdBy := "cli"
 		if agent != "" {
@@ -796,6 +807,7 @@ func recordToTaskData(record *core.Record) TaskData {
 		Board:          record.GetString("board"),
 		Seq:            record.GetInt("seq"),
 		Parent:         record.GetString("parent"),
+		DueDate:        record.GetString("due_date"),
 		History:        history,
 	}
 }
