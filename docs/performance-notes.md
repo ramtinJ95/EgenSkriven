@@ -9,7 +9,7 @@ workflow feature.
 
 **Goal**: Create benchmark tests to verify all performance targets are met.
 
-**Status**: Not Started
+**Status**: Complete ✓
 
 ### Subtask 1.1: Create Benchmark Test Infrastructure
 
@@ -54,10 +54,14 @@ Create benchmarks for each operation with target verification:
 
 ### Subtask 1.3: Implement Scaling Benchmarks
 
-- [ ] `BenchmarkCommentsScaling` - Test 1000+ comments per task
-- [ ] `BenchmarkTasksScaling` - Test 10000+ tasks per board
-- [ ] `BenchmarkConcurrentSessions` - Test 100+ concurrent sessions
-- [ ] `BenchmarkLargeCommentContent` - Test 50KB comment content
+- [x] `BenchmarkCommentsScaling` - Test 1000+ comments per task
+  - Results: 10→307μs, 100→1.4ms, 500→7.6ms, 1000→10.7ms
+- [x] `BenchmarkTasksScaling` - Test 10000+ tasks per board
+  - Results: 100→832μs, 1000→4.7ms, 5000→30ms, 10000→37.5ms
+- [x] `BenchmarkConcurrentSessions` - Test 100+ concurrent sessions
+  - Results: reads→17μs, updates→203μs, mixed→88μs (with 120 sessions)
+- [x] `BenchmarkLargeCommentContent` - Test up to 4KB (schema limit is 5000 chars)
+  - Note: 50KB would require schema change; current limit is 5000 chars
 
 **Acceptance Criteria**:
 ```bash

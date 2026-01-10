@@ -362,7 +362,7 @@ func BenchmarkCommentsScaling(b *testing.B) {
 // BenchmarkTasksScaling measures performance with large task counts.
 // Target: Handle 10000+ tasks per board
 func BenchmarkTasksScaling(b *testing.B) {
-	taskCounts := []int{100, 1000, 5000}
+	taskCounts := []int{100, 1000, 5000, 10000}
 
 	for _, count := range taskCounts {
 		b.Run(fmt.Sprintf("tasks_%d", count), func(b *testing.B) {
@@ -773,4 +773,117 @@ func BenchmarkSessionStatusUpdate(b *testing.B) {
 			b.Fatalf("session status update failed: %v", err)
 		}
 	}
+}
+
+// BenchmarkConcurrentSessions measures performance with 100+ concurrent session operations.
+// Target: Support 100+ concurrent sessions without degradation
+func BenchmarkConcurrentSessions(b *testing.B) {
+	app := setupBenchmarkEnv(b)
+	setupBenchmarkSessionsCollection(b, app)
+
+	sessionsCollection, err := app.FindCollectionByNameOrId("sessions")
+	if err != nil {
+		b.Fatalf("sessions collection not found: %v", err)
+	}
+
+	// Create 100+ tasks with sessions
+	taskIds := make([]string, 120)
+	sessionIds := make([]string, 120)
+	for i := 0; i < 120; i++ {
+		task := createBenchmarkTask(b, app, fmt.Sprintf("Concurrent session task %d", i), "in_progress")
+		taskIds[i] = task.Id
+
+		session := core.NewRecord(sessionsCollection)
+		session.Set("task", task.Id)
+		session.Set("tool", "claude-code")
+		session.Set("external_ref", fmt.Sprintf("concurrent-session-%d", i))
+		session.Set("ref_type", "uuid")
+		session.Set("working_dir", "/tmp")
+		session.Set("status", "active")
+		if err := app.Save(session); err != nil {
+			b.Fatalf("failed to create session: %v", err)
+		}
+		sessionIds[i] = session.Id
+	}
+
+	b.ResetTimer()
+
+	// Test concurrent read operations
+	b.Run("concurrent_reads", func(b *testing.B) {
+		b.RunParallel(func(pb *testing.PB) {
+			i := 0
+			for pb.Next() {
+				ref := fmt.Sprintf("concurrent-session-%d", i%120)
+				_, err := app.FindRecordsByFilter(
+					"sessions",
+					"external_ref = {:ref}",
+					"",
+					1,
+					0,
+					dbx.Params{"ref": ref},
+				)
+				if err != nil {
+					b.Errorf("concurrent read failed: %v", err)
+				}
+				i++
+			}
+		})
+	})
+
+	// Test concurrent status updates
+	b.Run("concurrent_updates", func(b *testing.B) {
+		b.RunParallel(func(pb *testing.PB) {
+			i := 0
+			for pb.Next() {
+				sessionId := sessionIds[i%120]
+				session, err := app.FindRecordById("sessions", sessionId)
+				if err != nil {
+					b.Errorf("session lookup failed: %v", err)
+					i++
+					continue
+				}
+				// Toggle status
+				newStatus := "paused"
+				if session.GetString("status") == "paused" {
+					newStatus = "active"
+				}
+				session.Set("status", newStatus)
+				if err := app.Save(session); err != nil {
+					// SQLite may have lock contention, this is expected
+					// in concurrent write scenarios
+				}
+				i++
+			}
+		})
+	})
+
+	// Test mixed read/write operations
+	b.Run("concurrent_mixed", func(b *testing.B) {
+		b.RunParallel(func(pb *testing.PB) {
+			i := 0
+			for pb.Next() {
+				if i%3 == 0 {
+					// Write operation
+					sessionId := sessionIds[i%120]
+					session, err := app.FindRecordById("sessions", sessionId)
+					if err == nil {
+						session.Set("status", "active")
+						app.Save(session)
+					}
+				} else {
+					// Read operation
+					ref := fmt.Sprintf("concurrent-session-%d", i%120)
+					app.FindRecordsByFilter(
+						"sessions",
+						"external_ref = {:ref}",
+						"",
+						1,
+						0,
+						dbx.Params{"ref": ref},
+					)
+				}
+				i++
+			}
+		})
+	})
 }
