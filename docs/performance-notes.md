@@ -81,11 +81,13 @@ go test -bench=. ./internal/commands/ ./internal/resume/ ./internal/autoresume/
 
 Verify indexes defined in migrations:
 
-- [ ] `idx_comments_task` - `migrations/1700000014_comments_collection.go:83`
-- [ ] `idx_comments_created` - `migrations/1700000014_comments_collection.go:84`
-- [ ] `idx_sessions_task` - `migrations/1700000015_sessions_collection.go:91`
-- [ ] `idx_sessions_external_ref` - `migrations/1700000015_sessions_collection.go:93`
-- [ ] `idx_sessions_status` - `migrations/1700000015_sessions_collection.go:92`
+- [x] `idx_comments_task` - `migrations/1700000014_comments_collection.go:83` ✓ Verified
+- [x] `idx_comments_created` - `migrations/1700000014_comments_collection.go:84` ✓ Verified
+- [x] `idx_sessions_task` - `migrations/1700000015_sessions_collection.go:91` ✓ Verified
+- [x] `idx_sessions_external_ref` - `migrations/1700000015_sessions_collection.go:93` ✓ Verified
+- [x] `idx_sessions_status` - `migrations/1700000015_sessions_collection.go:92` ✓ Verified
+
+**Audit Result**: All documented indexes exist in migration files.
 
 ### Subtask 2.2: Create Index Verification Tests
 
