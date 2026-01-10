@@ -109,6 +109,7 @@ type TaskData struct {
 	Board          string   `json:"board,omitempty"`
 	Seq            int      `json:"seq,omitempty"`
 	Parent         string   `json:"parent,omitempty"`
+	DueDate        string   `json:"due_date,omitempty"`
 	History        []any    `json:"history,omitempty"`
 }
 
