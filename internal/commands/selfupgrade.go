@@ -227,15 +227,15 @@ func downloadBinary(url string) (string, error) {
 
 // replaceBinary replaces the current binary with the new one
 func replaceBinary(newBinary, targetPath string) error {
-	// On Windows, we can't replace a running binary directly
-	// On Unix, we can rename over it
-	if runtime.GOOS == "windows" {
-		// Rename current binary to .old
-		oldPath := targetPath + ".old"
-		os.Remove(oldPath) // Remove any existing .old file
-		if err := os.Rename(targetPath, oldPath); err != nil {
-			return fmt.Errorf("failed to backup current binary: %w", err)
-		}
+	// On both Windows and Linux, we can't overwrite a running binary directly.
+	// However, we CAN rename a running binary, then place the new one at the original path.
+	// This works because the OS keeps the inode open for the running process.
+	oldPath := targetPath + ".old"
+	os.Remove(oldPath) // Remove any existing .old file
+
+	// Rename current binary to .old (this works even while running)
+	if err := os.Rename(targetPath, oldPath); err != nil {
+		return fmt.Errorf("failed to backup current binary: %w", err)
 	}
 
 	// Move new binary to target location
@@ -243,9 +243,16 @@ func replaceBinary(newBinary, targetPath string) error {
 	if err := os.Rename(newBinary, targetPath); err != nil {
 		// If rename fails (cross-device), fall back to copy
 		if err := copyFile(newBinary, targetPath); err != nil {
+			// Try to restore the old binary on failure
+			os.Rename(oldPath, targetPath)
 			return err
 		}
 		os.Remove(newBinary)
+	}
+
+	// Clean up .old file (optional - leave it on Windows for safety)
+	if runtime.GOOS != "windows" {
+		os.Remove(oldPath)
 	}
 
 	return nil
