@@ -16,6 +16,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
+## [0.2.1] - 2026-01-10
+
+### Added
+- **UI**: Epic creation modal in sidebar - Create epics directly from the UI with title, description, and color picker
+- **UI**: "+ New epic" button in EPICS section with real-time updates via existing subscription
+
+### Fixed
+- **UI**: Task detail panel width increased from 400px to 500px for better content spacing
+- **UI**: DatePicker dropdown now right-aligns to prevent overflow outside panel bounds
+- **UI**: EpicPicker dropdown now right-aligns to prevent overflow outside panel bounds
+
+### Documentation
+- **README**: Updated project documentation
+
 ## [0.2.0] - 2026-01-10
 
 ### Added
