@@ -75,7 +75,7 @@ go test -bench=. ./internal/commands/ ./internal/resume/ ./internal/autoresume/
 
 **Goal**: Ensure all documented indexes exist and are being used effectively.
 
-**Status**: Not Started
+**Status**: Complete ✓
 
 ### Subtask 2.1: Audit Existing Index Definitions
 
@@ -100,9 +100,13 @@ Verify indexes defined in migrations:
 
 ### Subtask 2.3: Add Missing Indexes
 
-- [ ] Verify task column index exists for `need_input` filter
-- [ ] Add composite index if needed: `idx_comments_task_created`
-- [ ] Document any new indexes in migration files
+- [x] Verify task column index exists for `need_input` filter
+  - Created: `migrations/1700000018_performance_indexes.go`
+  - Index: `CREATE INDEX idx_tasks_column ON tasks (column)`
+- [x] Add composite index if needed: `idx_comments_task_created`
+  - Index: `CREATE INDEX idx_comments_task_created ON comments (task, created)`
+- [x] Document any new indexes in migration files
+  - Migration includes comments explaining the performance optimization purpose
 
 **Acceptance Criteria**:
 ```sql
