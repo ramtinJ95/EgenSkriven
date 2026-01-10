@@ -300,7 +300,7 @@ go test -benchmem -bench=Memory ./internal/memory/
 
 **Goal**: Verify and optimize auto-resume goroutine execution.
 
-**Status**: Mostly Complete (Subtasks 7.1, 7.2 done; 7.3 optimization not needed)
+**Status**: Complete ✓
 
 ### Subtask 7.1: Verify Current Implementation
 
@@ -325,9 +325,12 @@ go test -benchmem -bench=Memory ./internal/memory/
 
 ### Subtask 7.3: Optimize Hot Paths
 
-- [ ] Profile `hasAgentMention()` for string scanning efficiency
-- [ ] Consider caching recent mention checks
-- [ ] Optimize comment fetch query if needed
+- [x] Profile `hasAgentMention()` for string scanning efficiency
+  - **Decision**: Not needed - benchmarks show ~3-5μs per call (target is <1s)
+- [x] Consider caching recent mention checks
+  - **Decision**: Not needed - string.Contains is O(n) but with small strings (~100 chars typical)
+- [x] Optimize comment fetch query if needed
+  - **Decision**: Not needed - query uses index, ~1.5ms for full path
 
 **Acceptance Criteria**:
 - Auto-resume trigger should complete in < 1s
