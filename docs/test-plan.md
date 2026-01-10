@@ -741,7 +741,7 @@ Task(
 |-------|--------|------|------|-------|
 | 0 | ✅ DONE | - | - | Dev server running on ports 5173-5176 |
 | 1 | ✅ DONE | 3 | 0 | All subtasks (1.1, 1.2, 1.3) passed. Screenshots in .playwright-mcp/ |
-| 2 | Pending | - | - | - |
+| 2 | ✅ DONE | 4 | 0 | All subtasks passed (2.1-2.4). Themes, accents, persistence verified |
 | 3 | Pending | - | - | - |
 | 4 | Pending | - | - | - |
 | 5 | Pending | - | - | - |
