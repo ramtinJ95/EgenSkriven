@@ -743,7 +743,7 @@ Task(
 | 1 | ✅ DONE | 3 | 0 | All subtasks (1.1, 1.2, 1.3) passed. Screenshots in .playwright-mcp/ |
 | 2 | ✅ DONE | 4 | 0 | All subtasks passed (2.1-2.4). Themes, accents, persistence verified |
 | 3 | ✅ DONE | 4 | 0 | All subtasks passed (3.1-3.4). Cards, columns, selection, loading verified |
-| 4 | Pending | - | - | - |
+| 4 | ✅ DONE | 4 | 0 | All subtasks passed (4.1-4.4). Panel, properties, markdown, comments verified |
 | 5 | Pending | - | - | - |
 | 6 | Pending | - | - | - |
 | 7 | Pending | - | - | - |
