@@ -750,7 +750,7 @@ Task(
 | 8 | ✅ DONE | 4 | 0 | All subtasks passed (8.1-8.4). Minor focus trap issues in modals noted |
 | 9 | ✅ DONE | 4 | 0 | All subtasks passed (9.1-9.4). Table, sorting, selection, empty states verified |
 | 10 | ✅ DONE | 3 | 0 | Subtasks 10.1-10.2 passed. 10.3 has epic removal bug (clear not working) |
-| 11 | Pending | - | - | - |
+| 11 | ✅ DONE | 4 | 0 | All subtasks passed (11.1-11.4). E2E workflow, loading, errors, persistence verified |
 
 ---
 
