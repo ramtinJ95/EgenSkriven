@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
+## [0.2.2] - 2026-01-10
+
+### Fixed
+- **CLI**: Fix `self-upgrade` command failing with "text file busy" error on Linux. The command now correctly renames the running binary before replacing it, which is allowed by the OS even while the binary is executing.
+
 ## [0.2.1] - 2026-01-10
 
 ### Added
