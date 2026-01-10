@@ -70,8 +70,18 @@ Examples:
 			var newPosition float64
 
 			if afterID != "" {
+				// Resolve the reference task (supports display IDs like TST-4)
+				refTask, err := resolver.MustResolve(app, afterID)
+				if err != nil {
+					if ambErr, ok := err.(*resolver.AmbiguousError); ok {
+						return out.AmbiguousError(afterID, ambErr.Matches)
+					}
+					return out.Error(ExitNotFound,
+						fmt.Sprintf("task not found: %s", afterID), nil)
+				}
+
 				// Position after specific task
-				pos, err := GetPositionAfter(app, afterID)
+				pos, err := GetPositionAfter(app, refTask.Id)
 				if err != nil {
 					return out.Error(ExitNotFound,
 						fmt.Sprintf("task not found: %s", afterID), nil)
@@ -79,13 +89,22 @@ Examples:
 				newPosition = pos
 
 				// Get target column from reference task
-				refTask, _ := app.FindRecordById("tasks", afterID)
-				if refTask != nil && len(args) < 2 {
+				if len(args) < 2 {
 					targetColumn = refTask.GetString("column")
 				}
 			} else if beforeID != "" {
+				// Resolve the reference task (supports display IDs like TST-4)
+				refTask, err := resolver.MustResolve(app, beforeID)
+				if err != nil {
+					if ambErr, ok := err.(*resolver.AmbiguousError); ok {
+						return out.AmbiguousError(beforeID, ambErr.Matches)
+					}
+					return out.Error(ExitNotFound,
+						fmt.Sprintf("task not found: %s", beforeID), nil)
+				}
+
 				// Position before specific task
-				pos, err := GetPositionBefore(app, beforeID)
+				pos, err := GetPositionBefore(app, refTask.Id)
 				if err != nil {
 					return out.Error(ExitNotFound,
 						fmt.Sprintf("task not found: %s", beforeID), nil)
@@ -93,8 +112,7 @@ Examples:
 				newPosition = pos
 
 				// Get target column from reference task
-				refTask, _ := app.FindRecordById("tasks", beforeID)
-				if refTask != nil && len(args) < 2 {
+				if len(args) < 2 {
 					targetColumn = refTask.GetString("column")
 				}
 			} else if position >= 0 {

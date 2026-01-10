@@ -132,6 +132,10 @@ Examples:
 						return out.Error(ExitNotFound,
 							fmt.Sprintf("blocking task not found: %s", ref), nil)
 					}
+					// Check for self-reference early and return error
+					if blockingTask.Id == task.Id {
+						return out.Error(ExitValidation, "task cannot block itself", nil)
+					}
 					resolvedBlockedBy = append(resolvedBlockedBy, blockingTask.Id)
 				}
 

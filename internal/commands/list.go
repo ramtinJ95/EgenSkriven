@@ -401,19 +401,21 @@ Examples:
 }
 
 // buildInFilter creates a SQL IN expression for a list of values.
+// The field name is included in parameter names to avoid collisions when
+// multiple filters are combined.
 func buildInFilter(field string, values []string) dbx.Expression {
 	if len(values) == 1 {
 		return dbx.NewExp(
-			fmt.Sprintf("%s = {:val}", field),
-			dbx.Params{"val": values[0]},
+			fmt.Sprintf("%s = {:%s_val}", field, field),
+			dbx.Params{field + "_val": values[0]},
 		)
 	}
 
-	// Build IN clause
+	// Build IN clause with field-prefixed parameter names to avoid collisions
 	placeholders := make([]string, len(values))
 	params := dbx.Params{}
 	for i, v := range values {
-		key := fmt.Sprintf("val%d", i)
+		key := fmt.Sprintf("%s_val%d", field, i)
 		placeholders[i] = "{:" + key + "}"
 		params[key] = v
 	}
