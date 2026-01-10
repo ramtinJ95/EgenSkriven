@@ -950,6 +950,184 @@ Project configuration is stored in `.egenskriven/config.json`:
 }
 ```
 
+## Deployment Scenarios
+
+EgenSkriven can be deployed in different ways depending on how you want to organize your tasks. The database location is determined by the `--dir` flag or defaults to `pb_data/` in the current working directory.
+
+### Scenario 1: Project-Specific (Recommended for Teams)
+
+Each project has its own isolated task management with separate database and configuration.
+
+**Setup:**
+```bash
+# In each project directory
+cd ~/my-project
+egenskriven init --workflow light
+egenskriven serve
+```
+
+This creates:
+- `.egenskriven/config.json` - Project configuration
+- `pb_data/data.db` - Project database
+
+**When to use:**
+- Working on distinct projects that don't share tasks
+- Team projects where tasks are version-controlled with code
+- Projects with different workflow requirements (strict vs minimal)
+- When you want to `.gitignore` the `pb_data/` but commit `.egenskriven/config.json`
+
+**Pros:**
+- Natural project isolation
+- Config lives with the project and can be version controlled
+- Each project can have different workflow modes
+- Works seamlessly - no extra flags needed when in project directory
+
+**Cons:**
+- Must start a server per project if you want the web UI
+- Tasks don't aggregate across projects
+- Multiple databases to manage
+
+**Recommended `.gitignore`:**
+```gitignore
+pb_data/
+```
+
+### Scenario 2: Global/Centralized (Recommended for Personal Use)
+
+One database for all tasks, accessible from anywhere. Use boards to organize tasks by project.
+
+**Setup:**
+```bash
+# 1. Create global data directory
+mkdir -p ~/.egenskriven
+
+# 2. Add shell alias (~/.bashrc, ~/.zshrc, or ~/.config/fish/config.fish)
+alias egs='egenskriven --dir ~/.egenskriven'
+
+# 3. Start global server (in a separate terminal or background)
+egs serve --http :8090 &
+
+# 4. Create boards for each project (or use --direct without server)
+egs board add "Work" --prefix WRK
+egs board add "Personal" --prefix PER
+egs board add "SideProject" --prefix SIDE
+
+# 5. Use from anywhere
+egs add "Fix login bug" --board WRK
+egs add "Buy groceries" --board PER
+egs list --all-boards
+```
+
+**When to use:**
+- Personal task management across all your work
+- You want one unified view of all tasks
+- You prefer one server running in the background
+- Quick capture of tasks without switching contexts
+
+**Pros:**
+- All tasks in one place with unified search
+- Single server to manage
+- Cross-project visibility and planning
+- Great for personal productivity workflows
+
+**Cons:**
+- Must use alias or `--dir` flag consistently
+- No project-specific configuration (workflow modes apply globally)
+- Database not tied to any specific project
+
+**Recommended shell configuration:**
+```bash
+# ~/.bashrc or ~/.zshrc
+export EGENSKRIVEN_DIR="$HOME/.egenskriven"
+alias egs='egenskriven --dir "$EGENSKRIVEN_DIR"'
+
+# Optional: Start server on login (background)
+# (egs serve --http :8090 &) 2>/dev/null
+```
+
+**Fish shell:**
+```fish
+# ~/.config/fish/config.fish
+set -gx EGENSKRIVEN_DIR "$HOME/.egenskriven"
+alias egs="egenskriven --dir $EGENSKRIVEN_DIR"
+```
+
+### Scenario 3: Hybrid Approach
+
+Global database for task storage, but project-specific configs for workflow settings.
+
+**Setup:**
+```bash
+# Global alias for database location
+alias egs='egenskriven --dir ~/.egenskriven'
+
+# Project config for workflow settings
+cd ~/my-project
+egs init --workflow strict  # Creates .egenskriven/config.json
+```
+
+In this setup:
+- Tasks are stored in the global `~/.egenskriven` database
+- The project's `.egenskriven/config.json` controls workflow mode and default board
+- Agents read project-local config for behavior settings
+
+**Note:** The CLI reads config from the current directory, so project-specific settings (like `defaultBoard`) work when you're in that project, even with a global database.
+
+### Running Multiple Servers
+
+You can run multiple servers on different ports for different databases:
+
+```bash
+# Terminal 1: Global database on default port
+egenskriven serve --dir ~/.egenskriven --http :8090
+
+# Terminal 2: Specific project database
+egenskriven serve --dir ~/work-project/pb_data --http :8091
+```
+
+Access different UIs:
+- Global: `http://localhost:8090`
+- Work project: `http://localhost:8091`
+
+### Offline CLI Usage
+
+The `--direct` flag allows CLI access without a running server:
+
+```bash
+# Works even when server is not running
+egenskriven --direct list
+egenskriven --direct add "Quick task"
+egenskriven --direct move WRK-123 done
+```
+
+This is useful for:
+- Quick task capture without starting a server
+- CI/CD pipelines
+- Scripts and automation
+- Systems with limited resources
+
+**Trade-off:** Direct mode doesn't trigger real-time UI updates. Changes will appear in the web UI on next page load or refresh.
+
+### Comparison Table
+
+| Aspect | Project-Specific | Global | Hybrid |
+|--------|-----------------|--------|--------|
+| Task isolation | Per project | Shared (use boards) | Shared (use boards) |
+| Config location | Per project | N/A | Per project |
+| Server management | One per project | Single global | Single global |
+| CLI usage | Natural (no flags) | Requires `--dir` or alias | Requires `--dir` or alias |
+| Best for | Teams, distinct projects | Personal productivity | Personal with project workflows |
+| Offline support | Natural | With `--dir` flag | With `--dir` flag |
+
+### Environment Variables
+
+| Variable | Purpose |
+|----------|---------|
+| `EGENSKRIVEN_AUTHOR` | Default author name for comments |
+| `EGENSKRIVEN_AGENT` | Default agent name for block command |
+
+> **Note:** There is currently no environment variable for database directory. Use the `--dir` flag or shell aliases instead.
+
 ## License
 
 MIT
