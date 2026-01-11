@@ -555,7 +555,7 @@ func GetTypeIndicator(taskType string) string {
 
 ---
 
-### 1.6 Implement TaskItem
+### 1.6 Implement TaskItem [COMPLETED]
 
 **What**: Create the `TaskItem` type that implements `list.Item` interface.
 
