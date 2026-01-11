@@ -1869,7 +1869,7 @@ func truncateString(s string, maxLen int) string {
 
 ---
 
-### 2.6 Add Styles for New Components
+### 2.6 Add Styles for New Components [COMPLETED]
 
 **What**: Add Lipgloss styles for the task detail, form, and confirmation dialog.
 
