@@ -122,7 +122,7 @@ Before starting, ensure you have the Bubble Tea dependencies available:
 
 ---
 
-### 1.2 Add Bubble Tea Dependencies
+### 1.2 Add Bubble Tea Dependencies [COMPLETED]
 
 **What**: Add the Charm libraries to `go.mod`.
 
