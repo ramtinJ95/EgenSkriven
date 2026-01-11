@@ -80,6 +80,9 @@ func Register(app *pocketbase.PocketBase) {
 
 	// Configuration management
 	app.RootCmd.AddCommand(newConfigCmd(app))
+
+	// TUI command
+	app.RootCmd.AddCommand(newTuiCmd(app))
 }
 
 // getFormatter creates a new output formatter with current flag values.
