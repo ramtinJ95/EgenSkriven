@@ -2055,7 +2055,7 @@ func TypeColor(taskType string) lipgloss.Color {
 
 ---
 
-### 2.7 Update App Model for CRUD Operations
+### 2.7 Update App Model for CRUD Operations [COMPLETED]
 
 **What**: Integrate all new components into the main App model and handle CRUD messages.
 
