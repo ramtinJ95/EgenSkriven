@@ -95,6 +95,20 @@ var (
 	// statusSuccessStyle is used for success messages.
 	statusSuccessStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("82"))
+
+	// statusBarErrorStyle is used for error status messages with background.
+	statusBarErrorStyle = lipgloss.NewStyle().
+				Background(errorColor).
+				Foreground(lipgloss.Color("255")).
+				Padding(0, 1).
+				Bold(true)
+
+	// statusBarSuccessStyle is used for success status messages with background.
+	statusBarSuccessStyle = lipgloss.NewStyle().
+				Background(successColor).
+				Foreground(lipgloss.Color("0")).
+				Padding(0, 1).
+				Bold(true)
 )
 
 // Task item styles.
@@ -234,4 +248,54 @@ func GetTypeIndicator(taskType string) string {
 	}
 
 	return lipgloss.NewStyle().Foreground(color).Render("[" + taskType + "]")
+}
+
+// =============================================================================
+// Color Helper Functions
+// =============================================================================
+
+// ColumnColor returns the color for a given column status.
+// Useful when you need just the color value, not a styled string.
+func ColumnColor(status string) lipgloss.Color {
+	colors := map[string]lipgloss.Color{
+		"backlog":     columnBacklog,
+		"todo":        columnTodo,
+		"in_progress": columnInProgress,
+		"need_input":  columnNeedInput,
+		"review":      columnReview,
+		"done":        columnDone,
+	}
+	if c, ok := colors[status]; ok {
+		return c
+	}
+	return borderColor
+}
+
+// PriorityColor returns the color for a given priority.
+// Useful when you need just the color value, not a styled string.
+func PriorityColor(priority string) lipgloss.Color {
+	colors := map[string]lipgloss.Color{
+		"urgent": priorityUrgent,
+		"high":   priorityHigh,
+		"medium": priorityMedium,
+		"low":    priorityLow,
+	}
+	if c, ok := colors[priority]; ok {
+		return c
+	}
+	return mutedColor
+}
+
+// TypeColor returns the color for a given task type.
+// Useful when you need just the color value, not a styled string.
+func TypeColor(taskType string) lipgloss.Color {
+	colors := map[string]lipgloss.Color{
+		"bug":     typeBug,
+		"feature": typeFeature,
+		"chore":   typeChore,
+	}
+	if c, ok := colors[taskType]; ok {
+		return c
+	}
+	return mutedColor
 }
