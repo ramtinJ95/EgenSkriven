@@ -130,6 +130,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// =================================================================
 
 	case taskCreatedMsg:
+		// Guard against nil board (edge case during rapid actions)
+		if a.currentBoard == nil {
+			return a, nil
+		}
 		// Reload tasks and show success message
 		cmds = append(cmds,
 			loadTasks(a.pb, a.currentBoard.Id),
@@ -140,6 +144,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.view = ViewBoard
 
 	case taskUpdatedMsg:
+		// Guard against nil board (edge case during rapid actions)
+		if a.currentBoard == nil {
+			return a, nil
+		}
 		// Reload tasks and show success message
 		cmds = append(cmds,
 			loadTasks(a.pb, a.currentBoard.Id),
@@ -154,6 +162,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.view = ViewBoard
 
 	case taskDeletedMsg:
+		// Guard against nil board (edge case during rapid actions)
+		if a.currentBoard == nil {
+			return a, nil
+		}
 		// Reload tasks and show success message
 		cmds = append(cmds,
 			loadTasks(a.pb, a.currentBoard.Id),
@@ -165,6 +177,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.view = ViewBoard
 
 	case taskMovedMsg:
+		// Guard against nil board (edge case during rapid actions)
+		if a.currentBoard == nil {
+			return a, nil
+		}
 		// Reload tasks and show status
 		cmds = append(cmds, loadTasks(a.pb, a.currentBoard.Id))
 		if msg.fromColumn != msg.toColumn {
