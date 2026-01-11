@@ -352,7 +352,7 @@ func (k keyMap) FullHelp() [][]key.Binding {
 
 ---
 
-### 1.5 Implement Styles
+### 1.5 Implement Styles [COMPLETED]
 
 **What**: Define Lip Gloss styles for consistent visual appearance.
 
