@@ -20,6 +20,9 @@ type TaskItem struct {
 	Column          string // backlog, todo, in_progress, need_input, review, done
 	Labels          []string
 	Position        float64
+	DueDate         string // due date in YYYY-MM-DD format
+	EpicID          string // ID of parent epic
+	EpicTitle       string // title of parent epic (for display)
 
 	// Display fields
 	DisplayID string // e.g., "WRK-123"
@@ -129,6 +132,8 @@ func NewTaskItemFromRecord(record *core.Record, displayID string) TaskItem {
 		Column:          record.GetString("column"),
 		Labels:          labels,
 		Position:        record.GetFloat("position"),
+		DueDate:         record.GetString("due_date"),
+		EpicID:          record.GetString("epic"),
 		DisplayID:       displayID,
 		IsBlocked:       isBlocked,
 		BlockedBy:       blockedBy,
