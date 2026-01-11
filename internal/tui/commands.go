@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"os"
 	"sort"
 	"time"
 
@@ -17,6 +19,13 @@ import (
 	"github.com/ramtinJ95/EgenSkriven/internal/board"
 	"github.com/ramtinJ95/EgenSkriven/internal/position"
 )
+
+// debugLog logs a message only when EGENSKRIVEN_DEBUG is set
+func debugLog(format string, args ...any) {
+	if os.Getenv("EGENSKRIVEN_DEBUG") != "" {
+		log.Printf("[tui-debug] "+format, args...)
+	}
+}
 
 const (
 	// DefaultServerURL for API requests
@@ -472,9 +481,13 @@ func saveRecordHybrid(app *pocketbase.PocketBase, record *core.Record) error {
 	if isServerRunning() {
 		taskData := recordToAPIData(record)
 		if err := createTaskViaAPI(taskData); err == nil {
+			debugLog("created task via API")
 			return nil
+		} else {
+			debugLog("API create failed, falling back to direct DB: %v", err)
 		}
-		// Fall through to direct save on API error
+	} else {
+		debugLog("server not running, using direct DB save")
 	}
 	return app.Save(record)
 }
@@ -484,9 +497,13 @@ func updateRecordHybrid(app *pocketbase.PocketBase, record *core.Record) error {
 	if isServerRunning() {
 		taskData := recordToAPIData(record)
 		if err := updateTaskViaAPI(record.Id, taskData); err == nil {
+			debugLog("updated task via API: %s", record.Id)
 			return nil
+		} else {
+			debugLog("API update failed, falling back to direct DB: %v", err)
 		}
-		// Fall through to direct save on API error
+	} else {
+		debugLog("server not running, using direct DB save")
 	}
 	return app.Save(record)
 }
@@ -495,9 +512,13 @@ func updateRecordHybrid(app *pocketbase.PocketBase, record *core.Record) error {
 func deleteRecordHybrid(app *pocketbase.PocketBase, record *core.Record) error {
 	if isServerRunning() {
 		if err := deleteTaskViaAPI(record.Id); err == nil {
+			debugLog("deleted task via API: %s", record.Id)
 			return nil
+		} else {
+			debugLog("API delete failed, falling back to direct DB: %v", err)
 		}
-		// Fall through to direct delete on API error
+	} else {
+		debugLog("server not running, using direct DB delete")
 	}
 	return app.Delete(record)
 }
