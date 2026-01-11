@@ -587,48 +587,32 @@ func (a *App) View() string {
 
 // overlayCenter places the overlay in the center of the background
 func (a *App) overlayCenter(background, overlay string) string {
+	// Dim the entire background
 	bgLines := strings.Split(background, "\n")
-	overlayLines := strings.Split(overlay, "\n")
+	dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	var dimmedLines []string
+	for _, line := range bgLines {
+		dimmedLines = append(dimmedLines, dimStyle.Render(line))
+	}
+	dimmedBg := strings.Join(dimmedLines, "\n")
 
-	// Calculate overlay position
-	overlayWidth := lipgloss.Width(overlay)
-	overlayHeight := len(overlayLines)
-	bgHeight := len(bgLines)
+	// Use lipgloss.Place to correctly position the overlay
+	// This handles ANSI escape sequences properly
+	bgHeight := lipgloss.Height(dimmedBg)
 	bgWidth := a.width
-
-	startY := (bgHeight - overlayHeight) / 2
-	startX := (bgWidth - overlayWidth) / 2
-
-	if startY < 0 {
-		startY = 0
-	}
-	if startX < 0 {
-		startX = 0
+	if bgWidth <= 0 {
+		bgWidth = lipgloss.Width(dimmedBg)
 	}
 
-	// Build result
-	var result []string
-	for i, line := range bgLines {
-		if i >= startY && i < startY+overlayHeight {
-			overlayLine := ""
-			if i-startY < len(overlayLines) {
-				overlayLine = overlayLines[i-startY]
-			}
-			// Dim the background and place overlay
-			dimmedLine := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(line)
-			// Simple overlay: replace center portion
-			if startX+lipgloss.Width(overlayLine) < len(dimmedLine) {
-				result = append(result, dimmedLine[:startX]+overlayLine+dimmedLine[startX+lipgloss.Width(overlayLine):])
-			} else {
-				result = append(result, overlayLine)
-			}
-		} else {
-			// Dim non-overlay lines
-			result = append(result, lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(line))
-		}
-	}
-
-	return strings.Join(result, "\n")
+	return lipgloss.Place(
+		bgWidth,
+		bgHeight,
+		lipgloss.Center,
+		lipgloss.Center,
+		overlay,
+		lipgloss.WithWhitespaceBackground(lipgloss.NoColor{}),
+		lipgloss.WithWhitespaceForeground(lipgloss.Color("240")),
+	)
 }
 
 // renderLoading shows a loading message while data is being fetched.
