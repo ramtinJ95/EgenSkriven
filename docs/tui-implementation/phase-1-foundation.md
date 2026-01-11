@@ -1125,7 +1125,7 @@ func clearStatus() tea.Cmd {
 
 ---
 
-### 1.9 Implement Main App Model
+### 1.9 Implement Main App Model [COMPLETED]
 
 **What**: Create the main `App` model that ties everything together.
 
