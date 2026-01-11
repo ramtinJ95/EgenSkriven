@@ -807,7 +807,7 @@ go build ./internal/tui
 
 ---
 
-### 2.3 Implement Task Detail View
+### 2.3 Implement Task Detail View [COMPLETED]
 
 **What**: Create a panel that shows full task details with markdown-rendered description.
 
