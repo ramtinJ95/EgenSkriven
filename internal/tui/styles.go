@@ -150,6 +150,23 @@ var (
 				Background(primaryColor).
 				Bold(true).
 				Padding(0, 2)
+
+	// buttonDangerStyle is used for destructive action buttons when focused.
+	buttonDangerStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("255")).
+				Background(errorColor).
+				Bold(true).
+				Padding(0, 2)
+)
+
+// Dialog styles - used for confirmation and other dialogs.
+var (
+	// confirmDialogStyle is used for confirmation dialogs.
+	confirmDialogStyle = lipgloss.NewStyle().
+				Border(lipgloss.DoubleBorder()).
+				BorderForeground(warningColor).
+				Padding(1, 2).
+				Align(lipgloss.Center)
 )
 
 // GetColumnHeaderColor returns the appropriate color for a column header.
