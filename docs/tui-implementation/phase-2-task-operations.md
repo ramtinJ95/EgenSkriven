@@ -2425,7 +2425,7 @@ func recordToTaskItem(record *core.Record, boardRecord *core.Record) TaskItem {
 
 ---
 
-### 2.8 Write Tests for CRUD Operations
+### 2.8 Write Tests for CRUD Operations [COMPLETED]
 
 **What**: Create tests to verify the CRUD operations work correctly.
 
