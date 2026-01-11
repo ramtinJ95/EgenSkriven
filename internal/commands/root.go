@@ -77,6 +77,9 @@ func Register(app *pocketbase.PocketBase) {
 
 	// AI workflow commands (Phase 3 - resume flow)
 	app.RootCmd.AddCommand(newResumeCmd(app))
+
+	// Configuration management
+	app.RootCmd.AddCommand(newConfigCmd(app))
 }
 
 // getFormatter creates a new output formatter with current flag values.
