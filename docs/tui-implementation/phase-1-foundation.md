@@ -1585,7 +1585,7 @@ h/l: columns | j/k: tasks | enter: details | q: quit | ?: help    WRK
 
 ---
 
-### 1.10 Implement CLI Command
+### 1.10 Implement CLI Command [COMPLETED]
 
 **What**: Create the `egenskriven tui` command that launches the TUI.
 
