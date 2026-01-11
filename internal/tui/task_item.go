@@ -1,1 +1,148 @@
 package tui
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+	"github.com/pocketbase/pocketbase/core"
+)
+
+// TaskItem represents a task in the kanban board.
+// It implements the list.Item interface required by bubbles/list.
+type TaskItem struct {
+	// Core fields from database
+	ID              string
+	TaskTitle       string // renamed to avoid conflict with Title() method
+	TaskDescription string // renamed to avoid conflict with Description() method
+	Type            string // bug, feature, chore
+	Priority        string // low, medium, high, urgent
+	Column          string // backlog, todo, in_progress, need_input, review, done
+	Labels          []string
+	Position        float64
+
+	// Display fields
+	DisplayID string // e.g., "WRK-123"
+
+	// Computed fields
+	IsBlocked bool
+	BlockedBy []string
+}
+
+// FilterValue returns the string used for filtering in the list.
+// When the user types to filter, this value is searched.
+func (t TaskItem) FilterValue() string {
+	// Include title and display ID for filtering
+	return t.TaskTitle + " " + t.DisplayID
+}
+
+// Title returns the primary display string for the list item.
+// This is rendered as the main line in the list.
+func (t TaskItem) Title() string {
+	return t.renderTitle()
+}
+
+// Description returns the secondary display string.
+// Rendered below the title in a dimmer color.
+func (t TaskItem) Description() string {
+	return t.renderDescription()
+}
+
+// renderTitle creates the formatted title line for display.
+// Format: [PRIORITY] DISPLAY_ID Title [TYPE] [BLOCKED]
+func (t TaskItem) renderTitle() string {
+	var parts []string
+
+	// Priority indicator (colored dot or exclamation marks)
+	if indicator := GetPriorityIndicator(t.Priority); indicator != "" {
+		parts = append(parts, indicator)
+	}
+
+	// Display ID in muted color
+	idStyle := lipgloss.NewStyle().Foreground(mutedColor)
+	parts = append(parts, idStyle.Render(t.DisplayID))
+
+	// Task title (main content)
+	parts = append(parts, t.TaskTitle)
+
+	// Type badge
+	if t.Type != "" {
+		parts = append(parts, GetTypeIndicator(t.Type))
+	}
+
+	// Blocked indicator
+	if t.IsBlocked {
+		blocked := blockedIndicatorStyle.Render("[BLOCKED]")
+		parts = append(parts, blocked)
+	}
+
+	return strings.Join(parts, " ")
+}
+
+// renderDescription creates the secondary info line.
+// Shows labels and other metadata.
+func (t TaskItem) renderDescription() string {
+	var parts []string
+
+	// Labels (show first 3)
+	if len(t.Labels) > 0 {
+		labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+		maxLabels := 3
+		if len(t.Labels) < maxLabels {
+			maxLabels = len(t.Labels)
+		}
+		for _, label := range t.Labels[:maxLabels] {
+			parts = append(parts, labelStyle.Render("#"+label))
+		}
+		if len(t.Labels) > 3 {
+			parts = append(parts, labelStyle.Render(fmt.Sprintf("+%d", len(t.Labels)-3)))
+		}
+	}
+
+	// If no parts, return empty
+	if len(parts) == 0 {
+		return ""
+	}
+
+	return strings.Join(parts, " ")
+}
+
+// NewTaskItemFromRecord creates a TaskItem from a PocketBase record.
+// This is the primary way to create TaskItems from database queries.
+func NewTaskItemFromRecord(record *core.Record, displayID string) TaskItem {
+	// Extract labels from the record
+	var labels []string
+	if rawLabels := record.Get("labels"); rawLabels != nil {
+		labels = record.GetStringSlice("labels")
+	}
+
+	// Extract blocked_by to determine if task is blocked
+	blockedBy := record.GetStringSlice("blocked_by")
+	isBlocked := len(blockedBy) > 0
+
+	return TaskItem{
+		ID:              record.Id,
+		TaskTitle:       record.GetString("title"),
+		TaskDescription: record.GetString("description"),
+		Type:            record.GetString("type"),
+		Priority:        record.GetString("priority"),
+		Column:          record.GetString("column"),
+		Labels:          labels,
+		Position:        record.GetFloat("position"),
+		DisplayID:       displayID,
+		IsBlocked:       isBlocked,
+		BlockedBy:       blockedBy,
+	}
+}
+
+// Truncate truncates a string to maxLen, adding "..." if truncated.
+// Used to fit long titles in limited space.
+func Truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	if maxLen <= 3 {
+		return s[:maxLen]
+	}
+	return s[:maxLen-3] + "..."
+}
