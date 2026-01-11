@@ -46,20 +46,24 @@ interface TaskDetailProps {
  */
 export function TaskDetail({ task, tasks, onClose, onUpdate, onTaskClick, currentBoard }: TaskDetailProps) {
   const panelRef = useRef<HTMLDivElement>(null)
+  const titleInputRef = useRef<HTMLInputElement>(null)
   const [isResumeModalOpen, setIsResumeModalOpen] = useState(false)
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
 
   // Handle keyboard shortcuts
   useEffect(() => {
     // Don't add listener when no task is selected
     if (!task) return
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Only close on Escape if not inside the MarkdownEditor (which handles its own Escape)
+    const handleKeyDown = (e: globalThis.KeyboardEvent) => {
+      // Only close on Escape if not inside the MarkdownEditor or title input
       if (e.key === 'Escape') {
-        // Check if we're inside an active editor
+        // Check if we're inside an active editor or title input
         const activeElement = document.activeElement
         const isInEditor = activeElement?.closest('[class*="MarkdownEditor"]')
-        if (!isInEditor) {
+        const isInTitleInput = activeElement === titleInputRef.current
+        if (!isInEditor && !isInTitleInput) {
           onClose()
         }
       }
@@ -68,6 +72,22 @@ export function TaskDetail({ task, tasks, onClose, onUpdate, onTaskClick, curren
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [task, onClose])
+
+  // Focus title input when entering edit mode
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus()
+      titleInputRef.current.select()
+    }
+  }, [isEditingTitle])
+
+  // Reset edit state when task changes
+  useEffect(() => {
+    setIsEditingTitle(false)
+    if (task) {
+      setEditTitle(task.title)
+    }
+  }, [task?.id])  // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle click outside
   const handleOverlayClick = (e: React.MouseEvent) => {
@@ -81,6 +101,40 @@ export function TaskDetail({ task, tasks, onClose, onUpdate, onTaskClick, curren
     if (!task) return
     await onUpdate(task.id, { description: newDescription || undefined })
   }, [task, onUpdate])
+
+  // Title editing handlers
+  const handleTitleClick = useCallback(() => {
+    if (task) {
+      setEditTitle(task.title)
+      setIsEditingTitle(true)
+    }
+  }, [task])
+
+  const handleTitleSave = useCallback(async () => {
+    if (!task) return
+    const trimmedTitle = editTitle.trim()
+    if (trimmedTitle && trimmedTitle !== task.title) {
+      await onUpdate(task.id, { title: trimmedTitle })
+    }
+    setIsEditingTitle(false)
+  }, [task, editTitle, onUpdate])
+
+  const handleTitleCancel = useCallback(() => {
+    if (task) {
+      setEditTitle(task.title)
+    }
+    setIsEditingTitle(false)
+  }, [task])
+
+  const handleTitleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleTitleSave()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      handleTitleCancel()
+    }
+  }, [handleTitleSave, handleTitleCancel])
 
   // Early return after all hooks are defined
   if (!task) return null
@@ -145,8 +199,36 @@ export function TaskDetail({ task, tasks, onClose, onUpdate, onTaskClick, curren
 
         {/* Content */}
         <div className={styles.content}>
-          {/* Title */}
-          <h1 className={styles.title}>{task.title}</h1>
+          {/* Title - click to edit */}
+          {isEditingTitle ? (
+            <input
+              ref={titleInputRef}
+              type="text"
+              className={styles.titleInput}
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              onBlur={handleTitleSave}
+              onKeyDown={handleTitleKeyDown}
+              placeholder="Task title"
+              aria-label="Edit task title"
+            />
+          ) : (
+            <h1
+              className={styles.title}
+              onClick={handleTitleClick}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleTitleClick()
+                }
+              }}
+              title="Click to edit title"
+            >
+              {task.title}
+            </h1>
+          )}
           <span className={styles.id}>{task.id}</span>
 
           {/* Description - editable with Markdown support */}
