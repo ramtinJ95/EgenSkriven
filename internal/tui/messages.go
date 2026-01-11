@@ -95,7 +95,6 @@ type closeTaskFormMsg struct {
 type openConfirmDialogMsg struct {
 	title   string
 	message string
-	onYes   func() // Callback when user confirms
 }
 
 // closeConfirmDialogMsg requests closing the confirmation dialog
@@ -150,7 +149,7 @@ type TaskFormData struct {
 // submitTaskFormMsg is sent when the task form is submitted
 type submitTaskFormMsg struct {
 	mode   FormMode
-	taskID string       // Empty for create, set for update
+	taskID string // Empty for create, set for update
 	data   TaskFormData
 }
 
