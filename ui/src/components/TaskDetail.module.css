@@ -71,6 +71,43 @@
   color: var(--text-primary);
   line-height: var(--leading-tight);
   margin-bottom: var(--space-2);
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  margin-left: calc(-1 * var(--space-2));
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: all var(--duration-fast) var(--ease-default);
+}
+
+.title:hover {
+  background-color: var(--bg-card);
+  border-color: var(--border-subtle);
+}
+
+.title:focus {
+  outline: none;
+  border-color: var(--accent);
+  background-color: var(--bg-card);
+}
+
+.titleInput {
+  width: 100%;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-semibold);
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  line-height: var(--leading-tight);
+  margin-bottom: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  margin-left: calc(-1 * var(--space-2));
+  background-color: var(--bg-input);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  outline: none;
+}
+
+.titleInput::placeholder {
+  color: var(--text-muted);
 }
 
 .id {
