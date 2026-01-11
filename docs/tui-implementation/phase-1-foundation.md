@@ -244,7 +244,7 @@ type statusMsg struct {
 
 ---
 
-### 1.4 Implement Key Bindings
+### 1.4 Implement Key Bindings [COMPLETED]
 
 **What**: Define all keyboard shortcuts for TUI navigation and actions.
 
