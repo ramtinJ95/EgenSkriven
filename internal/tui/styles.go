@@ -35,6 +35,11 @@ var (
 	focusBorderColor = lipgloss.Color("62")  // Blue border for focused
 	mutedColor       = lipgloss.Color("240") // Gray for secondary text
 	textColor        = lipgloss.Color("252") // Light gray for text
+
+	// Status colors
+	successColor = lipgloss.Color("82")  // Green
+	warningColor = lipgloss.Color("214") // Orange
+	errorColor   = lipgloss.Color("196") // Red
 )
 
 // Column styles - different border colors for focused vs unfocused columns.
@@ -108,6 +113,21 @@ var (
 	blockedIndicatorStyle = lipgloss.NewStyle().
 				Foreground(priorityUrgent).
 				Bold(true)
+)
+
+// Panel styles - used for modal/overlay panels.
+var (
+	// taskDetailStyle is used for the task detail side panel.
+	taskDetailStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(primaryColor).
+			Padding(1, 2)
+
+	// modalStyle is used for modal dialogs like forms and confirmations.
+	modalStyle = lipgloss.NewStyle().
+			Border(lipgloss.DoubleBorder()).
+			BorderForeground(primaryColor).
+			Padding(1, 2)
 )
 
 // GetColumnHeaderColor returns the appropriate color for a column header.
