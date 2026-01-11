@@ -128,6 +128,28 @@ var (
 			Border(lipgloss.DoubleBorder()).
 			BorderForeground(primaryColor).
 			Padding(1, 2)
+
+	// formStyle is used for task add/edit forms.
+	formStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(primaryColor).
+			Padding(1, 2)
+)
+
+// Button styles - used for form buttons.
+var (
+	// buttonStyle is the default button style.
+	buttonStyle = lipgloss.NewStyle().
+			Foreground(textColor).
+			Background(lipgloss.Color("236")).
+			Padding(0, 2)
+
+	// buttonFocusedStyle is used when a button is focused.
+	buttonFocusedStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("0")).
+				Background(primaryColor).
+				Bold(true).
+				Padding(0, 2)
 )
 
 // GetColumnHeaderColor returns the appropriate color for a column header.
