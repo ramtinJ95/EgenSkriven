@@ -1718,7 +1718,7 @@ app.RootCmd.AddCommand(newTuiCmd(app))
 
 ---
 
-### 1.11 Write Unit Tests
+### 1.11 Write Unit Tests [COMPLETED]
 
 **What**: Create tests for the TUI components.
 
