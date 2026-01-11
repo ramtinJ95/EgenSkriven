@@ -16,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
+## [0.2.4] - 2026-01-11
+
+### Added
+- **UI**: Inline title editing in TaskDetail panel - click on task title to edit directly
+- **UI**: Keyboard support for title editing (Enter/Space to activate, Enter to save, Escape to cancel)
+- **UI**: Hover and focus styles for clickable task title
+
+### Changed
+- **Docs**: Reorganized documentation files into subdirectories (`docs/ai-workflow/`, `docs/core/`, `docs/tui-implementation/`)
+
 ## [0.2.3] - 2026-01-11
 
 ### Added
