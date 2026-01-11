@@ -950,7 +950,7 @@ func (c Column) SelectedTask() *TaskItem {
 
 ---
 
-### 1.8 Implement Async Commands
+### 1.8 Implement Async Commands [COMPLETED]
 
 **What**: Create command functions for loading data asynchronously.
 
