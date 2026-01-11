@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 	"strings"
 
 	"github.com/pocketbase/pocketbase"
@@ -10,17 +9,25 @@ import (
 
 	"github.com/ramtinJ95/EgenSkriven/internal/board"
 	"github.com/ramtinJ95/EgenSkriven/internal/commands"
+	"github.com/ramtinJ95/EgenSkriven/internal/config"
 	"github.com/ramtinJ95/EgenSkriven/internal/hooks"
 	_ "github.com/ramtinJ95/EgenSkriven/migrations" // Auto-register migrations
 	"github.com/ramtinJ95/EgenSkriven/ui"
 )
 
 func main() {
-	// Resolve data directory from environment variable or use PocketBase default
+	// Load global config for data directory
+	globalCfg, err := config.LoadGlobalConfig()
+	if err != nil {
+		log.Printf("Warning: failed to load global config: %v", err)
+		globalCfg = config.DefaultGlobalConfig()
+	}
+
+	// Create PocketBase with configured data directory
 	var app *pocketbase.PocketBase
-	if dataDir := os.Getenv("EGENSKRIVEN_DIR"); dataDir != "" {
+	if globalCfg.DataDir != "" {
 		app = pocketbase.NewWithConfig(pocketbase.Config{
-			DefaultDataDir: dataDir,
+			DefaultDataDir: globalCfg.DataDir,
 		})
 	} else {
 		app = pocketbase.New()
