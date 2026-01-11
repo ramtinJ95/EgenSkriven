@@ -1046,7 +1046,7 @@ egs list --all-boards
 - Great for personal productivity workflows
 
 **Cons:**
-- Must use alias or `--dir` flag consistently
+- Requires `EGENSKRIVEN_DIR` env var (set once in shell profile)
 - No project-specific configuration (workflow modes apply globally)
 - Database not tied to any specific project
 
@@ -1054,7 +1054,7 @@ egs list --all-boards
 ```bash
 # ~/.bashrc or ~/.zshrc
 export EGENSKRIVEN_DIR="$HOME/.egenskriven"
-alias egs='egenskriven --dir "$EGENSKRIVEN_DIR"'
+alias egs='egenskriven'  # Optional: shorter command
 
 # Optional: Start server on login (background)
 # (egs serve --http :8090 &) 2>/dev/null
@@ -1064,8 +1064,10 @@ alias egs='egenskriven --dir "$EGENSKRIVEN_DIR"'
 ```fish
 # ~/.config/fish/config.fish
 set -gx EGENSKRIVEN_DIR "$HOME/.egenskriven"
-alias egs="egenskriven --dir $EGENSKRIVEN_DIR"
+alias egs="egenskriven"  # Optional: shorter command
 ```
+
+With `EGENSKRIVEN_DIR` set, all commands automatically use the configured directory - no `--dir` flag needed.
 
 ### Scenario 3: Hybrid Approach
 
@@ -1130,18 +1132,19 @@ This is useful for:
 | Task isolation | Per project | Shared (use boards) | Shared (use boards) |
 | Config location | Per project | N/A | Per project |
 | Server management | One per project | Single global | Single global |
-| CLI usage | Natural (no flags) | Requires `--dir` or alias | Requires `--dir` or alias |
+| CLI usage | Natural (no flags) | Set `EGENSKRIVEN_DIR` env var | Set `EGENSKRIVEN_DIR` env var |
 | Best for | Teams, distinct projects | Personal productivity | Personal with project workflows |
-| Offline support | Natural | With `--dir` flag | With `--dir` flag |
+| Offline support | Natural | Natural (with env var) | Natural (with env var) |
 
 ### Environment Variables
 
 | Variable | Purpose |
 |----------|---------|
+| `EGENSKRIVEN_DIR` | Data directory path (database location) |
 | `EGENSKRIVEN_AUTHOR` | Default author name for comments |
 | `EGENSKRIVEN_AGENT` | Default agent name for block command |
 
-> **Note:** There is currently no environment variable for database directory. Use the `--dir` flag or shell aliases instead.
+When `EGENSKRIVEN_DIR` is set, the CLI automatically uses that directory for all database operations, eliminating the need for `--dir` flags or aliases.
 
 ## License
 
