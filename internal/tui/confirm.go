@@ -67,7 +67,7 @@ func NewConfirmDialog(title, message string) *ConfirmDialog {
 func NewDeleteConfirmDialog(taskTitle string) *ConfirmDialog {
 	return &ConfirmDialog{
 		title:    "Delete Task?",
-		message:  "Delete \"" + truncateString(taskTitle, 30) + "\"?\nThis action cannot be undone.",
+		message:  "Delete \"" + Truncate(taskTitle, 30) + "\"?\nThis action cannot be undone.",
 		yesLabel: "Delete",
 		noLabel:  "Cancel",
 		focused:  false, // Default to Cancel for safety
@@ -164,15 +164,4 @@ func (d *ConfirmDialog) View() string {
 // SetWidth sets the dialog width
 func (d *ConfirmDialog) SetWidth(width int) {
 	d.width = width
-}
-
-// truncateString truncates a string to a maximum length, adding "..." if truncated
-func truncateString(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	if maxLen <= 3 {
-		return "..."
-	}
-	return s[:maxLen-3] + "..."
 }
