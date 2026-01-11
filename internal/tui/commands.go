@@ -577,6 +577,9 @@ func recordToAPIData(record *core.Record) APITaskData {
 			for _, entry := range hSlice {
 				history = append(history, entry)
 			}
+		} else if hAny, ok := h.([]any); ok {
+			// Handle []any type (consistent with getRecordHistory)
+			history = hAny
 		}
 	}
 
