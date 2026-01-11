@@ -121,12 +121,7 @@ func loadBoardAndTasks(app *pocketbase.PocketBase, boardRef string) tea.Cmd {
 	}
 }
 
-// boardAndTasksLoadedMsg is sent when both board and tasks are loaded.
-// Used for the initial load sequence.
-type boardAndTasksLoadedMsg struct {
-	board *core.Record
-	tasks []*core.Record
-}
+// boardAndTasksLoadedMsg is defined in messages.go
 
 // setStatus creates a command that sends a status message.
 // Used for displaying temporary feedback messages.
