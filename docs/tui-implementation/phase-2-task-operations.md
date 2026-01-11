@@ -39,7 +39,7 @@ The TUI must provide feature parity with the CLI for task operations. Users shou
 
 ## Tasks
 
-### 2.1 Create Message Types
+### 2.1 Create Message Types [COMPLETED]
 
 **What**: Define Bubble Tea message types for all CRUD operations.
 
