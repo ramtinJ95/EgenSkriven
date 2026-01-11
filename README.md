@@ -355,13 +355,18 @@ egenskriven resume <task> --exec
 
 ### Resume Modes
 
-Configure how resume works in board settings:
+Resume modes control what happens when you respond to a blocked task. When an agent needs your input, it "blocks" the task and waits. Resume mode determines how work continues after you answer.
 
-| Mode | Behavior |
-|------|----------|
-| `command` | Prints the resume command for you to run |
-| `manual` | Shows command to copy |
-| `auto` | Automatically triggers on @agent comments |
+| Mode | Behavior | Use When |
+|------|----------|----------|
+| `manual` | Command is printed, you copy and run it yourself | Learning the workflow, debugging, you want to see exactly what happens |
+| `command` (default) | You explicitly run `egenskriven resume <task> --exec` | Normal development, you want explicit control over when the agent resumes |
+| `auto` | Agent resumes automatically when you add a comment with `@agent` | Pair programming with AI, rapid back-and-forth, you want responsiveness |
+
+Configure per board:
+```bash
+egenskriven board update <board> --resume-mode auto
+```
 
 ### Session ID Discovery
 
@@ -387,15 +392,25 @@ EgenSkriven is designed to work seamlessly with AI coding agents like Claude Cod
 ./egenskriven init --codex
 ```
 
-**Workflow modes:**
-- `strict` - Full enforcement: create before work, update during, summary after
-- `light` - Basic tracking: create/complete tasks
-- `minimal` - No enforcement: agent decides when to use
+### Workflow Modes
 
-**Agent modes:**
-- `autonomous` - Agent executes actions directly
-- `collaborative` - Agent proposes major changes, executes minor ones
-- `supervised` - Agent is read-only, outputs commands for human
+Workflow modes control how strictly the agent must track work in tasks.
+
+| Mode | Behavior | Use When |
+|------|----------|----------|
+| `strict` | Agent **must** use task tracking for everything: create/claim before starting, update status while working, mark complete after finishing | You need an audit trail, working in a team, or want full visibility into what the agent did and why |
+| `light` (default) | Agent **should** track significant work: create tasks for features/bugs/multi-step work, mark done when finished, skip tracking for trivial stuff | Solo development, you want tracking without ceremony |
+| `minimal` | Agent **decides** when tracking is useful: no requirements, agent uses judgment on what's worth tracking | Exploratory work, quick fixes, you trust the agent's judgment |
+
+### Agent Modes
+
+Agent modes control how much autonomy the agent has over task operations.
+
+| Mode | Behavior | Use When |
+|------|----------|----------|
+| `autonomous` | Agent **acts first, you review later**: creates tasks without asking, updates status and notes freely, completes and closes tasks on its own | You trust the agent, want fast iteration, will review async |
+| `collaborative` | Agent **acts on small things, explains big decisions**: can read tasks and make minor updates, but for major actions (completing, deleting, changing priority to urgent) it explains why and waits | You want the agent to be productive but still catch important decisions |
+| `supervised` | Agent **can only look, not touch**: read-only access to task data, outputs commands for you to run (e.g., "Run: `egenskriven move FIX-1 done`") | Sensitive projects, onboarding a new agent, you want full control |
 
 ### Get Agent Instructions
 
