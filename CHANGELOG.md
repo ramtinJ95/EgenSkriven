@@ -16,6 +16,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
+## [0.2.3] - 2026-01-11
+
+### Added
+- **Config**: Global configuration support at `~/.config/egenskriven/config.json` for user-wide settings
+- **Config**: `GlobalConfig` type for data directory, default author/agent names, and server URL
+- **Config**: `MergedConfig` type that combines global and project configs with project taking precedence
+- **Config**: Tilde expansion support in `data_dir` (e.g., `~/data` expands to `/home/user/data`)
+- **CLI**: New `config` command with `show` and `path` subcommands to inspect configuration
+- **CLI**: `config show` displays merged, global, or project config (`--global`, `--project` flags)
+- **CLI**: `config path` shows config file locations
+- **Tests**: Comprehensive test suite for global config loading, merging, and caching
+
+### Changed
+- **Config**: Data directory now configured via `data_dir` in global config instead of `EGENSKRIVEN_DIR` environment variable
+- **Config**: Default agent name now configured via `defaults.agent` in global config instead of `EGENSKRIVEN_AGENT` environment variable
+- **Config**: Default author name now configured via `defaults.author` in global config instead of environment variable
+- **Config**: Server URL can now be set in global config and overridden per-project
+
+### Improved
+- **Performance**: Global config is cached using `sync.Once` to avoid repeated disk reads
+- **Documentation**: Improved README with better explanations of workflow modes, agent behaviors, and resume modes
+
 ## [0.2.2] - 2026-01-10
 
 ### Fixed
