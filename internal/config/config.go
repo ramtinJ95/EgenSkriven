@@ -6,6 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+)
+
+// Global config cache - loaded once per process
+var (
+	globalConfigOnce  sync.Once
+	globalConfigCache *GlobalConfig
+	globalConfigError error
 )
 
 // ValidWorkflows is the list of valid workflow values.
@@ -142,7 +150,17 @@ func GlobalConfigPath() (string, error) {
 
 // LoadGlobalConfig loads configuration from ~/.config/egenskriven/config.json.
 // Returns default config if file doesn't exist.
+// The config is cached after first load - subsequent calls return the cached value.
 func LoadGlobalConfig() (*GlobalConfig, error) {
+	globalConfigOnce.Do(func() {
+		globalConfigCache, globalConfigError = loadGlobalConfigFromDisk()
+	})
+	return globalConfigCache, globalConfigError
+}
+
+// loadGlobalConfigFromDisk reads the global config from disk.
+// This is the internal implementation; use LoadGlobalConfig for cached access.
+func loadGlobalConfigFromDisk() (*GlobalConfig, error) {
 	configPath, err := GlobalConfigPath()
 	if err != nil {
 		return DefaultGlobalConfig(), nil
@@ -185,6 +203,14 @@ func LoadGlobalConfig() (*GlobalConfig, error) {
 	}
 
 	return cfg, nil
+}
+
+// ResetGlobalConfigCache clears the cached global config.
+// This is primarily useful for testing.
+func ResetGlobalConfigCache() {
+	globalConfigOnce = sync.Once{}
+	globalConfigCache = nil
+	globalConfigError = nil
 }
 
 // SaveGlobalConfig saves configuration to ~/.config/egenskriven/config.json.
