@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"strings"
 
 	"github.com/pocketbase/pocketbase"
@@ -15,7 +16,15 @@ import (
 )
 
 func main() {
-	app := pocketbase.New()
+	// Resolve data directory from environment variable or use PocketBase default
+	var app *pocketbase.PocketBase
+	if dataDir := os.Getenv("EGENSKRIVEN_DIR"); dataDir != "" {
+		app = pocketbase.NewWithConfig(pocketbase.Config{
+			DefaultDataDir: dataDir,
+		})
+	} else {
+		app = pocketbase.New()
+	}
 
 	// Hook: Run app migrations after bootstrap
 	// Bootstrap() only runs system migrations, so we need to explicitly
