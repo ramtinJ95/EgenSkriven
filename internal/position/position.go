@@ -1,6 +1,8 @@
 package position
 
 import (
+	"sort"
+
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
@@ -144,11 +146,7 @@ func GetBefore(app *pocketbase.PocketBase, taskID string) (float64, error) {
 
 // SortByPosition sorts tasks by their position field in ascending order.
 func SortByPosition(tasks []*core.Record) {
-	for i := 0; i < len(tasks)-1; i++ {
-		for j := i + 1; j < len(tasks); j++ {
-			if tasks[i].GetFloat("position") > tasks[j].GetFloat("position") {
-				tasks[i], tasks[j] = tasks[j], tasks[i]
-			}
-		}
-	}
+	sort.Slice(tasks, func(i, j int) bool {
+		return tasks[i].GetFloat("position") < tasks[j].GetFloat("position")
+	})
 }
