@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -13,6 +14,16 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 
 	"github.com/ramtinJ95/EgenSkriven/internal/board"
+)
+
+// ViewState represents which view is currently active
+type ViewState int
+
+const (
+	ViewBoard ViewState = iota
+	ViewTaskDetail
+	ViewTaskForm
+	ViewConfirm
 )
 
 // App is the main TUI application model.
@@ -34,6 +45,15 @@ type App struct {
 	width  int
 	height int
 	ready  bool // True once initial data is loaded
+	view   ViewState
+
+	// Overlays
+	taskDetail    *TaskDetail
+	taskForm      *TaskForm
+	confirmDialog *ConfirmDialog
+
+	// Pending operations
+	pendingDeleteTaskID string
 
 	// Components
 	help help.Model
@@ -63,6 +83,7 @@ func NewApp(pb *pocketbase.PocketBase, boardRef string) *App {
 		focusedCol:      0,
 		initialBoardRef: boardRef,
 		columnOrder:     []string{"backlog", "todo", "in_progress", "need_input", "review", "done"},
+		view:            ViewBoard,
 	}
 }
 
@@ -76,6 +97,8 @@ func (a *App) Init() tea.Cmd {
 // Update implements tea.Model.
 // Handles all messages and updates the model state.
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+
 	switch msg := msg.(type) {
 
 	// Window resize
@@ -83,43 +106,172 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.width = msg.Width
 		a.height = msg.Height
 		a.updateColumnSizes()
+		// Update overlay sizes
+		if a.taskDetail != nil {
+			a.taskDetail.SetSize(a.width/2, a.height-4)
+		}
+		if a.taskForm != nil {
+			a.taskForm.SetSize(a.width/2, a.height-10)
+		}
 		return a, nil
 
-	// Keyboard input
-	case tea.KeyMsg:
-		return a.handleKeyMsg(msg)
+	// =================================================================
+	// Initial Load Messages
+	// =================================================================
 
-	// Initial load complete
 	case boardAndTasksLoadedMsg:
 		a.currentBoard = msg.board
 		a.initializeColumns(msg.tasks)
 		a.ready = true
 		return a, nil
 
-	// Tasks loaded (refresh)
+	// =================================================================
+	// Task CRUD Messages
+	// =================================================================
+
+	case taskCreatedMsg:
+		// Reload tasks and show success message
+		cmds = append(cmds,
+			loadTasks(a.pb, a.currentBoard.Id),
+			showStatus("Created: "+msg.task.GetString("title")+" ["+msg.displayID+"]", false, 3*time.Second),
+		)
+		// Close form
+		a.taskForm = nil
+		a.view = ViewBoard
+
+	case taskUpdatedMsg:
+		// Reload tasks and show success message
+		cmds = append(cmds,
+			loadTasks(a.pb, a.currentBoard.Id),
+			showStatus("Updated: "+msg.task.GetString("title"), false, 3*time.Second),
+		)
+		// Close form and update detail if open
+		a.taskForm = nil
+		if a.taskDetail != nil {
+			// Update the detail view with new data
+			a.taskDetail.UpdateTask(a.recordToTaskItem(msg.task))
+		}
+		a.view = ViewBoard
+
+	case taskDeletedMsg:
+		// Reload tasks and show success message
+		cmds = append(cmds,
+			loadTasks(a.pb, a.currentBoard.Id),
+			showStatus("Deleted: "+msg.title, false, 3*time.Second),
+		)
+		// Close any overlays
+		a.taskDetail = nil
+		a.confirmDialog = nil
+		a.view = ViewBoard
+
+	case taskMovedMsg:
+		// Reload tasks and show status
+		cmds = append(cmds, loadTasks(a.pb, a.currentBoard.Id))
+		if msg.fromColumn != msg.toColumn {
+			cmds = append(cmds, showStatus("Moved to "+msg.toColumn, false, 2*time.Second))
+		}
+
 	case tasksLoadedMsg:
 		a.updateColumnsWithTasks(msg.tasks)
-		return a, nil
+		return a, tea.Batch(cmds...)
 
-	// Error occurred
+	// =================================================================
+	// View State Messages
+	// =================================================================
+
+	case openTaskDetailMsg:
+		a.taskDetail = NewTaskDetail(msg.task, a.width/2, a.height-4)
+		a.view = ViewTaskDetail
+
+	case closeTaskDetailMsg:
+		a.taskDetail = nil
+		a.view = ViewBoard
+
+	case openTaskFormMsg:
+		if msg.mode == FormModeEdit && msg.task != nil {
+			a.taskForm = NewTaskFormWithData(msg.task, a.width/2, a.height-10)
+		} else {
+			a.taskForm = NewTaskForm(FormModeAdd, a.width/2, a.height-10)
+		}
+		a.view = ViewTaskForm
+
+	case closeTaskFormMsg:
+		a.taskForm = nil
+		a.view = ViewBoard
+
+	case openConfirmDialogMsg:
+		a.confirmDialog = NewConfirmDialog(msg.title, msg.message)
+		a.view = ViewConfirm
+
+	case closeConfirmDialogMsg:
+		if msg.confirmed {
+			// Execute the pending action (delete)
+			if a.pendingDeleteTaskID != "" {
+				cmds = append(cmds, deleteTask(a.pb, a.pendingDeleteTaskID))
+				a.pendingDeleteTaskID = ""
+			}
+		}
+		a.confirmDialog = nil
+		a.view = ViewBoard
+
+	case submitTaskFormMsg:
+		if msg.mode == FormModeAdd {
+			cmds = append(cmds, createTask(a.pb, a.currentBoard, msg.data))
+		} else {
+			cmds = append(cmds, updateTask(a.pb, msg.taskID, msg.data))
+		}
+
+	// =================================================================
+	// Status Messages
+	// =================================================================
+
+	case statusMsg:
+		a.statusMessage = msg.message
+		a.statusIsError = msg.isError
+		if msg.duration > 0 {
+			cmds = append(cmds, clearStatusAfter(msg.duration))
+		}
+
+	case clearStatusMsg:
+		a.statusMessage = ""
+		a.statusIsError = false
+
+	// =================================================================
+	// Error Messages
+	// =================================================================
+
 	case errMsg:
 		a.err = msg.err
 		a.statusMessage = msg.Error()
 		a.statusIsError = true
-		return a, nil
+		cmds = append(cmds, clearStatusAfter(5*time.Second))
 
-	// Status message
-	case statusMsg:
-		a.statusMessage = msg.message
-		a.statusIsError = msg.isError
-		return a, nil
+	// =================================================================
+	// Keyboard Input
+	// =================================================================
+
+	case tea.KeyMsg:
+		switch a.view {
+		case ViewBoard:
+			return a.handleBoardKeys(msg)
+		case ViewTaskDetail:
+			return a.handleDetailKeys(msg)
+		case ViewTaskForm:
+			return a.handleFormKeys(msg)
+		case ViewConfirm:
+			return a.handleConfirmKeys(msg)
+		}
 	}
 
-	return a, nil
+	return a, tea.Batch(cmds...)
 }
 
-// handleKeyMsg processes keyboard input.
-func (a *App) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+// =============================================================================
+// Key Handlers
+// =============================================================================
+
+// handleBoardKeys processes keyboard input when in board view.
+func (a *App) handleBoardKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// If not ready, ignore keys
 	if !a.ready {
 		return a, nil
@@ -158,23 +310,204 @@ func (a *App) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return a, nil
 
-	// Enter - view task details (placeholder for Phase 2)
+	// Enter - view task details
 	case matchKey(msg, a.keys.Enter):
-		task := a.columns[a.focusedCol].SelectedTask()
+		task := a.getSelectedTask()
 		if task != nil {
-			a.statusMessage = fmt.Sprintf("Selected: %s %s", task.DisplayID, task.TaskTitle)
-			a.statusIsError = false
+			return a, func() tea.Msg {
+				return openTaskDetailMsg{task: *task}
+			}
 		}
 		return a, nil
 
-	// Help toggle (placeholder for Phase 2)
+	// Help toggle
 	case matchKey(msg, a.keys.Help):
 		a.help.ShowAll = !a.help.ShowAll
 		return a, nil
 	}
 
+	// Additional key handling by string
+	switch msg.String() {
+	case "n":
+		// New task
+		return a, func() tea.Msg {
+			return openTaskFormMsg{mode: FormModeAdd}
+		}
+
+	case "e":
+		// Edit task
+		task := a.getSelectedTask()
+		if task != nil {
+			return a, func() tea.Msg {
+				return openTaskFormMsg{
+					mode:   FormModeEdit,
+					taskID: task.ID,
+					task:   task,
+				}
+			}
+		}
+
+	case "d":
+		// Delete task (with confirmation)
+		task := a.getSelectedTask()
+		if task != nil {
+			a.pendingDeleteTaskID = task.ID
+			a.confirmDialog = NewDeleteConfirmDialog(task.TaskTitle)
+			a.view = ViewConfirm
+		}
+		return a, nil
+
+	case "H":
+		// Move task to previous column
+		return a.moveTaskLeft()
+
+	case "L":
+		// Move task to next column
+		return a.moveTaskRight()
+
+	case "K":
+		// Move task up in column
+		return a.reorderTaskUp()
+
+	case "J":
+		// Move task down in column
+		return a.reorderTaskDown()
+
+	case "1", "2", "3", "4", "5", "6":
+		// Move task to column by number
+		columnIndex := int(msg.String()[0] - '1')
+		return a.moveTaskToColumnIndex(columnIndex)
+	}
+
 	return a, nil
 }
+
+// handleDetailKeys processes keyboard input when in task detail view.
+func (a *App) handleDetailKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if a.taskDetail == nil {
+		a.view = ViewBoard
+		return a, nil
+	}
+
+	// Let the detail component handle its own keys
+	td, cmd := a.taskDetail.Update(msg)
+	a.taskDetail = td
+	return a, cmd
+}
+
+// handleFormKeys processes keyboard input when in task form view.
+func (a *App) handleFormKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if a.taskForm == nil {
+		a.view = ViewBoard
+		return a, nil
+	}
+
+	// Let the form component handle its own keys
+	tf, cmd := a.taskForm.Update(msg)
+	a.taskForm = tf
+	return a, cmd
+}
+
+// handleConfirmKeys processes keyboard input when in confirm dialog view.
+func (a *App) handleConfirmKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if a.confirmDialog == nil {
+		a.view = ViewBoard
+		return a, nil
+	}
+
+	// Let the confirm dialog handle its own keys
+	cd, cmd := a.confirmDialog.Update(msg)
+	a.confirmDialog = cd
+	return a, cmd
+}
+
+// =============================================================================
+// Task Movement Helpers
+// =============================================================================
+
+func (a *App) moveTaskLeft() (tea.Model, tea.Cmd) {
+	task := a.getSelectedTask()
+	if task == nil {
+		return a, nil
+	}
+
+	currentIndex := a.getColumnIndex(task.Column)
+	if currentIndex <= 0 {
+		return a, showStatus("Already in first column", true, 2*time.Second)
+	}
+
+	targetColumn := a.columnOrder[currentIndex-1]
+	return a, moveTaskToColumn(a.pb, task.ID, targetColumn)
+}
+
+func (a *App) moveTaskRight() (tea.Model, tea.Cmd) {
+	task := a.getSelectedTask()
+	if task == nil {
+		return a, nil
+	}
+
+	currentIndex := a.getColumnIndex(task.Column)
+	if currentIndex >= len(a.columnOrder)-1 {
+		return a, showStatus("Already in last column", true, 2*time.Second)
+	}
+
+	targetColumn := a.columnOrder[currentIndex+1]
+	return a, moveTaskToColumn(a.pb, task.ID, targetColumn)
+}
+
+func (a *App) reorderTaskUp() (tea.Model, tea.Cmd) {
+	task := a.getSelectedTask()
+	if task == nil {
+		return a, nil
+	}
+	return a, reorderTaskInColumn(a.pb, task.ID, true)
+}
+
+func (a *App) reorderTaskDown() (tea.Model, tea.Cmd) {
+	task := a.getSelectedTask()
+	if task == nil {
+		return a, nil
+	}
+	return a, reorderTaskInColumn(a.pb, task.ID, false)
+}
+
+func (a *App) moveTaskToColumnIndex(index int) (tea.Model, tea.Cmd) {
+	if index < 0 || index >= len(a.columnOrder) {
+		return a, nil
+	}
+
+	task := a.getSelectedTask()
+	if task == nil {
+		return a, nil
+	}
+
+	targetColumn := a.columnOrder[index]
+	if targetColumn == task.Column {
+		return a, nil // Already in this column
+	}
+
+	return a, moveTaskToColumn(a.pb, task.ID, targetColumn)
+}
+
+func (a *App) getColumnIndex(column string) int {
+	for i, col := range a.columnOrder {
+		if col == column {
+			return i
+		}
+	}
+	return -1
+}
+
+func (a *App) getSelectedTask() *TaskItem {
+	if a.focusedCol < 0 || a.focusedCol >= len(a.columns) {
+		return nil
+	}
+	return a.columns[a.focusedCol].SelectedTask()
+}
+
+// =============================================================================
+// View Rendering
+// =============================================================================
 
 // View implements tea.Model.
 // Returns the string to render to the terminal.
@@ -192,13 +525,94 @@ func (a *App) View() string {
 	// Header
 	sections = append(sections, a.renderHeader())
 
-	// Columns (main content)
-	sections = append(sections, a.renderColumns())
+	// Main content depends on view state
+	switch a.view {
+	case ViewTaskDetail:
+		// Board + detail panel side by side
+		boardView := a.renderColumns()
+		detailView := ""
+		if a.taskDetail != nil {
+			detailView = a.taskDetail.View()
+		}
+		sections = append(sections, lipgloss.JoinHorizontal(lipgloss.Top, boardView, detailView))
+
+	case ViewTaskForm:
+		// Board with form overlay
+		boardView := a.renderColumns()
+		if a.taskForm != nil {
+			// Center the form over the board
+			formView := a.taskForm.View()
+			sections = append(sections, a.overlayCenter(boardView, formView))
+		} else {
+			sections = append(sections, boardView)
+		}
+
+	case ViewConfirm:
+		// Board with confirm dialog overlay
+		boardView := a.renderColumns()
+		if a.confirmDialog != nil {
+			// Center the dialog over the board
+			dialogView := a.confirmDialog.View()
+			sections = append(sections, a.overlayCenter(boardView, dialogView))
+		} else {
+			sections = append(sections, boardView)
+		}
+
+	default:
+		// Normal board view
+		sections = append(sections, a.renderColumns())
+	}
 
 	// Status bar
 	sections = append(sections, a.renderStatusBar())
 
 	return lipgloss.JoinVertical(lipgloss.Left, sections...)
+}
+
+// overlayCenter places the overlay in the center of the background
+func (a *App) overlayCenter(background, overlay string) string {
+	bgLines := strings.Split(background, "\n")
+	overlayLines := strings.Split(overlay, "\n")
+
+	// Calculate overlay position
+	overlayWidth := lipgloss.Width(overlay)
+	overlayHeight := len(overlayLines)
+	bgHeight := len(bgLines)
+	bgWidth := a.width
+
+	startY := (bgHeight - overlayHeight) / 2
+	startX := (bgWidth - overlayWidth) / 2
+
+	if startY < 0 {
+		startY = 0
+	}
+	if startX < 0 {
+		startX = 0
+	}
+
+	// Build result
+	var result []string
+	for i, line := range bgLines {
+		if i >= startY && i < startY+overlayHeight {
+			overlayLine := ""
+			if i-startY < len(overlayLines) {
+				overlayLine = overlayLines[i-startY]
+			}
+			// Dim the background and place overlay
+			dimmedLine := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(line)
+			// Simple overlay: replace center portion
+			if startX+lipgloss.Width(overlayLine) < len(dimmedLine) {
+				result = append(result, dimmedLine[:startX]+overlayLine+dimmedLine[startX+lipgloss.Width(overlayLine):])
+			} else {
+				result = append(result, overlayLine)
+			}
+		} else {
+			// Dim non-overlay lines
+			result = append(result, lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(line))
+		}
+	}
+
+	return strings.Join(result, "\n")
 }
 
 // renderLoading shows a loading message while data is being fetched.
@@ -249,7 +663,12 @@ func (a *App) renderColumns() string {
 	}
 
 	// Calculate column width (equal distribution)
-	colWidth := (a.width - 2) / len(a.columns) // -2 for outer margins
+	// When in detail view, use less width for columns
+	totalWidth := a.width - 2
+	if a.view == ViewTaskDetail {
+		totalWidth = a.width / 2
+	}
+	colWidth := totalWidth / len(a.columns)
 	if colWidth < 15 {
 		colWidth = 15
 	}
@@ -285,13 +704,36 @@ func (a *App) renderStatusBar() string {
 		}
 		left = style.Render(a.statusMessage)
 	} else {
-		// Show key hints
-		hints := []string{
-			"h/l: columns",
-			"j/k: tasks",
-			"enter: details",
-			"q: quit",
-			"?: help",
+		// Show key hints based on current view
+		var hints []string
+		switch a.view {
+		case ViewBoard:
+			hints = []string{
+				"h/l: columns",
+				"j/k: tasks",
+				"n: new",
+				"e: edit",
+				"d: delete",
+				"enter: details",
+				"q: quit",
+			}
+		case ViewTaskDetail:
+			hints = []string{
+				"j/k: scroll",
+				"e: edit",
+				"esc: close",
+			}
+		case ViewTaskForm:
+			hints = []string{
+				"tab: next field",
+				"ctrl+s: save",
+				"esc: cancel",
+			}
+		case ViewConfirm:
+			hints = []string{
+				"y: confirm",
+				"n/esc: cancel",
+			}
 		}
 		left = statusBarStyle.Render(strings.Join(hints, " | "))
 	}
@@ -312,6 +754,10 @@ func (a *App) renderStatusBar() string {
 
 	return left + strings.Repeat(" ", gap) + right
 }
+
+// =============================================================================
+// Data Helpers
+// =============================================================================
 
 // initializeColumns creates columns from loaded tasks.
 func (a *App) initializeColumns(tasks []*core.Record) {
@@ -370,6 +816,17 @@ func (a *App) recordsToListItems(records []*core.Record, boardPrefix string) []l
 		items[i] = NewTaskItemFromRecord(record, displayID)
 	}
 	return items
+}
+
+// recordToTaskItem converts a single record to a TaskItem
+func (a *App) recordToTaskItem(record *core.Record) TaskItem {
+	boardPrefix := ""
+	if a.currentBoard != nil {
+		boardPrefix = a.currentBoard.GetString("prefix")
+	}
+	seq := record.GetInt("seq")
+	displayID := board.FormatDisplayID(boardPrefix, seq)
+	return NewTaskItemFromRecord(record, displayID)
 }
 
 // updateColumnSizes recalculates column dimensions after resize.
