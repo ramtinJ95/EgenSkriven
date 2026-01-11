@@ -60,7 +60,7 @@ Before starting, ensure you have the Bubble Tea dependencies available:
 
 ## Tasks
 
-### 1.1 Create Directory Structure
+### 1.1 Create Directory Structure [COMPLETED]
 
 **What**: Create the `internal/tui/` directory with all necessary Go files.
 
