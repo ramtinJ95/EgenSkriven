@@ -733,7 +733,7 @@ func Truncate(s string, maxLen int) string {
 
 ---
 
-### 1.7 Implement Column Component
+### 1.7 Implement Column Component [COMPLETED]
 
 **What**: Create the `Column` component that wraps `bubbles/list` for a single kanban column.
 
