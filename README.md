@@ -947,22 +947,72 @@ make clean    # Remove build artifacts
 
 ## Configuration
 
-Project configuration is stored in `.egenskriven/config.json`:
+EgenSkriven uses a two-tier configuration system:
+
+### Global Configuration
+
+User-wide settings stored in `~/.config/egenskriven/config.json`:
 
 ```json
 {
-  "defaultBoard": "WRK",
+  "data_dir": "~/.egenskriven",
+  "defaults": {
+    "author": "your-name",
+    "agent": "claude"
+  },
   "agent": {
-    "workflow": "strict",
+    "workflow": "light",
     "mode": "autonomous",
-    "overrideTodoWrite": true,
-    "requireSummary": false,
-    "structuredSections": false
+    "resume_mode": "command"
   },
   "server": {
     "url": "http://localhost:8090"
   }
 }
+```
+
+| Setting | Description |
+|---------|-------------|
+| `data_dir` | Database location (supports `~` expansion) |
+| `defaults.author` | Default author for comments |
+| `defaults.agent` | Default agent name for block command |
+| `agent.*` | Default agent behavior settings |
+| `server.url` | Default server URL |
+
+### Project Configuration
+
+Project-specific overrides in `.egenskriven/config.json`:
+
+```json
+{
+  "default_board": "WRK",
+  "agent": {
+    "workflow": "strict",
+    "mode": "collaborative",
+    "resume_mode": "auto"
+  },
+  "server": {
+    "url": "http://localhost:9090"
+  }
+}
+```
+
+Project settings override global settings for `agent.*` and `server.*` fields.
+
+### Config Commands
+
+```bash
+# Show effective (merged) configuration
+egenskriven config show
+
+# Show global config only
+egenskriven config show --global
+
+# Show project config only
+egenskriven config show --project
+
+# Show config file paths
+egenskriven config path --global
 ```
 
 ## Deployment Scenarios
@@ -1013,16 +1063,25 @@ One database for all tasks, accessible from anywhere. Use boards to organize tas
 
 **Setup:**
 ```bash
-# 1. Create global data directory
-mkdir -p ~/.egenskriven
+# 1. Create global config
+mkdir -p ~/.config/egenskriven ~/.egenskriven
+cat > ~/.config/egenskriven/config.json << 'EOF'
+{
+  "data_dir": "~/.egenskriven",
+  "defaults": {
+    "author": "your-name",
+    "agent": "claude"
+  }
+}
+EOF
 
-# 2. Add shell alias (~/.bashrc, ~/.zshrc, or ~/.config/fish/config.fish)
-alias egs='egenskriven --dir ~/.egenskriven'
+# 2. Optional: Add shell alias for shorter command
+alias egs='egenskriven'
 
 # 3. Start global server (in a separate terminal or background)
 egs serve --http :8090 &
 
-# 4. Create boards for each project (or use --direct without server)
+# 4. Create boards for each project
 egs board add "Work" --prefix WRK
 egs board add "Personal" --prefix PER
 egs board add "SideProject" --prefix SIDE
@@ -1046,28 +1105,10 @@ egs list --all-boards
 - Great for personal productivity workflows
 
 **Cons:**
-- Requires `EGENSKRIVEN_DIR` env var (set once in shell profile)
 - No project-specific configuration (workflow modes apply globally)
 - Database not tied to any specific project
 
-**Recommended shell configuration:**
-```bash
-# ~/.bashrc or ~/.zshrc
-export EGENSKRIVEN_DIR="$HOME/.egenskriven"
-alias egs='egenskriven'  # Optional: shorter command
-
-# Optional: Start server on login (background)
-# (egs serve --http :8090 &) 2>/dev/null
-```
-
-**Fish shell:**
-```fish
-# ~/.config/fish/config.fish
-set -gx EGENSKRIVEN_DIR "$HOME/.egenskriven"
-alias egs="egenskriven"  # Optional: shorter command
-```
-
-With `EGENSKRIVEN_DIR` set, all commands automatically use the configured directory - no `--dir` flag needed.
+With `data_dir` set in global config, all commands automatically use the configured directory - no `--dir` flag needed.
 
 ### Scenario 3: Hybrid Approach
 
@@ -1075,20 +1116,32 @@ Global database for task storage, but project-specific configs for workflow sett
 
 **Setup:**
 ```bash
-# Global alias for database location
-alias egs='egenskriven --dir ~/.egenskriven'
+# 1. Set up global config with data directory
+mkdir -p ~/.config/egenskriven ~/.egenskriven
+cat > ~/.config/egenskriven/config.json << 'EOF'
+{
+  "data_dir": "~/.egenskriven",
+  "defaults": {
+    "author": "your-name"
+  },
+  "agent": {
+    "workflow": "light",
+    "mode": "autonomous"
+  }
+}
+EOF
 
-# Project config for workflow settings
+# 2. Project config for workflow overrides
 cd ~/my-project
-egs init --workflow strict  # Creates .egenskriven/config.json
+egenskriven init --workflow strict  # Creates .egenskriven/config.json
 ```
 
 In this setup:
-- Tasks are stored in the global `~/.egenskriven` database
-- The project's `.egenskriven/config.json` controls workflow mode and default board
-- Agents read project-local config for behavior settings
+- Tasks are stored in the global `~/.egenskriven` database (from global config)
+- The project's `.egenskriven/config.json` overrides workflow mode and default board
+- Global defaults apply when no project config exists
 
-**Note:** The CLI reads config from the current directory, so project-specific settings (like `defaultBoard`) work when you're in that project, even with a global database.
+**Note:** The CLI merges global and project configs, with project settings taking precedence.
 
 ### Running Multiple Servers
 
@@ -1130,21 +1183,11 @@ This is useful for:
 | Aspect | Project-Specific | Global | Hybrid |
 |--------|-----------------|--------|--------|
 | Task isolation | Per project | Shared (use boards) | Shared (use boards) |
-| Config location | Per project | N/A | Per project |
+| Config location | Per project | Global only | Global + project |
 | Server management | One per project | Single global | Single global |
-| CLI usage | Natural (no flags) | Set `EGENSKRIVEN_DIR` env var | Set `EGENSKRIVEN_DIR` env var |
+| CLI usage | Natural (no flags) | Set `data_dir` in global config | Set `data_dir` in global config |
 | Best for | Teams, distinct projects | Personal productivity | Personal with project workflows |
-| Offline support | Natural | Natural (with env var) | Natural (with env var) |
-
-### Environment Variables
-
-| Variable | Purpose |
-|----------|---------|
-| `EGENSKRIVEN_DIR` | Data directory path (database location) |
-| `EGENSKRIVEN_AUTHOR` | Default author name for comments |
-| `EGENSKRIVEN_AGENT` | Default agent name for block command |
-
-When `EGENSKRIVEN_DIR` is set, the CLI automatically uses that directory for all database operations, eliminating the need for `--dir` flags or aliases.
+| Offline support | Natural | Natural (with config) | Natural (with config) |
 
 ## License
 
