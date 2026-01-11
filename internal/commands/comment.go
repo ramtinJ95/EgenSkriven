@@ -12,6 +12,7 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/spf13/cobra"
 
+	"github.com/ramtinJ95/EgenSkriven/internal/config"
 	"github.com/ramtinJ95/EgenSkriven/internal/resolver"
 )
 
@@ -86,7 +87,7 @@ comment, it may trigger an auto-resume (depending on board configuration).`,
 			if isAgentContext() {
 				authorType = "agent"
 				if authorId == "" {
-					authorId = getAgentNameFromEnv()
+					authorId = getDefaultAgentName()
 				}
 			}
 
@@ -150,14 +151,16 @@ comment, it may trigger an auto-resume (depending on board configuration).`,
 }
 
 // resolveAuthor returns the author identifier from various sources.
-// Priority: --author flag > EGENSKRIVEN_AUTHOR env > USER env > empty
+// Priority: --author flag > config defaults.author > USER env > empty
 func resolveAuthor(flagValue string) string {
 	if flagValue != "" {
 		return flagValue
 	}
-	if author := os.Getenv("EGENSKRIVEN_AUTHOR"); author != "" {
-		return author
+	// Try to get from global config
+	if cfg, err := config.LoadGlobalConfig(); err == nil && cfg.Defaults.Author != "" {
+		return cfg.Defaults.Author
 	}
+	// Fallback to system user
 	if user := os.Getenv("USER"); user != "" {
 		return user
 	}
@@ -166,12 +169,11 @@ func resolveAuthor(flagValue string) string {
 
 // isAgentContext checks if we're running in an AI agent context.
 func isAgentContext() bool {
-	// Check for common agent environment indicators
+	// Check for common agent runtime environment indicators
 	indicators := []string{
 		"OPENCODE_SESSION_ID",
 		"CLAUDE_SESSION_ID",
 		"CODEX_THREAD_ID",
-		"EGENSKRIVEN_AGENT",
 	}
 	for _, env := range indicators {
 		if os.Getenv(env) != "" {

@@ -11,6 +11,7 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/spf13/cobra"
 
+	"github.com/ramtinJ95/EgenSkriven/internal/config"
 	"github.com/ramtinJ95/EgenSkriven/internal/resolver"
 )
 
@@ -90,7 +91,7 @@ Use this when you're blocked and need human guidance to proceed.`,
 
 			// Determine agent name
 			if agentName == "" {
-				agentName = getAgentNameFromEnv()
+				agentName = getDefaultAgentName()
 			}
 
 			// Get comments collection
@@ -176,11 +177,14 @@ Use this when you're blocked and need human guidance to proceed.`,
 	return cmd
 }
 
-// getAgentNameFromEnv returns the agent name from environment variables.
-// Priority: EGENSKRIVEN_AGENT env > "agent" default
-func getAgentNameFromEnv() string {
-	if name := os.Getenv("EGENSKRIVEN_AGENT"); name != "" {
-		return name
+// getDefaultAgentName returns the default agent name from config.
+func getDefaultAgentName() string {
+	cfg, err := config.LoadGlobalConfig()
+	if err != nil {
+		return "agent"
+	}
+	if cfg.Defaults.Agent != "" {
+		return cfg.Defaults.Agent
 	}
 	return "agent"
 }
