@@ -31,11 +31,12 @@ type APIClient struct {
 }
 
 // NewAPIClient creates a new API client with the configured or default server URL.
+// Uses merged config (global + project) to determine the server URL.
 func NewAPIClient() *APIClient {
 	baseURL := DefaultServerURL
 
-	// Try to load URL from config
-	if cfg, err := config.LoadProjectConfig(); err == nil && cfg.Server.URL != "" {
+	// Use merged config to get effective server URL
+	if cfg, err := config.Load(); err == nil && cfg.Server.URL != "" {
 		baseURL = cfg.Server.URL
 	}
 
