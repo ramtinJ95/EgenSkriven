@@ -96,8 +96,13 @@ func NewApp(pb *pocketbase.PocketBase, boardRef string) *App {
 // Init implements tea.Model.
 // Called once when the program starts. Returns initial commands.
 func (a *App) Init() tea.Cmd {
-	// Load board and tasks asynchronously
-	return loadBoardAndTasks(a.pb, a.initialBoardRef)
+	// Load boards list and current board's tasks in parallel.
+	// loadBoards populates a.boards for the board selector.
+	// loadBoardAndTasks loads the initial board and its tasks.
+	return tea.Batch(
+		loadBoards(a.pb),
+		loadBoardAndTasks(a.pb, a.initialBoardRef),
+	)
 }
 
 // Update implements tea.Model.
