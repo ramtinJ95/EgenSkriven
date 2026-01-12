@@ -530,7 +530,7 @@ func (h *Header) Height() int {
 
 ---
 
-### 3.4 Implement Board Loading Command
+### 3.4 Implement Board Loading Command ✅ COMPLETED
 
 **What**: Create tea.Cmd functions to load boards from the database.
 
