@@ -12,7 +12,6 @@ type Header struct {
 	boardPrefix string
 	boardColor  string
 	taskCount   int
-	columnCount int
 	width       int
 	showHelp    bool // Show keybinding hints
 }
@@ -34,11 +33,6 @@ func (h *Header) SetBoard(name, prefix, color string) {
 // SetTaskCount updates the task count display
 func (h *Header) SetTaskCount(count int) {
 	h.taskCount = count
-}
-
-// SetColumnCount updates the column count
-func (h *Header) SetColumnCount(count int) {
-	h.columnCount = count
 }
 
 // SetWidth updates the header width
