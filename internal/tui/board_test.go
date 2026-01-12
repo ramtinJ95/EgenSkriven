@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/pocketbase/pocketbase/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -237,4 +238,116 @@ func TestHeaderTaskCount(t *testing.T) {
 func TestHeaderHeight(t *testing.T) {
 	header := NewHeader()
 	assert.Equal(t, 2, header.Height())
+}
+
+func TestBoardSelectorCancellation(t *testing.T) {
+	options := []BoardOption{
+		{ID: "id1", Name: "Work", Prefix: "WRK"},
+		{ID: "id2", Name: "Personal", Prefix: "PER"},
+	}
+
+	selector := NewBoardSelector(options, "id1")
+	selector.SetSize(50, 20)
+
+	// Cancel with Escape - should return nil command
+	_, cmd := selector.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	assert.Nil(t, cmd)
+
+	// Cancel with 'q' - should also return nil command
+	selector2 := NewBoardSelector(options, "id1")
+	selector2.SetSize(50, 20)
+	_, cmd = selector2.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	assert.Nil(t, cmd)
+}
+
+func TestBoardOptionsFromRecordsEmpty(t *testing.T) {
+	// Test with nil records
+	options := BoardOptionsFromRecords(nil, nil)
+	assert.Empty(t, options)
+
+	// Test with empty slice
+	options = BoardOptionsFromRecords([]*core.Record{}, nil)
+	assert.Empty(t, options)
+}
+
+func TestBoardSelectorView(t *testing.T) {
+	options := []BoardOption{
+		{ID: "id1", Name: "Work", Prefix: "WRK", TaskCount: 10},
+	}
+
+	selector := NewBoardSelector(options, "id1")
+	selector.SetSize(50, 20)
+
+	view := selector.View()
+
+	// View should contain the list content wrapped in a modal border
+	assert.NotEmpty(t, view)
+	assert.Contains(t, view, "Switch Board")
+}
+
+func TestBoardSwitchingFlow(t *testing.T) {
+	// This test simulates the full board switching flow:
+	// 1. User has multiple boards
+	// 2. User opens board selector (b key)
+	// 3. User navigates to a different board
+	// 4. User selects the board (enter)
+	// 5. boardSwitchedMsg is produced
+
+	options := []BoardOption{
+		{ID: "board-1", Name: "Work", Prefix: "WRK", TaskCount: 5},
+		{ID: "board-2", Name: "Personal", Prefix: "PER", TaskCount: 3},
+		{ID: "board-3", Name: "Learning", Prefix: "LRN", TaskCount: 0},
+	}
+
+	// Create selector with "Work" as current board
+	selector := NewBoardSelector(options, "board-1")
+	selector.SetSize(60, 20)
+
+	// Verify initial state
+	selected, ok := selector.SelectedBoard()
+	require.True(t, ok)
+	assert.Equal(t, "board-1", selected.ID)
+	assert.True(t, selected.IsSelected, "Current board should be marked as selected")
+
+	// Navigate down twice to "Learning"
+	selector, _ = selector.Update(tea.KeyMsg{Type: tea.KeyDown})
+	selector, _ = selector.Update(tea.KeyMsg{Type: tea.KeyDown})
+
+	selected, ok = selector.SelectedBoard()
+	require.True(t, ok)
+	assert.Equal(t, "board-3", selected.ID)
+
+	// Select the board
+	_, cmd := selector.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	require.NotNil(t, cmd, "Selection should produce a command")
+
+	// Execute command and verify message
+	msg := cmd()
+	switchMsg, ok := msg.(boardSwitchedMsg)
+	require.True(t, ok, "Command should produce boardSwitchedMsg")
+	assert.Equal(t, "board-3", switchMsg.boardID)
+}
+
+func TestBoardSelectorNavigationWrapping(t *testing.T) {
+	options := []BoardOption{
+		{ID: "id1", Name: "First", Prefix: "FST"},
+		{ID: "id2", Name: "Second", Prefix: "SND"},
+	}
+
+	selector := NewBoardSelector(options, "id1")
+	selector.SetSize(50, 20)
+
+	// Start at first item
+	selected, _ := selector.SelectedBoard()
+	assert.Equal(t, "id1", selected.ID)
+
+	// Navigate down to second
+	selector, _ = selector.Update(tea.KeyMsg{Type: tea.KeyDown})
+	selected, _ = selector.SelectedBoard()
+	assert.Equal(t, "id2", selected.ID)
+
+	// Navigate up back to first
+	selector, _ = selector.Update(tea.KeyMsg{Type: tea.KeyUp})
+	selected, _ = selector.SelectedBoard()
+	assert.Equal(t, "id1", selected.ID)
 }
