@@ -24,6 +24,7 @@ const (
 	ViewTaskDetail
 	ViewTaskForm
 	ViewConfirm
+	ViewBoardSelector
 )
 
 // App is the main TUI application model.
@@ -51,6 +52,10 @@ type App struct {
 	taskDetail    *TaskDetail
 	taskForm      *TaskForm
 	confirmDialog *ConfirmDialog
+	boardSelector *BoardSelector
+
+	// Header component
+	header *Header
 
 	// Pending operations
 	pendingDeleteTaskID string
@@ -80,6 +85,7 @@ func NewApp(pb *pocketbase.PocketBase, boardRef string) *App {
 		pb:              pb,
 		keys:            defaultKeyMap(),
 		help:            h,
+		header:          NewHeader(),
 		focusedCol:      0,
 		initialBoardRef: boardRef,
 		columnOrder:     []string{"backlog", "todo", "in_progress", "need_input", "review", "done"},
@@ -106,12 +112,19 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.width = msg.Width
 		a.height = msg.Height
 		a.updateColumnSizes()
+		// Update header width
+		if a.header != nil {
+			a.header.SetWidth(msg.Width)
+		}
 		// Update overlay sizes
 		if a.taskDetail != nil {
 			a.taskDetail.SetSize(a.width/2, a.height-4)
 		}
 		if a.taskForm != nil {
 			a.taskForm.SetSize(a.width/2, a.height-10)
+		}
+		if a.boardSelector != nil {
+			a.boardSelector.SetSize(min(60, a.width-4), min(20, a.height-4))
 		}
 		return a, nil
 
@@ -122,7 +135,52 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case boardAndTasksLoadedMsg:
 		a.currentBoard = msg.board
 		a.initializeColumns(msg.tasks)
+		a.updateHeaderInfo()
 		a.ready = true
+		return a, nil
+
+	// =================================================================
+	// Board Switching Messages
+	// =================================================================
+
+	case boardsLoadedMsg:
+		a.boards = msg.boards
+		return a, nil
+
+	case boardSwitchedMsg:
+		// Find and set the board record
+		for _, b := range a.boards {
+			if b.Id == msg.boardID {
+				a.currentBoard = b
+				break
+			}
+		}
+
+		// Close board selector if open
+		if a.view == ViewBoardSelector {
+			a.view = ViewBoard
+			a.boardSelector = nil
+		}
+
+		// Load the new board's data
+		return a, switchBoard(a.pb, msg.boardID)
+
+	case boardTasksLoadedMsg:
+		if a.currentBoard != nil {
+			a.updateColumnsWithTasks(msg.tasks)
+			a.updateHeaderInfo()
+		}
+		return a, nil
+
+	case boardColumnsMsg:
+		// Update column order if board has custom columns
+		if len(msg.columns) > 0 {
+			a.columnOrder = msg.columns
+		}
+		return a, nil
+
+	case lastBoardSavedMsg:
+		// Silently acknowledge save
 		return a, nil
 
 	// =================================================================
@@ -276,6 +334,8 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a.handleFormKeys(msg)
 		case ViewConfirm:
 			return a.handleConfirmKeys(msg)
+		case ViewBoardSelector:
+			return a.handleBoardSelectorKeys(msg)
 		}
 	}
 
@@ -344,6 +404,11 @@ func (a *App) handleBoardKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	// Additional key handling by string
 	switch msg.String() {
+	case "b":
+		// Open board selector
+		a.openBoardSelector()
+		return a, nil
+
 	case "n":
 		// New task
 		return a, func() tea.Msg {
@@ -435,6 +500,75 @@ func (a *App) handleConfirmKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	cd, cmd := a.confirmDialog.Update(msg)
 	a.confirmDialog = cd
 	return a, cmd
+}
+
+// handleBoardSelectorKeys processes keyboard input when in board selector view.
+func (a *App) handleBoardSelectorKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if a.boardSelector == nil {
+		a.view = ViewBoard
+		return a, nil
+	}
+
+	// Check for escape to close
+	if msg.String() == "esc" || msg.String() == "b" {
+		a.view = ViewBoard
+		a.boardSelector = nil
+		return a, nil
+	}
+
+	// Let the board selector handle its own keys
+	bs, cmd := a.boardSelector.Update(msg)
+	a.boardSelector = bs
+	return a, cmd
+}
+
+// openBoardSelector opens the board selector overlay.
+func (a *App) openBoardSelector() {
+	if len(a.boards) == 0 {
+		// Load boards first if not loaded
+		return
+	}
+
+	// Get task counts for each board
+	boardIDs := make([]string, len(a.boards))
+	for i, b := range a.boards {
+		boardIDs[i] = b.Id
+	}
+	taskCounts := getTaskCountsForBoards(a.pb, boardIDs)
+
+	// Convert records to options
+	options := BoardOptionsFromRecords(a.boards, taskCounts)
+
+	// Get current board ID
+	currentBoardID := ""
+	if a.currentBoard != nil {
+		currentBoardID = a.currentBoard.Id
+	}
+
+	// Create board selector
+	a.boardSelector = NewBoardSelector(options, currentBoardID)
+	a.boardSelector.SetSize(min(60, a.width-4), min(20, a.height-4))
+	a.view = ViewBoardSelector
+}
+
+// updateHeaderInfo updates the header with current board info.
+func (a *App) updateHeaderInfo() {
+	if a.header == nil || a.currentBoard == nil {
+		return
+	}
+
+	name := a.currentBoard.GetString("name")
+	prefix := a.currentBoard.GetString("prefix")
+	color := a.currentBoard.GetString("color")
+
+	a.header.SetBoard(name, prefix, color)
+
+	// Count tasks
+	taskCount := 0
+	for _, col := range a.columns {
+		taskCount += len(col.Items())
+	}
+	a.header.SetTaskCount(taskCount)
 }
 
 // =============================================================================
@@ -570,6 +704,17 @@ func (a *App) View() string {
 			// Center the dialog over the board
 			dialogView := a.confirmDialog.View()
 			sections = append(sections, a.overlayCenter(boardView, dialogView))
+		} else {
+			sections = append(sections, boardView)
+		}
+
+	case ViewBoardSelector:
+		// Board with board selector overlay
+		boardView := a.renderColumns()
+		if a.boardSelector != nil {
+			// Center the selector over the board
+			selectorView := a.boardSelector.View()
+			sections = append(sections, a.overlayCenter(boardView, selectorView))
 		} else {
 			sections = append(sections, boardView)
 		}
@@ -714,6 +859,7 @@ func (a *App) renderStatusBar() string {
 				"n: new",
 				"e: edit",
 				"d: delete",
+				"b: boards",
 				"enter: details",
 				"q: quit",
 			}
@@ -733,6 +879,13 @@ func (a *App) renderStatusBar() string {
 			hints = []string{
 				"y: confirm",
 				"n/esc: cancel",
+			}
+		case ViewBoardSelector:
+			hints = []string{
+				"j/k: navigate",
+				"/: filter",
+				"enter: select",
+				"esc/b: cancel",
 			}
 		}
 		left = statusBarStyle.Render(strings.Join(hints, " | "))
