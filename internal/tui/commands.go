@@ -17,6 +17,7 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 
 	"github.com/ramtinJ95/EgenSkriven/internal/board"
+	"github.com/ramtinJ95/EgenSkriven/internal/config"
 	"github.com/ramtinJ95/EgenSkriven/internal/position"
 )
 
@@ -144,6 +145,159 @@ func loadBoardAndTasks(app *pocketbase.PocketBase, boardRef string) tea.Cmd {
 			board: boardRecord,
 			tasks: records,
 		}
+	}
+}
+
+// loadBoardTasks returns a command that loads tasks for a specific board.
+// Returns boardTasksLoadedMsg (used during board switching).
+func loadBoardTasks(app *pocketbase.PocketBase, boardID string) tea.Cmd {
+	return func() tea.Msg {
+		records, err := app.FindAllRecords("tasks",
+			dbx.NewExp("board = {:board}", dbx.Params{"board": boardID}),
+		)
+		if err != nil {
+			return errMsg{err: fmt.Errorf("failed to load tasks: %w", err), context: "loading tasks"}
+		}
+
+		// Sort by column and position
+		sort.Slice(records, func(i, j int) bool {
+			colI := records[i].GetString("column")
+			colJ := records[j].GetString("column")
+			if colI != colJ {
+				return getColumnOrder(colI) < getColumnOrder(colJ)
+			}
+			return records[i].GetFloat("position") < records[j].GetFloat("position")
+		})
+
+		return boardTasksLoadedMsg{tasks: records}
+	}
+}
+
+// loadBoardColumns returns a command that loads columns for a specific board.
+func loadBoardColumns(app *pocketbase.PocketBase, boardID string) tea.Cmd {
+	return func() tea.Msg {
+		record, err := app.FindRecordById("boards", boardID)
+		if err != nil {
+			return errMsg{err: fmt.Errorf("failed to load board: %w", err), context: "loading board columns"}
+		}
+
+		b := board.RecordToBoard(record)
+		return boardColumnsMsg{columns: b.Columns}
+	}
+}
+
+// getTaskCountsForBoards returns task counts per board.
+// This is a sync function used during board selector initialization.
+func getTaskCountsForBoards(app *pocketbase.PocketBase, boardIDs []string) map[string]int {
+	counts := make(map[string]int)
+
+	for _, boardID := range boardIDs {
+		records, err := app.FindAllRecords("tasks",
+			dbx.NewExp("board = {:board}", dbx.Params{"board": boardID}),
+		)
+		if err == nil {
+			counts[boardID] = len(records)
+		}
+	}
+
+	return counts
+}
+
+// saveLastBoard returns a command that persists the last-used board to config.
+func saveLastBoard(boardID string) tea.Cmd {
+	return func() tea.Msg {
+		cfg, err := config.LoadProjectConfig()
+		if err != nil {
+			// If we can't load, create a new config
+			cfg = config.DefaultConfig()
+		}
+
+		cfg.DefaultBoard = boardID
+
+		if err := config.SaveConfig(".", cfg); err != nil {
+			return errMsg{err: err, context: "saving last board"}
+		}
+
+		return lastBoardSavedMsg{boardID: boardID}
+	}
+}
+
+// loadDefaultBoard returns a command that loads the default board from config.
+func loadDefaultBoard() tea.Cmd {
+	return func() tea.Msg {
+		cfg, err := config.LoadProjectConfig()
+		if err != nil || cfg.DefaultBoard == "" {
+			// No default board configured
+			return nil
+		}
+		return boardSwitchedMsg{boardID: cfg.DefaultBoard}
+	}
+}
+
+// switchBoard returns a command sequence for switching to a new board.
+// It loads the board's tasks and columns, then saves it as the last-used board.
+func switchBoard(app *pocketbase.PocketBase, boardID string) tea.Cmd {
+	return tea.Batch(
+		loadBoardTasks(app, boardID),
+		loadBoardColumns(app, boardID),
+		saveLastBoard(boardID),
+	)
+}
+
+// findBoardByRef finds a board by name, prefix, or ID and returns a switch message.
+func findBoardByRef(app *pocketbase.PocketBase, ref string) tea.Cmd {
+	return func() tea.Msg {
+		record, err := board.GetByNameOrPrefix(app, ref)
+		if err != nil {
+			return errMsg{err: fmt.Errorf("board not found: %s", ref), context: "finding board"}
+		}
+		return boardSwitchedMsg{boardID: record.Id}
+	}
+}
+
+// =============================================================================
+// Board Data Helpers
+// =============================================================================
+
+// BoardData holds computed board information for display.
+type BoardData struct {
+	ID         string
+	Name       string
+	Prefix     string
+	Color      string
+	Columns    []string
+	TaskCount  int
+	Tasks      []*core.Record
+	TasksByCol map[string][]*core.Record
+}
+
+// computeBoardData processes raw records into display-ready data.
+func computeBoardData(boardRecord *core.Record, tasks []*core.Record) *BoardData {
+	b := board.RecordToBoard(boardRecord)
+
+	// Group tasks by column
+	tasksByCol := make(map[string][]*core.Record)
+	for _, col := range b.Columns {
+		tasksByCol[col] = []*core.Record{}
+	}
+
+	for _, task := range tasks {
+		col := task.GetString("column")
+		if col == "" {
+			col = "backlog" // Default column
+		}
+		tasksByCol[col] = append(tasksByCol[col], task)
+	}
+
+	return &BoardData{
+		ID:         boardRecord.Id,
+		Name:       b.Name,
+		Prefix:     b.Prefix,
+		Color:      b.Color,
+		Columns:    b.Columns,
+		TaskCount:  len(tasks),
+		Tasks:      tasks,
+		TasksByCol: tasksByCol,
 	}
 }
 
