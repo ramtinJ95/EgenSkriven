@@ -16,6 +16,9 @@ type keyMap struct {
 	// Actions - interacting with tasks
 	Enter key.Binding
 
+	// Board operations
+	Board key.Binding
+
 	// Global - application-level controls
 	Quit   key.Binding
 	Help   key.Binding
@@ -51,6 +54,11 @@ func defaultKeyMap() keyMap {
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "view details"),
 		),
+		// Board opens the board selector (Phase 3)
+		Board: key.NewBinding(
+			key.WithKeys("b"),
+			key.WithHelp("b", "switch board"),
+		),
 		// Quit exits the TUI
 		Quit: key.NewBinding(
 			key.WithKeys("q", "ctrl+c"),
@@ -72,14 +80,15 @@ func defaultKeyMap() keyMap {
 // ShortHelp returns the keybindings to show in the short help view.
 // These are displayed in the status bar.
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Left, k.Right, k.Up, k.Down, k.Enter, k.Quit, k.Help}
+	return []key.Binding{k.Left, k.Right, k.Up, k.Down, k.Enter, k.Board, k.Quit, k.Help}
 }
 
 // FullHelp returns all keybindings grouped for the full help view.
 // Used when the user presses '?' to see all available keys.
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.Up, k.Down, k.Left, k.Right},     // Navigation
-		{k.Enter, k.Quit, k.Help, k.Escape}, // Actions
+		{k.Up, k.Down, k.Left, k.Right},          // Navigation
+		{k.Enter, k.Board, k.Quit, k.Help},       // Actions
+		{k.Escape},                               // Global
 	}
 }
