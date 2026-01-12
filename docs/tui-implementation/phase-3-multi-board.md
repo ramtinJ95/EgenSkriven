@@ -115,7 +115,7 @@ func (e errMsg) Error() string {
 
 ---
 
-### 3.2 Implement BoardSelector Component
+### 3.2 Implement BoardSelector Component ✅ COMPLETED
 
 **What**: Create a modal/overlay component for selecting boards using `bubbles/list`.
 
