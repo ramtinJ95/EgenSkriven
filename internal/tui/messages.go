@@ -39,6 +39,26 @@ type boardAndTasksLoadedMsg struct {
 	tasks []*core.Record
 }
 
+// boardSwitchedMsg is sent when the user selects a different board
+type boardSwitchedMsg struct {
+	boardID string
+}
+
+// boardTasksLoadedMsg is sent when tasks for a specific board are loaded
+type boardTasksLoadedMsg struct {
+	tasks []*core.Record
+}
+
+// boardColumnsMsg contains the columns for the current board
+type boardColumnsMsg struct {
+	columns []string
+}
+
+// lastBoardSavedMsg confirms the last board was persisted to config
+type lastBoardSavedMsg struct {
+	boardID string
+}
+
 // =============================================================================
 // Task CRUD Messages
 // =============================================================================
