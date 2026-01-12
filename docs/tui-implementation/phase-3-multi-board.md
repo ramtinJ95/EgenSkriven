@@ -41,7 +41,7 @@ Without board switching, users would need to restart the TUI with `--board` flag
 
 ## Tasks
 
-### 3.1 Create Board-Related Message Types
+### 3.1 Create Board-Related Message Types ✅ COMPLETED
 
 **What**: Define tea.Msg types for board operations.
 
