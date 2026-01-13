@@ -184,3 +184,114 @@ type windowSizeMsg struct {
 	width  int
 	height int
 }
+
+// =============================================================================
+// Realtime Messages
+// =============================================================================
+
+// RealtimeEvent represents a parsed realtime event from PocketBase.
+type RealtimeEvent struct {
+	Action     string                 // "create", "update", "delete"
+	Collection string                 // "tasks", "boards", "epics"
+	Record     map[string]interface{} // The record data
+}
+
+// realtimeConnectedMsg is sent when SSE connection is established.
+type realtimeConnectedMsg struct {
+	clientID string
+}
+
+// realtimeDisconnectedMsg is sent when SSE connection is lost.
+type realtimeDisconnectedMsg struct {
+	err error
+}
+
+// realtimeEventMsg wraps a realtime event for the Update loop.
+type realtimeEventMsg struct {
+	event RealtimeEvent
+}
+
+// realtimeErrorMsg indicates an error in the realtime subsystem.
+type realtimeErrorMsg struct {
+	err error
+}
+
+// realtimeReconnectMsg triggers a reconnection attempt.
+type realtimeReconnectMsg struct {
+	attempt int
+}
+
+// =============================================================================
+// Connection Status Messages
+// =============================================================================
+
+// ConnectionStatus represents the current realtime connection state.
+type ConnectionStatus int
+
+const (
+	ConnectionDisconnected ConnectionStatus = iota
+	ConnectionConnecting
+	ConnectionConnected
+	ConnectionReconnecting
+)
+
+func (s ConnectionStatus) String() string {
+	switch s {
+	case ConnectionDisconnected:
+		return "disconnected"
+	case ConnectionConnecting:
+		return "connecting"
+	case ConnectionConnected:
+		return "connected"
+	case ConnectionReconnecting:
+		return "reconnecting"
+	default:
+		return "unknown"
+	}
+}
+
+// connectionStatusMsg updates the connection status indicator.
+type connectionStatusMsg struct {
+	status ConnectionStatus
+}
+
+// =============================================================================
+// Polling Fallback Messages
+// =============================================================================
+
+// pollStartMsg initiates polling mode (fallback when SSE fails).
+type pollStartMsg struct{}
+
+// pollStopMsg stops polling mode.
+type pollStopMsg struct{}
+
+// pollTickMsg triggers a poll cycle.
+type pollTickMsg struct {
+	time time.Time
+}
+
+// pollResultMsg contains the results of a poll cycle.
+type pollResultMsg struct {
+	tasks     []*core.Record
+	checkTime time.Time
+	err       error
+}
+
+// =============================================================================
+// Task Realtime Update Messages
+// =============================================================================
+
+// tasksReloadedMsg is sent when tasks are bulk reloaded (after reconnect).
+type tasksReloadedMsg struct {
+	tasks []*core.Record
+}
+
+// =============================================================================
+// Server Status Messages
+// =============================================================================
+
+// serverOnlineMsg is sent when server becomes reachable.
+type serverOnlineMsg struct{}
+
+// serverOfflineMsg is sent when server becomes unreachable.
+type serverOfflineMsg struct{}
