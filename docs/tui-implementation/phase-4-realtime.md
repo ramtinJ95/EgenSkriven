@@ -1725,7 +1725,7 @@ func (a *App) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 ---
 
-### 4.6 Add Column Helper Methods
+### 4.6 Add Column Helper Methods ✅ COMPLETED
 
 **What**: Add methods to the Column component for inserting, updating, and removing tasks.
 
