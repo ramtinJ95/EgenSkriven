@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -189,4 +190,101 @@ func (c Column) SelectedTask() *TaskItem {
 		return nil
 	}
 	return &task
+}
+
+// =============================================================================
+// Incremental Update Methods (for realtime sync)
+// =============================================================================
+
+// InsertTask adds a task to the column in sorted position order.
+// Used for realtime task creation events.
+func (c *Column) InsertTask(task TaskItem) {
+	items := c.list.Items()
+
+	// Find insertion point based on position
+	insertAt := len(items)
+	for i, item := range items {
+		if t, ok := item.(TaskItem); ok && t.Position > task.Position {
+			insertAt = i
+			break
+		}
+	}
+
+	// Insert at position
+	newItems := make([]list.Item, 0, len(items)+1)
+	newItems = append(newItems, items[:insertAt]...)
+	newItems = append(newItems, task)
+	newItems = append(newItems, items[insertAt:]...)
+
+	c.list.SetItems(newItems)
+}
+
+// UpdateTask updates a task at the given index.
+// Used for realtime task update events.
+func (c *Column) UpdateTask(index int, task TaskItem) {
+	items := c.list.Items()
+	if index < 0 || index >= len(items) {
+		return
+	}
+
+	items[index] = task
+
+	// Check if position changed - if so, re-sort
+	needsSort := false
+	if index > 0 {
+		if prev, ok := items[index-1].(TaskItem); ok && prev.Position > task.Position {
+			needsSort = true
+		}
+	}
+	if index < len(items)-1 {
+		if next, ok := items[index+1].(TaskItem); ok && next.Position < task.Position {
+			needsSort = true
+		}
+	}
+
+	if needsSort {
+		// Re-sort by position
+		taskItems := make([]TaskItem, 0, len(items))
+		for _, item := range items {
+			if t, ok := item.(TaskItem); ok {
+				taskItems = append(taskItems, t)
+			}
+		}
+		sort.Slice(taskItems, func(i, j int) bool {
+			return taskItems[i].Position < taskItems[j].Position
+		})
+		newItems := make([]list.Item, len(taskItems))
+		for i, t := range taskItems {
+			newItems[i] = t
+		}
+		items = newItems
+	}
+
+	c.list.SetItems(items)
+}
+
+// RemoveTask removes a task at the given index.
+// Used for realtime task deletion events.
+func (c *Column) RemoveTask(index int) {
+	items := c.list.Items()
+	if index < 0 || index >= len(items) {
+		return
+	}
+
+	newItems := make([]list.Item, 0, len(items)-1)
+	newItems = append(newItems, items[:index]...)
+	newItems = append(newItems, items[index+1:]...)
+
+	c.list.SetItems(newItems)
+}
+
+// FindTaskByID finds a task by its ID and returns its index.
+// Returns -1 if not found.
+func (c Column) FindTaskByID(taskID string) int {
+	for i, item := range c.list.Items() {
+		if task, ok := item.(TaskItem); ok && task.ID == taskID {
+			return i
+		}
+	}
+	return -1
 }
