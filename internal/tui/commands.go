@@ -853,3 +853,94 @@ func getRecordHistory(record *core.Record) []map[string]any {
 	}
 	return history
 }
+
+// =============================================================================
+// Polling Fallback Commands
+// =============================================================================
+
+// PollConfig holds configuration for the polling fallback.
+type PollConfig struct {
+	Interval  time.Duration
+	BoardID   string
+	LastCheck time.Time
+}
+
+// StartPolling initiates the polling fallback mechanism.
+func StartPolling(config PollConfig) tea.Cmd {
+	return tea.Tick(config.Interval, func(t time.Time) tea.Msg {
+		return pollTickMsg{time: t}
+	})
+}
+
+// PollForChanges checks for records updated since the last check.
+func PollForChanges(app *pocketbase.PocketBase, boardID string, lastCheck time.Time) tea.Cmd {
+	return func() tea.Msg {
+		// Format timestamp for PocketBase query
+		// PocketBase uses ISO 8601 format: 2006-01-02 15:04:05.000Z
+		timestamp := lastCheck.UTC().Format("2006-01-02 15:04:05.000Z")
+
+		// Query for tasks updated since lastCheck
+		records, err := app.FindAllRecords("tasks",
+			dbx.NewExp("board = {:board} AND updated > {:time}",
+				dbx.Params{
+					"board": boardID,
+					"time":  timestamp,
+				}),
+		)
+		if err != nil {
+			return pollResultMsg{
+				tasks:     nil,
+				checkTime: time.Now(),
+				err:       err,
+			}
+		}
+
+		return pollResultMsg{
+			tasks:     records,
+			checkTime: time.Now(),
+			err:       nil,
+		}
+	}
+}
+
+// ContinuePolling schedules the next poll cycle.
+func ContinuePolling(interval time.Duration) tea.Cmd {
+	return tea.Tick(interval, func(t time.Time) tea.Msg {
+		return pollTickMsg{time: t}
+	})
+}
+
+// =============================================================================
+// Server Status Commands
+// =============================================================================
+
+// CheckServerStatus checks if the PocketBase server is reachable.
+func CheckServerStatus(serverURL string) tea.Cmd {
+	return func() tea.Msg {
+		if isServerReachable(serverURL) {
+			return serverOnlineMsg{}
+		}
+		return serverOfflineMsg{}
+	}
+}
+
+// ScheduleServerCheck schedules a server health check after a delay.
+func ScheduleServerCheck(serverURL string, delay time.Duration) tea.Cmd {
+	return tea.Tick(delay, func(t time.Time) tea.Msg {
+		if isServerReachable(serverURL) {
+			return serverOnlineMsg{}
+		}
+		return serverOfflineMsg{}
+	})
+}
+
+// isServerReachable checks if the server is reachable at the given URL.
+func isServerReachable(serverURL string) bool {
+	client := &http.Client{Timeout: HealthCheckTimeout}
+	resp, err := client.Get(serverURL + "/api/health")
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode == 200
+}
