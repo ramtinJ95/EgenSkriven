@@ -31,7 +31,8 @@ const (
 // It implements tea.Model and manages the overall application state.
 type App struct {
 	// Core dependencies
-	pb *pocketbase.PocketBase
+	pb        *pocketbase.PocketBase
+	serverURL string
 
 	// Board state
 	currentBoard *core.Record   // Currently displayed board
@@ -41,6 +42,12 @@ type App struct {
 	columns     []Column
 	focusedCol  int
 	columnOrder []string // Column status order
+
+	// Realtime state
+	realtimeClient *RealtimeClient
+	statusBar      *StatusBar
+	usePolling     bool
+	lastPollTime   time.Time
 
 	// UI state
 	width  int
@@ -81,8 +88,13 @@ func NewApp(pb *pocketbase.PocketBase, boardRef string) *App {
 	h := help.New()
 	h.ShowAll = false
 
+	serverURL := DefaultServerURL
+
 	return &App{
 		pb:              pb,
+		serverURL:       serverURL,
+		realtimeClient:  NewRealtimeClient(serverURL),
+		statusBar:       NewStatusBar(),
 		keys:            defaultKeyMap(),
 		help:            h,
 		header:          NewHeader(),
@@ -90,18 +102,24 @@ func NewApp(pb *pocketbase.PocketBase, boardRef string) *App {
 		initialBoardRef: boardRef,
 		columnOrder:     []string{"backlog", "todo", "in_progress", "need_input", "review", "done"},
 		view:            ViewBoard,
+		lastPollTime:    time.Now(),
 	}
 }
 
 // Init implements tea.Model.
 // Called once when the program starts. Returns initial commands.
 func (a *App) Init() tea.Cmd {
+	// Set initial connection status
+	a.statusBar.SetConnectionStatus(ConnectionConnecting)
+
 	// Load boards list and current board's tasks in parallel.
 	// loadBoards populates a.boards for the board selector.
 	// loadBoardAndTasks loads the initial board and its tasks.
+	// Also check server status to determine if we can use realtime.
 	return tea.Batch(
 		loadBoards(a.pb),
 		loadBoardAndTasks(a.pb, a.initialBoardRef),
+		CheckServerStatus(a.serverURL),
 	)
 }
 
@@ -324,6 +342,100 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.statusMessage = msg.Error()
 		a.statusIsError = true
 		cmds = append(cmds, clearStatusAfter(5*time.Second))
+
+	// =================================================================
+	// Server Status Messages
+	// =================================================================
+
+	case serverOnlineMsg:
+		// Server is online, try to connect via SSE
+		a.statusBar.SetConnectionStatus(ConnectionConnecting)
+		cmds = append(cmds, a.realtimeClient.Connect())
+
+	case serverOfflineMsg:
+		// Server is offline, use polling fallback
+		a.statusBar.SetConnectionStatus(ConnectionDisconnected)
+		a.usePolling = true
+		// Schedule a retry check
+		cmds = append(cmds, ScheduleServerCheck(a.serverURL, 10*time.Second))
+
+	// =================================================================
+	// Realtime Connection Messages
+	// =================================================================
+
+	case realtimeConnectedMsg:
+		// SSE connection established
+		a.statusBar.SetConnectionStatus(ConnectionConnected)
+		a.usePolling = false
+		// Start listening for events
+		cmds = append(cmds, WaitForEvent(a.realtimeClient))
+
+	case realtimeDisconnectedMsg:
+		// SSE connection lost
+		a.statusBar.SetConnectionStatusWithMessage(ConnectionReconnecting, "reconnecting...")
+		// Attempt to reconnect with backoff
+		cmds = append(cmds, ReconnectWithBackoff(a.realtimeClient, 0))
+
+	case realtimeReconnectMsg:
+		// Attempt to reconnect
+		a.statusBar.SetConnectionStatusWithMessage(ConnectionReconnecting,
+			fmt.Sprintf("attempt %d/%d", msg.attempt, maxReconnectAttempts))
+		cmds = append(cmds, a.realtimeClient.Connect())
+
+	case realtimeErrorMsg:
+		// Realtime error, fall back to polling
+		a.statusBar.SetConnectionStatusWithMessage(ConnectionDisconnected, "using polling")
+		a.usePolling = true
+		if a.currentBoard != nil {
+			cmds = append(cmds, StartPolling(PollConfig{
+				Interval: pollInterval,
+				BoardID:  a.currentBoard.Id,
+			}))
+		}
+
+	case realtimeEventMsg:
+		// Handle the realtime event
+		cmds = append(cmds, a.handleRealtimeEvent(msg.event))
+		// Continue listening for more events
+		cmds = append(cmds, WaitForEvent(a.realtimeClient))
+
+	// =================================================================
+	// Polling Messages
+	// =================================================================
+
+	case pollStartMsg:
+		// Switch to polling mode
+		a.usePolling = true
+		a.statusBar.SetConnectionStatusWithMessage(ConnectionDisconnected, "polling")
+		if a.currentBoard != nil {
+			cmds = append(cmds, StartPolling(PollConfig{
+				Interval: pollInterval,
+				BoardID:  a.currentBoard.Id,
+			}))
+		}
+
+	case pollTickMsg:
+		// Time to poll for changes
+		if a.usePolling && a.currentBoard != nil {
+			cmds = append(cmds, PollForChanges(a.pb, a.currentBoard.Id, a.lastPollTime))
+		}
+
+	case pollResultMsg:
+		// Process poll results
+		if msg.err != nil {
+			// Poll failed, continue polling anyway
+			cmds = append(cmds, ContinuePolling(pollInterval))
+		} else {
+			a.lastPollTime = msg.checkTime
+			if len(msg.tasks) > 0 {
+				// Changes detected, update the display
+				a.updateColumnsWithTasks(msg.tasks)
+			}
+			// Schedule next poll
+			if a.usePolling {
+				cmds = append(cmds, ContinuePolling(pollInterval))
+			}
+		}
 
 	// =================================================================
 	// Keyboard Input
@@ -1008,6 +1120,71 @@ func (a *App) updateColumnSizes() {
 	for i := range a.columns {
 		a.columns[i].SetSize(colWidth, colHeight)
 	}
+}
+
+// =============================================================================
+// Realtime Event Handlers
+// =============================================================================
+
+// handleRealtimeEvent processes a realtime event and returns appropriate commands.
+func (a *App) handleRealtimeEvent(event RealtimeEvent) tea.Cmd {
+	// Only handle task events for the current board
+	if event.Collection != "tasks" {
+		return nil
+	}
+
+	// Check if this event is for the current board
+	boardID, ok := event.Record["board"].(string)
+	if !ok || (a.currentBoard != nil && boardID != a.currentBoard.Id) {
+		return nil
+	}
+
+	switch event.Action {
+	case "create":
+		return a.handleTaskCreated(event.Record)
+	case "update":
+		return a.handleTaskUpdated(event.Record)
+	case "delete":
+		return a.handleTaskDeleted(event.Record)
+	}
+
+	return nil
+}
+
+// handleTaskCreated handles a task creation event from realtime.
+func (a *App) handleTaskCreated(record map[string]interface{}) tea.Cmd {
+	// Reload all tasks to get the new task properly
+	if a.currentBoard != nil {
+		return tea.Batch(
+			loadTasks(a.pb, a.currentBoard.Id),
+			showStatus("Task created externally", false, 2*time.Second),
+		)
+	}
+	return nil
+}
+
+// handleTaskUpdated handles a task update event from realtime.
+func (a *App) handleTaskUpdated(record map[string]interface{}) tea.Cmd {
+	// Reload all tasks to get the updated task
+	if a.currentBoard != nil {
+		return tea.Batch(
+			loadTasks(a.pb, a.currentBoard.Id),
+			showStatus("Task updated externally", false, 2*time.Second),
+		)
+	}
+	return nil
+}
+
+// handleTaskDeleted handles a task deletion event from realtime.
+func (a *App) handleTaskDeleted(record map[string]interface{}) tea.Cmd {
+	// Reload all tasks to remove the deleted task
+	if a.currentBoard != nil {
+		return tea.Batch(
+			loadTasks(a.pb, a.currentBoard.Id),
+			showStatus("Task deleted externally", false, 2*time.Second),
+		)
+	}
+	return nil
 }
 
 // matchKey checks if a key message matches a binding.
