@@ -288,3 +288,21 @@ func (c Column) FindTaskByID(taskID string) int {
 	}
 	return -1
 }
+
+// TotalItemCount returns the total number of items in this column.
+func (c Column) TotalItemCount() int {
+	return len(c.list.Items())
+}
+
+// AllTaskItems returns all items in this column as TaskItem slice.
+// Used for filter operations.
+func (c Column) AllTaskItems() []TaskItem {
+	items := c.list.Items()
+	tasks := make([]TaskItem, 0, len(items))
+	for _, item := range items {
+		if task, ok := item.(TaskItem); ok {
+			tasks = append(tasks, task)
+		}
+	}
+	return tasks
+}

@@ -1052,7 +1052,7 @@ func (a *App) renderError() string {
 	return style.Render(fmt.Sprintf("Error: %v", a.err))
 }
 
-// renderHeader renders the board title and info.
+// renderHeader renders the board title and info with filter status.
 func (a *App) renderHeader() string {
 	if a.currentBoard == nil {
 		return ""
@@ -1061,8 +1061,52 @@ func (a *App) renderHeader() string {
 	boardName := a.currentBoard.GetString("name")
 	boardPrefix := a.currentBoard.GetString("prefix")
 
-	title := fmt.Sprintf("EgenSkriven - %s (%s)", boardName, boardPrefix)
-	return headerStyle.Width(a.width).Render(title)
+	// Build header parts
+	var parts []string
+
+	// Board title
+	titleStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("205"))
+	parts = append(parts, titleStyle.Render(fmt.Sprintf("EgenSkriven - %s (%s)", boardName, boardPrefix)))
+
+	// Task count with filter indicator
+	totalTasks := a.getTotalTaskCount()
+	filteredTasks := a.getFilteredTaskCount()
+
+	countStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("240"))
+
+	if a.filterState != nil && a.filterState.HasActiveFilters() {
+		// Show FILTERED indicator and filtered/total count
+		filterIndicator := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("214")).
+			Bold(true).
+			Render(" FILTERED")
+
+		countText := countStyle.Render(
+			fmt.Sprintf(" (%d/%d tasks)", filteredTasks, totalTasks),
+		)
+		parts = append(parts, filterIndicator, countText)
+
+		// Add filter summary
+		summary := a.getFilterSummary()
+		if summary != "" {
+			summaryStyle := lipgloss.NewStyle().
+				Foreground(lipgloss.Color("62")).
+				Italic(true)
+			parts = append(parts, summaryStyle.Render(" | "+summary))
+		}
+	} else {
+		// Show total only
+		countText := countStyle.Render(
+			fmt.Sprintf(" (%d tasks)", totalTasks),
+		)
+		parts = append(parts, countText)
+	}
+
+	header := lipgloss.JoinHorizontal(lipgloss.Center, parts...)
+	return headerStyle.Width(a.width).Render(header)
 }
 
 // renderColumns renders all kanban columns horizontally.
@@ -1285,6 +1329,61 @@ func (a *App) refreshFilteredColumns() {
 	// The filtering is done at render time in View()
 	// This method exists for consistency with the message pattern
 	// and can trigger a reload if needed in the future
+}
+
+// getTotalTaskCount returns the total number of tasks across all columns (unfiltered).
+func (a *App) getTotalTaskCount() int {
+	count := 0
+	for _, col := range a.columns {
+		count += col.TotalItemCount()
+	}
+	return count
+}
+
+// getFilteredTaskCount returns the number of tasks that match the current filters.
+func (a *App) getFilteredTaskCount() int {
+	if a.filterState == nil || !a.filterState.HasActiveFilters() {
+		return a.getTotalTaskCount()
+	}
+
+	count := 0
+	for _, col := range a.columns {
+		// Get all items and apply filter
+		items := col.AllTaskItems()
+		filtered := a.filterState.Apply(items)
+		count += len(filtered)
+	}
+	return count
+}
+
+// getFilterSummary returns a brief summary of active filters for display in the header.
+func (a *App) getFilterSummary() string {
+	if a.filterState == nil {
+		return ""
+	}
+
+	var parts []string
+
+	// Add search query if present
+	if q := a.filterState.GetSearchQuery(); q != "" {
+		parts = append(parts, fmt.Sprintf("search: %q", Truncate(q, 15)))
+	}
+
+	// Add filter descriptions (limit to 3 for space)
+	filters := a.filterState.GetFilters()
+	for i, f := range filters {
+		if len(parts) >= 3 {
+			remaining := len(filters) - i
+			if a.filterState.GetSearchQuery() != "" {
+				remaining = len(filters) - i
+			}
+			parts = append(parts, fmt.Sprintf("+%d more", remaining))
+			break
+		}
+		parts = append(parts, f.String())
+	}
+
+	return strings.Join(parts, ", ")
 }
 
 // =============================================================================
