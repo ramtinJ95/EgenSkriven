@@ -7,7 +7,7 @@ import (
 
 // Filter represents a single filter condition
 type Filter struct {
-	Field    string // "priority", "type", "label", "epic"
+	Field    string // "priority", "type", "label", "epic", "blocked"
 	Operator string // "is", "is_not", "includes"
 	Value    string // The filter value
 	Display  string // Human-readable display (e.g., "Priority: High")
@@ -144,6 +144,8 @@ func (f *FilterState) matchesFilter(task TaskItem, filter Filter) bool {
 		return f.matchLabel(task, filter)
 	case "epic":
 		return f.matchEpic(task, filter)
+	case "blocked":
+		return f.matchBlocked(task, filter)
 	default:
 		return true // Unknown filter field - pass through
 	}
@@ -194,6 +196,31 @@ func (f *FilterState) matchEpic(task TaskItem, filter Filter) bool {
 	default:
 		return task.EpicID == filter.Value ||
 			strings.EqualFold(task.EpicTitle, filter.Value)
+	}
+}
+
+func (f *FilterState) matchBlocked(task TaskItem, filter Filter) bool {
+	// "blocked" filter: value can be "yes", "no", or "true", "false"
+	wantBlocked := strings.EqualFold(filter.Value, "yes") ||
+		strings.EqualFold(filter.Value, "true") ||
+		strings.EqualFold(filter.Value, "blocked")
+
+	switch filter.Operator {
+	case "is":
+		if wantBlocked {
+			return task.IsBlocked
+		}
+		return !task.IsBlocked
+	case "is_not":
+		if wantBlocked {
+			return !task.IsBlocked
+		}
+		return task.IsBlocked
+	default:
+		if wantBlocked {
+			return task.IsBlocked
+		}
+		return !task.IsBlocked
 	}
 }
 

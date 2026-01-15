@@ -2539,12 +2539,12 @@ Complete each section in order. Check off each item as you verify it.
 
 ### Blocked Indicator
 
-- [ ] **Blocked tasks show indicator**
+- [x] **Blocked tasks show indicator**
   - Create a task blocked by another task
   - Verify [BLOCKED] badge appears in red
   - Verify "blocked by X task(s)" in description
 
-- [ ] **Blocked filter works**
+- [x] **Blocked filter works**
   - Filter for blocked tasks only
   - Verify only tasks with blockers appear
 
