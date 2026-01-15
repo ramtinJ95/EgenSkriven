@@ -219,6 +219,42 @@ func TestFilterState_Apply_EpicFilter_ByTitle(t *testing.T) {
 	assert.Len(t, result, 1)
 }
 
+func TestFilterState_Apply_BlockedFilter(t *testing.T) {
+	fs := NewFilterState()
+	fs.AddFilter(Filter{Field: "blocked", Operator: "is", Value: "yes"})
+
+	tasks := []TaskItem{
+		{ID: "1", TaskTitle: "Task 1", IsBlocked: true, BlockedBy: []string{"abc"}},
+		{ID: "2", TaskTitle: "Task 2", IsBlocked: false},
+		{ID: "3", TaskTitle: "Task 3", IsBlocked: true, BlockedBy: []string{"def", "ghi"}},
+	}
+
+	result := fs.Apply(tasks)
+
+	// Only blocked tasks should match
+	assert.Len(t, result, 2)
+	assert.Equal(t, "1", result[0].ID)
+	assert.Equal(t, "3", result[1].ID)
+}
+
+func TestFilterState_Apply_UnblockedFilter(t *testing.T) {
+	fs := NewFilterState()
+	fs.AddFilter(Filter{Field: "blocked", Operator: "is", Value: "no"})
+
+	tasks := []TaskItem{
+		{ID: "1", TaskTitle: "Task 1", IsBlocked: true, BlockedBy: []string{"abc"}},
+		{ID: "2", TaskTitle: "Task 2", IsBlocked: false},
+		{ID: "3", TaskTitle: "Task 3", IsBlocked: false},
+	}
+
+	result := fs.Apply(tasks)
+
+	// Only unblocked tasks should match
+	assert.Len(t, result, 2)
+	assert.Equal(t, "2", result[0].ID)
+	assert.Equal(t, "3", result[1].ID)
+}
+
 func TestFilterState_Apply_CombinedFilters(t *testing.T) {
 	fs := NewFilterState()
 	fs.SetSearchQuery("login")

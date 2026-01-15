@@ -86,7 +86,7 @@ func (t TaskItem) renderTitle() string {
 }
 
 // renderDescription creates the secondary info line.
-// Shows epic badge, labels, and other metadata.
+// Shows epic badge, labels, blocked info, and other metadata.
 func (t TaskItem) renderDescription() string {
 	var parts []string
 
@@ -109,6 +109,18 @@ func (t TaskItem) renderDescription() string {
 		if len(t.Labels) > 3 {
 			parts = append(parts, labelStyle.Render(fmt.Sprintf("+%d", len(t.Labels)-3)))
 		}
+	}
+
+	// Blocked by info (show count of blocking tasks)
+	if t.IsBlocked && len(t.BlockedBy) > 0 {
+		blockedStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("196")).
+			Faint(true)
+		blockerText := fmt.Sprintf("blocked by %d task(s)", len(t.BlockedBy))
+		if len(t.BlockedBy) == 1 {
+			blockerText = "blocked by 1 task"
+		}
+		parts = append(parts, blockedStyle.Render(blockerText))
 	}
 
 	// If no parts, return empty

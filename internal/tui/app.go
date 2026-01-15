@@ -750,6 +750,11 @@ func (a *App) handleFilterKey(key string) (tea.Model, tea.Cmd) {
 		cmd := a.filterSelector.ShowEpic(a.availableEpics)
 		return a, cmd
 
+	case "b":
+		// Filter by blocked status
+		cmd := a.filterSelector.ShowBlocked()
+		return a, cmd
+
 	case "c":
 		// Clear all filters
 		a.filterState.Clear()

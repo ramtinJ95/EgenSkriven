@@ -171,6 +171,23 @@ func TestTaskItem_DescriptionWithEpic(t *testing.T) {
 			},
 			contains: []string{"Platform"},
 		},
+		{
+			name: "blocked task shows blocker count",
+			item: TaskItem{
+				Labels:    []string{"api"},
+				IsBlocked: true,
+				BlockedBy: []string{"task1", "task2"},
+			},
+			contains: []string{"#api", "blocked by 2 task"},
+		},
+		{
+			name: "blocked by single task",
+			item: TaskItem{
+				IsBlocked: true,
+				BlockedBy: []string{"task1"},
+			},
+			contains: []string{"blocked by 1 task"},
+		},
 	}
 
 	for _, tt := range tests {

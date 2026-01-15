@@ -17,6 +17,7 @@ const (
 	FilterSelectorTypeFilter
 	FilterSelectorLabel
 	FilterSelectorEpic
+	FilterSelectorBlocked
 )
 
 // FilterOption represents a selectable filter value
@@ -89,6 +90,15 @@ func (s *FilterSelector) ShowEpic(epics []EpicOption) tea.Cmd {
 		}
 	}
 	return s.show(FilterSelectorEpic, "Filter by Epic", options)
+}
+
+// ShowBlocked opens selector for blocked status filter
+func (s *FilterSelector) ShowBlocked() tea.Cmd {
+	options := []list.Item{
+		FilterOption{Value: "yes", Display: "Blocked Tasks", Color: "196"},
+		FilterOption{Value: "no", Display: "Unblocked Tasks", Color: "82"},
+	}
+	return s.show(FilterSelectorBlocked, "Filter by Blocked Status", options)
 }
 
 func (s *FilterSelector) show(sType FilterSelectorType, title string, options []list.Item) tea.Cmd {
@@ -194,6 +204,8 @@ func createFilterFromOption(sType FilterSelectorType, option FilterOption) Filte
 		field = "label"
 	case FilterSelectorEpic:
 		field = "epic"
+	case FilterSelectorBlocked:
+		field = "blocked"
 	}
 
 	return Filter{
