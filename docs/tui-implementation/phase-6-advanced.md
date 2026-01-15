@@ -2564,11 +2564,11 @@ Complete each section in order. Check off each item as you verify it.
 
 ### Subtasks
 
-- [ ] **Parent shows subtask count**
+- [x] **Parent shows subtask count**
   - Create task with children
   - Verify [+N] indicator on parent
 
-- [ ] **Subtasks expand/collapse**
+- [x] **Subtasks expand/collapse**
   - Press Tab on parent task
   - Verify children appear indented
   - Press Tab again to collapse

@@ -96,6 +96,10 @@ type App struct {
 
 	// Help overlay
 	helpOverlay *HelpOverlay
+
+	// Subtask state
+	subtaskCounts      map[string]int        // taskID -> subtask count
+	expandedSubtaskView *ExpandedSubtaskView // Tracks which tasks have expanded subtasks
 }
 
 // NewApp creates a new TUI application.
@@ -108,24 +112,26 @@ func NewApp(pb *pocketbase.PocketBase, boardRef string) *App {
 	filterState := NewFilterState()
 
 	return &App{
-		pb:               pb,
-		serverURL:        serverURL,
-		realtimeClient:   NewRealtimeClient(serverURL),
-		statusBar:        NewStatusBar(),
-		keys:             defaultKeyMap(),
-		help:             h,
-		header:           NewHeader(),
-		focusedCol:       0,
-		initialBoardRef:  boardRef,
-		columnOrder:      []string{"backlog", "todo", "in_progress", "need_input", "review", "done"},
-		view:             ViewBoard,
-		lastPollTime:     time.Now(),
-		filterState:      filterState,
-		filterBar:        NewFilterBar(filterState),
-		searchOverlay:    NewSearchOverlay(filterState),
-		filterSelector:   NewFilterSelector(),
-		pendingFilterKey: false,
-		helpOverlay:      NewHelpOverlay(),
+		pb:                  pb,
+		serverURL:           serverURL,
+		realtimeClient:      NewRealtimeClient(serverURL),
+		statusBar:           NewStatusBar(),
+		keys:                defaultKeyMap(),
+		help:                h,
+		header:              NewHeader(),
+		focusedCol:          0,
+		initialBoardRef:     boardRef,
+		columnOrder:         []string{"backlog", "todo", "in_progress", "need_input", "review", "done"},
+		view:                ViewBoard,
+		lastPollTime:        time.Now(),
+		filterState:         filterState,
+		filterBar:           NewFilterBar(filterState),
+		searchOverlay:       NewSearchOverlay(filterState),
+		filterSelector:      NewFilterSelector(),
+		pendingFilterKey:    false,
+		helpOverlay:         NewHelpOverlay(),
+		subtaskCounts:       make(map[string]int),
+		expandedSubtaskView: NewExpandedSubtaskView(),
 	}
 }
 
@@ -198,10 +204,11 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.initializeColumns(msg.tasks)
 		a.updateHeaderInfo()
 		a.ready = true
-		// Load epics and labels for filtering and badge display
+		// Load epics, labels, and subtask counts for filtering and badge display
 		return a, tea.Batch(
 			CmdLoadEpics(a.pb, msg.board.Id),
 			CmdLoadLabels(a.pb, msg.board.Id),
+			CmdLoadSubtaskCounts(a.pb, msg.board.Id),
 		)
 
 	// =================================================================
@@ -512,6 +519,20 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.refreshColumnEpics()
 		return a, nil
 
+	case SubtaskCountsLoadedMsg:
+		a.subtaskCounts = msg.Counts
+		// Refresh columns to show subtask indicators on tasks
+		a.refreshColumnSubtaskCounts()
+		return a, nil
+
+	case SubtasksExpandedMsg:
+		if msg.Err != nil {
+			return a, showStatus("Failed to load subtasks", true, 2*time.Second)
+		}
+		// Cache the loaded subtasks
+		a.expandedSubtaskView.SetSubtasks(msg.ParentID, msg.Subtasks)
+		return a, nil
+
 	case ClearFiltersMsg:
 		a.filterState.Clear()
 		a.refreshFilteredColumns()
@@ -730,6 +751,10 @@ func (a *App) handleBoardKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// Move task to column by number
 		columnIndex := int(msg.String()[0] - '1')
 		return a.moveTaskToColumnIndex(columnIndex)
+
+	case "tab":
+		// Toggle subtask expansion for current task
+		return a.toggleSubtaskExpansion()
 	}
 
 	return a, nil
@@ -971,6 +996,52 @@ func (a *App) getSelectedTask() *TaskItem {
 		return nil
 	}
 	return a.columns[a.focusedCol].SelectedTask()
+}
+
+// toggleSubtaskExpansion expands or collapses subtasks for the selected task.
+func (a *App) toggleSubtaskExpansion() (tea.Model, tea.Cmd) {
+	task := a.getSelectedTask()
+	if task == nil {
+		return a, nil
+	}
+
+	// Only toggle if task has subtasks
+	if !task.HasSubtasks || task.SubtaskCount == 0 {
+		return a, showStatus("This task has no subtasks", false, 2*time.Second)
+	}
+
+	// Toggle expansion state
+	a.expandedSubtaskView.Toggle(task.ID)
+	isExpanded := a.expandedSubtaskView.IsExpanded(task.ID)
+
+	// Update the task item in the column
+	a.updateTaskSubtaskExpansion(task.ID, isExpanded)
+
+	// If expanding and subtasks not loaded yet, load them
+	if isExpanded && len(a.expandedSubtaskView.GetSubtasks(task.ID)) == 0 {
+		boardPrefix := ""
+		if a.currentBoard != nil {
+			boardPrefix = a.currentBoard.GetString("prefix")
+		}
+		return a, CmdLoadSubtasks(a.pb, task.ID, boardPrefix)
+	}
+
+	return a, nil
+}
+
+// updateTaskSubtaskExpansion updates the SubtasksExpanded flag for a task in the columns.
+func (a *App) updateTaskSubtaskExpansion(taskID string, expanded bool) {
+	for colIdx := range a.columns {
+		items := a.columns[colIdx].Items()
+		for itemIdx, item := range items {
+			if task, ok := item.(TaskItem); ok && task.ID == taskID {
+				task.SubtasksExpanded = expanded
+				items[itemIdx] = task
+				a.columns[colIdx].SetItems(items)
+				return
+			}
+		}
+	}
 }
 
 // =============================================================================
@@ -1362,6 +1433,15 @@ func (a *App) recordsToListItems(records []*core.Record, boardPrefix string) []l
 				}
 			}
 		}
+		// Apply subtask count if available
+		if count, ok := a.subtaskCounts[taskItem.ID]; ok {
+			taskItem.SubtaskCount = count
+			taskItem.HasSubtasks = count > 0
+			// Check if expanded
+			if a.expandedSubtaskView != nil {
+				taskItem.SubtasksExpanded = a.expandedSubtaskView.IsExpanded(taskItem.ID)
+			}
+		}
 		items[i] = taskItem
 	}
 	return items
@@ -1444,6 +1524,32 @@ func (a *App) refreshColumnEpics() {
 				if epic, found := epicMap[task.EpicID]; found {
 					task.Epic = epic
 					task.EpicTitle = epic.Title
+					items[itemIdx] = task
+				}
+			}
+		}
+		a.columns[colIdx].SetItems(items)
+	}
+}
+
+// refreshColumnSubtaskCounts updates task items in all columns with subtask counts.
+// Called after subtask counts are loaded to show [+N] indicators on task cards.
+func (a *App) refreshColumnSubtaskCounts() {
+	if len(a.subtaskCounts) == 0 {
+		return
+	}
+
+	// Update each column's items
+	for colIdx := range a.columns {
+		items := a.columns[colIdx].Items()
+		for itemIdx, item := range items {
+			if task, ok := item.(TaskItem); ok {
+				if count, found := a.subtaskCounts[task.ID]; found {
+					task.SubtaskCount = count
+					task.HasSubtasks = count > 0
+					if a.expandedSubtaskView != nil {
+						task.SubtasksExpanded = a.expandedSubtaskView.IsExpanded(task.ID)
+					}
 					items[itemIdx] = task
 				}
 			}

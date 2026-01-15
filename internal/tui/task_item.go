@@ -33,6 +33,13 @@ type TaskItem struct {
 
 	// Resolved epic information (for badge display)
 	Epic EpicOption
+
+	// Subtask fields
+	ParentID         string     // ID of parent task (if this is a subtask)
+	HasSubtasks      bool       // True if this task has child tasks
+	SubtaskCount     int        // Number of direct child tasks
+	SubtasksExpanded bool       // True if subtasks are shown expanded
+	Subtasks         []TaskItem // Loaded subtasks (when expanded)
 }
 
 // FilterValue returns the string used for filtering in the list.
@@ -55,7 +62,7 @@ func (t TaskItem) Description() string {
 }
 
 // renderTitle creates the formatted title line for display.
-// Format: [PRIORITY] DISPLAY_ID Title [TYPE] [BLOCKED] [DUE DATE]
+// Format: [PRIORITY] DISPLAY_ID [+N] Title [TYPE] [BLOCKED] [DUE DATE]
 func (t TaskItem) renderTitle() string {
 	var parts []string
 
@@ -67,6 +74,15 @@ func (t TaskItem) renderTitle() string {
 	// Display ID in muted color
 	idStyle := lipgloss.NewStyle().Foreground(mutedColor)
 	parts = append(parts, idStyle.Render(t.DisplayID))
+
+	// Subtask indicator [+N] or [-N] if has subtasks
+	if t.HasSubtasks && t.SubtaskCount > 0 {
+		indicator := SubtaskIndicator{
+			Count:    t.SubtaskCount,
+			Expanded: t.SubtasksExpanded,
+		}
+		parts = append(parts, indicator.Render())
+	}
 
 	// Task title (main content)
 	parts = append(parts, t.TaskTitle)
@@ -166,6 +182,7 @@ func NewTaskItemFromRecord(record *core.Record, displayID string) TaskItem {
 		DisplayID:       displayID,
 		IsBlocked:       isBlocked,
 		BlockedBy:       blockedBy,
+		ParentID:        record.GetString("parent"),
 	}
 }
 
@@ -244,6 +261,7 @@ func NewTaskItemFromMap(m map[string]interface{}, boardPrefix string) TaskItem {
 		DisplayID:       displayID,
 		IsBlocked:       isBlocked,
 		BlockedBy:       blockedBy,
+		ParentID:        getString("parent"),
 	}
 }
 
