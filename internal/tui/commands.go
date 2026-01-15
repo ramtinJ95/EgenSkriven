@@ -944,3 +944,108 @@ func isServerReachable(serverURL string) bool {
 	defer resp.Body.Close()
 	return resp.StatusCode == 200
 }
+
+// =============================================================================
+// Filter Commands
+// =============================================================================
+
+// CmdApplyFilter adds a filter and refreshes the view
+func CmdApplyFilter(filterState *FilterState, filter Filter) tea.Cmd {
+	return func() tea.Msg {
+		filterState.AddFilter(filter)
+		return FilterChangedMsg{FilterState: filterState}
+	}
+}
+
+// CmdRemoveFilter removes a filter and refreshes the view
+func CmdRemoveFilter(filterState *FilterState, filter Filter) tea.Cmd {
+	return func() tea.Msg {
+		filterState.RemoveFilter(filter)
+		return FilterChangedMsg{FilterState: filterState}
+	}
+}
+
+// CmdClearFilters clears all filters
+func CmdClearFilters(filterState *FilterState) tea.Cmd {
+	return func() tea.Msg {
+		filterState.Clear()
+		return FilterChangedMsg{FilterState: filterState}
+	}
+}
+
+// CmdSetSearchQuery sets the search query
+func CmdSetSearchQuery(filterState *FilterState, query string) tea.Cmd {
+	return func() tea.Msg {
+		filterState.SetSearchQuery(query)
+		return FilterChangedMsg{FilterState: filterState}
+	}
+}
+
+// CmdLoadLabels loads all unique labels from tasks
+func CmdLoadLabels(app *pocketbase.PocketBase, boardID string) tea.Cmd {
+	return func() tea.Msg {
+		labels := make(map[string]bool)
+
+		records, err := app.FindAllRecords("tasks",
+			dbx.NewExp("board = {:board}", dbx.Params{"board": boardID}),
+		)
+		if err != nil {
+			return LabelsLoadedMsg{Labels: []string{}}
+		}
+
+		for _, record := range records {
+			// Extract labels (stored as JSON array)
+			taskLabels := record.Get("labels")
+			if labelSlice, ok := taskLabels.([]interface{}); ok {
+				for _, l := range labelSlice {
+					if label, ok := l.(string); ok && label != "" {
+						labels[label] = true
+					}
+				}
+			} else if labelSlice, ok := taskLabels.([]string); ok {
+				for _, label := range labelSlice {
+					if label != "" {
+						labels[label] = true
+					}
+				}
+			}
+		}
+
+		// Convert to sorted slice
+		result := make([]string, 0, len(labels))
+		for label := range labels {
+			result = append(result, label)
+		}
+		sort.Strings(result)
+
+		return LabelsLoadedMsg{Labels: result}
+	}
+}
+
+// CmdLoadEpics loads all epics for a board
+func CmdLoadEpics(app *pocketbase.PocketBase, boardID string) tea.Cmd {
+	return func() tea.Msg {
+		records, err := app.FindAllRecords("epics",
+			dbx.NewExp("board = {:board}", dbx.Params{"board": boardID}),
+		)
+		if err != nil {
+			return EpicsLoadedMsg{Epics: []EpicOption{}}
+		}
+
+		epics := make([]EpicOption, 0, len(records))
+		for _, record := range records {
+			epics = append(epics, EpicOption{
+				ID:    record.Id,
+				Title: record.GetString("title"),
+				Color: record.GetString("color"),
+			})
+		}
+
+		// Sort by title
+		sort.Slice(epics, func(i, j int) bool {
+			return epics[i].Title < epics[j].Title
+		})
+
+		return EpicsLoadedMsg{Epics: epics}
+	}
+}
