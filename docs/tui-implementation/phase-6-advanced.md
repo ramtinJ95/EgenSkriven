@@ -2591,12 +2591,12 @@ Complete each section in order. Check off each item as you verify it.
 
 ### Bulk Operations
 
-- [ ] **Bulk move works**
+- [x] **Bulk move works**
   - Select multiple tasks
   - Press m, then column number
   - Verify all tasks moved
 
-- [ ] **Bulk delete with confirmation**
+- [x] **Bulk delete with confirmation**
   - Select multiple tasks
   - Press d
   - Verify confirmation dialog appears
