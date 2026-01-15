@@ -1,6 +1,9 @@
 package tui
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -375,4 +378,289 @@ func TestStatusBarWithMessage(t *testing.T) {
 
 	view := bar.View()
 	assert.Contains(t, view, "Reconnecting...")
+}
+
+// =============================================================================
+// SSE Integration Tests with Mock Server
+// =============================================================================
+
+// TestSSEConnectionFlow tests the full SSE connection lifecycle using a mock server.
+func TestSSEConnectionFlow(t *testing.T) {
+	// Create a mock SSE server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" && r.URL.Path == "/api/realtime" {
+			// Set SSE headers
+			w.Header().Set("Content-Type", "text/event-stream")
+			w.Header().Set("Cache-Control", "no-cache")
+			w.Header().Set("Connection", "keep-alive")
+
+			// Flush headers
+			if flusher, ok := w.(http.Flusher); ok {
+				flusher.Flush()
+			}
+
+			// Send PB_CONNECT event with client ID
+			fmt.Fprintf(w, "event: PB_CONNECT\n")
+			fmt.Fprintf(w, "data: {\"clientId\":\"test-client-123\"}\n")
+			fmt.Fprintf(w, "\n")
+
+			if flusher, ok := w.(http.Flusher); ok {
+				flusher.Flush()
+			}
+
+			// Keep connection open briefly then close
+			time.Sleep(100 * time.Millisecond)
+			return
+		}
+
+		if r.Method == "POST" && r.URL.Path == "/api/realtime" {
+			// Handle subscription request
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	// Create client pointing to mock server
+	client := NewRealtimeClient(server.URL)
+
+	// Test connection
+	cmd := client.Connect()
+	msg := cmd()
+
+	// Should receive connected message
+	connectedMsg, ok := msg.(realtimeConnectedMsg)
+	assert.True(t, ok, "expected realtimeConnectedMsg, got %T", msg)
+	assert.Equal(t, "test-client-123", connectedMsg.clientID)
+
+	// Client should report connected
+	assert.True(t, client.IsConnected())
+
+	// Clean up
+	client.Disconnect()
+	assert.False(t, client.IsConnected())
+}
+
+// TestSSEConnectionError tests error handling when connection fails.
+func TestSSEConnectionError(t *testing.T) {
+	// Create a server that returns an error
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Service Unavailable", http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	client := NewRealtimeClient(server.URL)
+
+	cmd := client.Connect()
+	msg := cmd()
+
+	// Should receive error message
+	_, ok := msg.(realtimeErrorMsg)
+	assert.True(t, ok, "expected realtimeErrorMsg, got %T", msg)
+	assert.False(t, client.IsConnected())
+}
+
+// TestSSEEventReceiving tests that events are properly parsed and sent to channel.
+func TestSSEEventReceiving(t *testing.T) {
+	eventSent := make(chan struct{})
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" && r.URL.Path == "/api/realtime" {
+			w.Header().Set("Content-Type", "text/event-stream")
+			w.Header().Set("Cache-Control", "no-cache")
+
+			flusher, ok := w.(http.Flusher)
+			if !ok {
+				http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+				return
+			}
+
+			// Send PB_CONNECT
+			fmt.Fprintf(w, "event: PB_CONNECT\n")
+			fmt.Fprintf(w, "data: {\"clientId\":\"test-123\"}\n")
+			fmt.Fprintf(w, "\n")
+			flusher.Flush()
+
+			// Wait for subscription to complete
+			time.Sleep(50 * time.Millisecond)
+
+			// Send a task event
+			fmt.Fprintf(w, "event: tasks\n")
+			fmt.Fprintf(w, "data: {\"action\":\"create\",\"record\":{\"id\":\"task1\",\"title\":\"New Task\"}}\n")
+			fmt.Fprintf(w, "\n")
+			flusher.Flush()
+
+			close(eventSent)
+
+			// Keep connection open briefly
+			time.Sleep(100 * time.Millisecond)
+			return
+		}
+
+		if r.Method == "POST" && r.URL.Path == "/api/realtime" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	client := NewRealtimeClient(server.URL)
+
+	// Connect
+	cmd := client.Connect()
+	msg := cmd()
+	_, ok := msg.(realtimeConnectedMsg)
+	require.True(t, ok, "connection should succeed")
+
+	// Wait for event to be sent
+	select {
+	case <-eventSent:
+		// Event was sent
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for event to be sent")
+	}
+
+	// Check if event was received
+	select {
+	case event := <-client.Events():
+		assert.Equal(t, "create", event.Action)
+		assert.Equal(t, "tasks", event.Collection)
+		assert.Equal(t, "task1", event.Record["id"])
+	case <-time.After(1 * time.Second):
+		t.Fatal("timeout waiting for event in channel")
+	}
+
+	client.Disconnect()
+}
+
+// TestSSESubscriptionFailure tests handling of subscription failure.
+func TestSSESubscriptionFailure(t *testing.T) {
+	connectCount := 0
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" && r.URL.Path == "/api/realtime" {
+			connectCount++
+			w.Header().Set("Content-Type", "text/event-stream")
+
+			flusher, ok := w.(http.Flusher)
+			if !ok {
+				http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+				return
+			}
+
+			// Send PB_CONNECT
+			fmt.Fprintf(w, "event: PB_CONNECT\n")
+			fmt.Fprintf(w, "data: {\"clientId\":\"test-123\"}\n")
+			fmt.Fprintf(w, "\n")
+			flusher.Flush()
+
+			// Keep open briefly
+			time.Sleep(100 * time.Millisecond)
+			return
+		}
+
+		if r.Method == "POST" && r.URL.Path == "/api/realtime" {
+			// Subscription fails
+			http.Error(w, "Subscription failed", http.StatusBadRequest)
+			return
+		}
+
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	client := NewRealtimeClient(server.URL)
+
+	cmd := client.Connect()
+	msg := cmd()
+
+	// Should receive error message due to subscription failure
+	errMsg, ok := msg.(realtimeErrorMsg)
+	assert.True(t, ok, "expected realtimeErrorMsg, got %T", msg)
+	assert.Contains(t, errMsg.err.Error(), "subscribing")
+	assert.False(t, client.IsConnected())
+}
+
+// TestNewTaskItemFromMap tests the map-to-TaskItem conversion.
+func TestNewTaskItemFromMap(t *testing.T) {
+	record := map[string]interface{}{
+		"id":          "task123",
+		"title":       "Test Task",
+		"description": "A test description",
+		"type":        "feature",
+		"priority":    "high",
+		"column":      "in_progress",
+		"position":    1.5,
+		"seq":         float64(42), // JSON numbers are float64
+		"labels":      []interface{}{"backend", "urgent"},
+		"blocked_by":  []interface{}{"xyz789"},
+		"epic":        "epic123",
+		"due_date":    "2025-01-15",
+	}
+
+	task := NewTaskItemFromMap(record, "WRK")
+
+	assert.Equal(t, "task123", task.ID)
+	assert.Equal(t, "Test Task", task.TaskTitle)
+	assert.Equal(t, "A test description", task.TaskDescription)
+	assert.Equal(t, "feature", task.Type)
+	assert.Equal(t, "high", task.Priority)
+	assert.Equal(t, "in_progress", task.Column)
+	assert.Equal(t, 1.5, task.Position)
+	assert.Equal(t, "WRK-42", task.DisplayID)
+	assert.Equal(t, []string{"backend", "urgent"}, task.Labels)
+	assert.Equal(t, []string{"xyz789"}, task.BlockedBy)
+	assert.True(t, task.IsBlocked)
+	assert.Equal(t, "epic123", task.EpicID)
+	assert.Equal(t, "2025-01-15", task.DueDate)
+}
+
+// TestNewTaskItemFromMapMissingFields tests handling of missing fields.
+func TestNewTaskItemFromMapMissingFields(t *testing.T) {
+	// Minimal record with only ID
+	record := map[string]interface{}{
+		"id": "task123",
+	}
+
+	task := NewTaskItemFromMap(record, "TEST")
+
+	assert.Equal(t, "task123", task.ID)
+	assert.Equal(t, "", task.TaskTitle)
+	assert.Equal(t, 0.0, task.Position)
+	assert.Equal(t, "TEST-0", task.DisplayID)
+	assert.Nil(t, task.Labels)
+	assert.Nil(t, task.BlockedBy)
+	assert.False(t, task.IsBlocked)
+}
+
+// TestReconnectWithBackoffMaxAttempts tests that polling fallback is triggered.
+func TestReconnectWithBackoffMaxAttempts(t *testing.T) {
+	client := NewRealtimeClient("http://localhost:8090")
+
+	// When max attempts reached, should return pollStartMsg
+	cmd := ReconnectWithBackoff(client, maxReconnectAttempts)
+	msg := cmd()
+
+	_, ok := msg.(pollStartMsg)
+	assert.True(t, ok, "expected pollStartMsg after max attempts, got %T", msg)
+}
+
+// TestWaitForEventDisconnect tests handling of disconnect action.
+func TestWaitForEventDisconnect(t *testing.T) {
+	client := NewRealtimeClient("http://localhost:8090")
+
+	// Send a disconnect event to the channel
+	go func() {
+		client.events <- RealtimeEvent{Action: "disconnect"}
+	}()
+
+	cmd := WaitForEvent(client)
+	msg := cmd()
+
+	_, ok := msg.(realtimeDisconnectedMsg)
+	assert.True(t, ok, "expected realtimeDisconnectedMsg for disconnect action")
 }
