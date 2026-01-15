@@ -1152,39 +1152,111 @@ func (a *App) handleRealtimeEvent(event RealtimeEvent) tea.Cmd {
 }
 
 // handleTaskCreated handles a task creation event from realtime.
+// Uses incremental update to insert the new task without reloading all tasks.
 func (a *App) handleTaskCreated(record map[string]interface{}) tea.Cmd {
-	// Reload all tasks to get the new task properly
-	if a.currentBoard != nil {
-		return tea.Batch(
-			loadTasks(a.pb, a.currentBoard.Id),
-			showStatus("Task created externally", false, 2*time.Second),
-		)
+	if a.currentBoard == nil {
+		return nil
 	}
-	return nil
+
+	// Convert map to TaskItem
+	boardPrefix := a.currentBoard.GetString("prefix")
+	task := NewTaskItemFromMap(record, boardPrefix)
+
+	// Find the target column
+	colIndex := a.columnIndexForStatus(task.Column)
+	if colIndex < 0 || colIndex >= len(a.columns) {
+		return nil
+	}
+
+	// Check if task already exists (avoid duplicates on reconnect)
+	if existingIndex := a.columns[colIndex].FindTaskByID(task.ID); existingIndex >= 0 {
+		// Already exists, treat as update
+		a.columns[colIndex].UpdateTask(existingIndex, task)
+		return showStatus("Task updated externally", false, 2*time.Second)
+	}
+
+	// Insert the new task
+	a.columns[colIndex].InsertTask(task)
+
+	return showStatus("Task created externally", false, 2*time.Second)
 }
 
 // handleTaskUpdated handles a task update event from realtime.
+// Uses incremental update to modify the task in place or move it between columns.
 func (a *App) handleTaskUpdated(record map[string]interface{}) tea.Cmd {
-	// Reload all tasks to get the updated task
-	if a.currentBoard != nil {
-		return tea.Batch(
-			loadTasks(a.pb, a.currentBoard.Id),
-			showStatus("Task updated externally", false, 2*time.Second),
-		)
+	if a.currentBoard == nil {
+		return nil
 	}
-	return nil
+
+	// Convert map to TaskItem
+	boardPrefix := a.currentBoard.GetString("prefix")
+	task := NewTaskItemFromMap(record, boardPrefix)
+
+	// Find current location of the task
+	oldColIndex, oldItemIndex := a.findTaskInAllColumns(task.ID)
+
+	// Find target column
+	newColIndex := a.columnIndexForStatus(task.Column)
+	if newColIndex < 0 || newColIndex >= len(a.columns) {
+		return nil
+	}
+
+	if oldColIndex < 0 {
+		// Task not found, treat as create
+		a.columns[newColIndex].InsertTask(task)
+		return showStatus("Task created externally", false, 2*time.Second)
+	}
+
+	if oldColIndex == newColIndex {
+		// Same column, update in place
+		a.columns[oldColIndex].UpdateTask(oldItemIndex, task)
+	} else {
+		// Different column, remove from old and insert into new
+		a.columns[oldColIndex].RemoveTask(oldItemIndex)
+		a.columns[newColIndex].InsertTask(task)
+	}
+
+	return showStatus("Task updated externally", false, 2*time.Second)
 }
 
 // handleTaskDeleted handles a task deletion event from realtime.
+// Uses incremental update to remove the task without reloading all tasks.
 func (a *App) handleTaskDeleted(record map[string]interface{}) tea.Cmd {
-	// Reload all tasks to remove the deleted task
-	if a.currentBoard != nil {
-		return tea.Batch(
-			loadTasks(a.pb, a.currentBoard.Id),
-			showStatus("Task deleted externally", false, 2*time.Second),
-		)
+	taskID, ok := record["id"].(string)
+	if !ok {
+		return nil
 	}
+
+	// Find and remove the task
+	colIndex, itemIndex := a.findTaskInAllColumns(taskID)
+	if colIndex >= 0 {
+		a.columns[colIndex].RemoveTask(itemIndex)
+		return showStatus("Task deleted externally", false, 2*time.Second)
+	}
+
 	return nil
+}
+
+// findTaskInAllColumns searches for a task by ID across all columns.
+// Returns (columnIndex, itemIndex) or (-1, -1) if not found.
+func (a *App) findTaskInAllColumns(taskID string) (colIndex, itemIndex int) {
+	for i := range a.columns {
+		if idx := a.columns[i].FindTaskByID(taskID); idx >= 0 {
+			return i, idx
+		}
+	}
+	return -1, -1
+}
+
+// columnIndexForStatus returns the column index for a given status string.
+// Returns -1 if the status is not found in columnOrder.
+func (a *App) columnIndexForStatus(status string) int {
+	for i, s := range a.columnOrder {
+		if s == status {
+			return i
+		}
+	}
+	return -1
 }
 
 // matchKey checks if a key message matches a binding.
