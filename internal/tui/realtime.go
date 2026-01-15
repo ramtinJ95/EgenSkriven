@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -286,7 +287,7 @@ func (c *RealtimeClient) processEvent(eventType, data string) {
 	}
 
 	if err := json.Unmarshal([]byte(data), &eventPayload); err != nil {
-		// Log parsing error but continue
+		log.Printf("realtime: failed to parse event data for %q: %v", eventType, err)
 		return
 	}
 
@@ -307,8 +308,7 @@ func (c *RealtimeClient) processEvent(eventType, data string) {
 	default:
 		// Channel full, event dropped. This can happen during high-frequency
 		// updates. The polling fallback will eventually sync any missed changes.
-		// TODO: Consider adding metrics or logging here if event drops become
-		// frequent in production use.
+		log.Printf("realtime: event channel full, dropped %s event for %s", event.Action, event.Collection)
 	}
 }
 
