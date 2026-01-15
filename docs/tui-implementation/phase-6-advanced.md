@@ -2575,17 +2575,17 @@ Complete each section in order. Check off each item as you verify it.
 
 ### Multi-Select
 
-- [ ] **Space toggles selection**
+- [x] **Space toggles selection**
   - Press Space on a task
   - Verify [x] checkbox appears
   - Verify selection count in status bar
 
-- [ ] **Ctrl+A selects all in column**
+- [x] **Ctrl+A selects all in column**
   - Navigate to column with tasks
   - Press Ctrl+A
   - Verify all tasks in column selected
 
-- [ ] **Esc clears selection**
+- [x] **Esc clears selection**
   - With tasks selected, press Esc
   - Verify all selections cleared
 
