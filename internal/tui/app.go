@@ -135,11 +135,22 @@ func (a *App) Init() tea.Cmd {
 	// loadBoards populates a.boards for the board selector.
 	// loadBoardAndTasks loads the initial board and its tasks.
 	// Also check server status to determine if we can use realtime.
+	// Load session state to restore filters from previous run.
 	return tea.Batch(
 		loadBoards(a.pb),
 		loadBoardAndTasks(a.pb, a.initialBoardRef),
 		CheckServerStatus(a.serverURL),
+		loadSession,
 	)
+}
+
+// loadSession loads the previous session state if available.
+func loadSession() tea.Msg {
+	session, err := LoadSession()
+	if err != nil || session == nil {
+		return nil
+	}
+	return SessionLoadedMsg{Session: session}
 }
 
 // Update implements tea.Model.
@@ -501,6 +512,31 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 
 	// =================================================================
+	// Session Messages
+	// =================================================================
+
+	case SessionLoadedMsg:
+		if msg.Session != nil {
+			// Restore filter state from session
+			if msg.Session.FilterState != nil {
+				a.filterState = msg.Session.FilterState
+				a.filterBar = NewFilterBar(a.filterState)
+				a.searchOverlay = NewSearchOverlay(a.filterState)
+			}
+			// Restore focused column (clamped to valid range)
+			if msg.Session.FocusedColumn >= 0 && msg.Session.FocusedColumn < len(a.columns) {
+				// Update focus only if columns are initialized
+				if len(a.columns) > 0 {
+					a.columns[a.focusedCol].SetFocused(false)
+					a.focusedCol = msg.Session.FocusedColumn
+					a.columns[a.focusedCol].SetFocused(true)
+				}
+			}
+			// Note: Board switching is handled separately by initialBoardRef
+		}
+		return a, nil
+
+	// =================================================================
 	// Keyboard Input
 	// =================================================================
 
@@ -555,6 +591,9 @@ func (a *App) handleBoardKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
 	// Quit
 	case matchKey(msg, a.keys.Quit):
+		// Save session state before exiting
+		a.saveSession()
+
 		// Clean up realtime connection before exiting
 		if a.realtimeClient != nil {
 			a.realtimeClient.Disconnect()
@@ -1384,6 +1423,21 @@ func (a *App) getFilterSummary() string {
 	}
 
 	return strings.Join(parts, ", ")
+}
+
+// saveSession saves the current session state before quitting.
+// Errors are silently ignored since session persistence is optional.
+func (a *App) saveSession() {
+	currentBoardID := ""
+	if a.currentBoard != nil {
+		currentBoardID = a.currentBoard.Id
+	}
+
+	_ = SaveSession(SessionState{
+		FilterState:    a.filterState,
+		CurrentBoardID: currentBoardID,
+		FocusedColumn:  a.focusedCol,
+	})
 }
 
 // =============================================================================
