@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"fmt"
+
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -69,6 +71,26 @@ func NewDeleteConfirmDialog(taskTitle string) *ConfirmDialog {
 		title:    "Delete Task?",
 		message:  "Delete \"" + Truncate(taskTitle, 30) + "\"?\nThis action cannot be undone.",
 		yesLabel: "Delete",
+		noLabel:  "Cancel",
+		focused:  false, // Default to Cancel for safety
+		width:    50,
+		keys:     defaultConfirmKeyMap(),
+	}
+}
+
+// NewBulkDeleteConfirmDialog creates a confirmation dialog for bulk delete.
+func NewBulkDeleteConfirmDialog(count int) *ConfirmDialog {
+	var message string
+	if count == 1 {
+		message = "Delete 1 task?\nThis action cannot be undone."
+	} else {
+		message = fmt.Sprintf("Delete %d tasks?\nThis action cannot be undone.", count)
+	}
+
+	return &ConfirmDialog{
+		title:    "Delete Tasks?",
+		message:  message,
+		yesLabel: "Delete All",
 		noLabel:  "Cancel",
 		focused:  false, // Default to Cancel for safety
 		width:    50,

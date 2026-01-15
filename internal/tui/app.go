@@ -66,6 +66,9 @@ type App struct {
 
 	// Pending operations
 	pendingDeleteTaskID string
+	pendingBulkDelete   []string // Task IDs for bulk delete
+	pendingBulkMove     []string // Task IDs for bulk move
+	pendingBulkMoveKey  bool     // True when waiting for column number after 'm'
 
 	// Components
 	help help.Model
@@ -310,6 +313,22 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.confirmDialog = nil
 		a.view = ViewBoard
 
+	case BulkResultMsg:
+		// Handle bulk operation result
+		if a.currentBoard == nil {
+			return a, nil
+		}
+		resultMsg := FormatBulkResult(msg.Result)
+		isError := len(msg.Result.FailedIDs) > 0
+		cmds = append(cmds,
+			loadTasks(a.pb, a.currentBoard.Id),
+			showStatus(resultMsg, isError, 3*time.Second),
+		)
+		// Close any overlays
+		a.taskDetail = nil
+		a.confirmDialog = nil
+		a.view = ViewBoard
+
 	case taskMovedMsg:
 		// Guard against nil board (edge case during rapid actions)
 		if a.currentBoard == nil {
@@ -356,10 +375,24 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case closeConfirmDialogMsg:
 		if msg.confirmed {
 			// Execute the pending action (delete)
-			if a.pendingDeleteTaskID != "" {
+			if len(a.pendingBulkDelete) > 0 {
+				// Bulk delete
+				cmds = append(cmds, BulkDelete(a.pb, a.pendingBulkDelete))
+				a.pendingBulkDelete = nil
+				// Clear selection
+				if a.selectionState != nil {
+					a.selectionState.Clear()
+					a.refreshColumnSelections()
+				}
+			} else if a.pendingDeleteTaskID != "" {
+				// Single delete
 				cmds = append(cmds, deleteTask(a.pb, a.pendingDeleteTaskID))
 				a.pendingDeleteTaskID = ""
 			}
+		} else {
+			// Cancelled - clear pending operations
+			a.pendingBulkDelete = nil
+			a.pendingDeleteTaskID = ""
 		}
 		a.confirmDialog = nil
 		a.view = ViewBoard
@@ -633,6 +666,12 @@ func (a *App) handleBoardKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return a.handleFilterKey(msg.String())
 	}
 
+	// Handle pending bulk move key (column number after 'm')
+	if a.pendingBulkMoveKey {
+		a.pendingBulkMoveKey = false
+		return a.handleBulkMoveKey(msg.String())
+	}
+
 	switch {
 	// Quit
 	case matchKey(msg, a.keys.Quit):
@@ -726,12 +765,30 @@ func (a *App) handleBoardKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 
 	case "d":
-		// Delete task (with confirmation)
-		task := a.getSelectedTask()
-		if task != nil {
-			a.pendingDeleteTaskID = task.ID
-			a.confirmDialog = NewDeleteConfirmDialog(task.TaskTitle)
+		// Delete task(s) with confirmation
+		if a.selectionState != nil && a.selectionState.IsActive() {
+			// Bulk delete
+			count := a.selectionState.Count()
+			a.pendingBulkDelete = a.selectionState.GetSelected()
+			a.confirmDialog = NewBulkDeleteConfirmDialog(count)
 			a.view = ViewConfirm
+		} else {
+			// Single delete
+			task := a.getSelectedTask()
+			if task != nil {
+				a.pendingDeleteTaskID = task.ID
+				a.confirmDialog = NewDeleteConfirmDialog(task.TaskTitle)
+				a.view = ViewConfirm
+			}
+		}
+		return a, nil
+
+	case "m":
+		// Bulk move - start waiting for column number
+		if a.selectionState != nil && a.selectionState.IsActive() {
+			a.pendingBulkMove = a.selectionState.GetSelected()
+			a.pendingBulkMoveKey = true
+			return a, showStatus("Move to column: 1-6", false, 5*time.Second)
 		}
 		return a, nil
 
@@ -824,6 +881,37 @@ func (a *App) handleFilterKey(key string) (tea.Model, tea.Cmd) {
 		// Unknown second key - ignore
 		return a, nil
 	}
+}
+
+// handleBulkMoveKey handles the column number after 'm' for bulk move.
+func (a *App) handleBulkMoveKey(key string) (tea.Model, tea.Cmd) {
+	// Check if key is a valid column number
+	if key >= "1" && key <= "6" {
+		columnIndex := int(key[0] - '1')
+		if columnIndex >= 0 && columnIndex < len(a.columnOrder) {
+			targetColumn := a.columnOrder[columnIndex]
+			taskIDs := a.pendingBulkMove
+			a.pendingBulkMove = nil
+
+			// Clear selection
+			if a.selectionState != nil {
+				a.selectionState.Clear()
+				a.refreshColumnSelections()
+			}
+
+			// Get board ID
+			boardID := ""
+			if a.currentBoard != nil {
+				boardID = a.currentBoard.Id
+			}
+
+			return a, BulkMove(a.pb, taskIDs, targetColumn, boardID)
+		}
+	}
+
+	// Invalid key or cancelled
+	a.pendingBulkMove = nil
+	return a, showStatus("Bulk move cancelled", false, 2*time.Second)
 }
 
 // handleDetailKeys processes keyboard input when in task detail view.
