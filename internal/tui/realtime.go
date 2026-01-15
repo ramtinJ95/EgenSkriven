@@ -16,9 +16,6 @@ import (
 )
 
 const (
-	// SSE connection timeout
-	sseConnectTimeout = 10 * time.Second
-
 	// Maximum reconnection attempts before falling back to polling
 	maxReconnectAttempts = 5
 
@@ -306,8 +303,12 @@ func (c *RealtimeClient) processEvent(eventType, data string) {
 	// Send to events channel (non-blocking)
 	select {
 	case c.events <- event:
+		// Event sent successfully
 	default:
-		// Channel full, drop event
+		// Channel full, event dropped. This can happen during high-frequency
+		// updates. The polling fallback will eventually sync any missed changes.
+		// TODO: Consider adding metrics or logging here if event drops become
+		// frequent in production use.
 	}
 }
 
