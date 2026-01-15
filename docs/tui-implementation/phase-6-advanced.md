@@ -2604,12 +2604,12 @@ Complete each section in order. Check off each item as you verify it.
 
 ### Help Overlay
 
-- [ ] **? toggles help**
+- [x] **? toggles help**
   - Press ?
   - Verify help overlay appears
   - Press ? again to close
 
-- [ ] **All keybindings documented**
+- [x] **All keybindings documented**
   - Verify all implemented shortcuts appear in help
 
 ### Status Bar
