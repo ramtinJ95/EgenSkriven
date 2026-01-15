@@ -2550,15 +2550,15 @@ Complete each section in order. Check off each item as you verify it.
 
 ### Due Dates
 
-- [ ] **Overdue tasks show red**
+- [x] **Overdue tasks show red**
   - Create task with past due date
   - Verify "!! OVERDUE (X days)" in red
 
-- [ ] **Today tasks show orange**
+- [x] **Today tasks show orange**
   - Create task due today
   - Verify "! TODAY" in orange/bold
 
-- [ ] **Soon tasks show yellow**
+- [x] **Soon tasks show yellow**
   - Create task due in 1-2 days
   - Verify "> Tomorrow" or similar in yellow
 
