@@ -2527,12 +2527,12 @@ Complete each section in order. Check off each item as you verify it.
 
 ### Epic Display
 
-- [ ] **Epic badge shows on tasks**
+- [x] **Epic badge shows on tasks**
   - Create a task with an epic assigned
   - Verify colored badge appears in task card
   - Verify epic title is truncated if too long
 
-- [ ] **Epic filter works**
+- [x] **Epic filter works**
   - Press `fe` to open epic filter
   - Select an epic
   - Verify only tasks from that epic are shown

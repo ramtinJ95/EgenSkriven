@@ -194,7 +194,11 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.initializeColumns(msg.tasks)
 		a.updateHeaderInfo()
 		a.ready = true
-		return a, nil
+		// Load epics and labels for filtering and badge display
+		return a, tea.Batch(
+			CmdLoadEpics(a.pb, msg.board.Id),
+			CmdLoadLabels(a.pb, msg.board.Id),
+		)
 
 	// =================================================================
 	// Board Switching Messages
@@ -500,6 +504,8 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case EpicsLoadedMsg:
 		a.availableEpics = msg.Epics
+		// Refresh columns to show epic badges on tasks
+		a.refreshColumnEpics()
 		return a, nil
 
 	case ClearFiltersMsg:
@@ -1320,7 +1326,18 @@ func (a *App) recordsToListItems(records []*core.Record, boardPrefix string) []l
 	for i, record := range records {
 		seq := record.GetInt("seq")
 		displayID := board.FormatDisplayID(boardPrefix, seq)
-		items[i] = NewTaskItemFromRecord(record, displayID)
+		taskItem := NewTaskItemFromRecord(record, displayID)
+		// Resolve epic information for badge display
+		if taskItem.EpicID != "" && len(a.availableEpics) > 0 {
+			for _, epic := range a.availableEpics {
+				if epic.ID == taskItem.EpicID {
+					taskItem.Epic = epic
+					taskItem.EpicTitle = epic.Title
+					break
+				}
+			}
+		}
+		items[i] = taskItem
 	}
 	return items
 }
@@ -1333,7 +1350,18 @@ func (a *App) recordToTaskItem(record *core.Record) TaskItem {
 	}
 	seq := record.GetInt("seq")
 	displayID := board.FormatDisplayID(boardPrefix, seq)
-	return NewTaskItemFromRecord(record, displayID)
+	taskItem := NewTaskItemFromRecord(record, displayID)
+	// Resolve epic information for badge display
+	if taskItem.EpicID != "" && len(a.availableEpics) > 0 {
+		for _, epic := range a.availableEpics {
+			if epic.ID == taskItem.EpicID {
+				taskItem.Epic = epic
+				taskItem.EpicTitle = epic.Title
+				break
+			}
+		}
+	}
+	return taskItem
 }
 
 // updateColumnSizes recalculates column dimensions after resize.
@@ -1368,6 +1396,35 @@ func (a *App) refreshFilteredColumns() {
 	// The filtering is done at render time in View()
 	// This method exists for consistency with the message pattern
 	// and can trigger a reload if needed in the future
+}
+
+// refreshColumnEpics updates task items in all columns with resolved epic information.
+// Called after epics are loaded to show epic badges on task cards.
+func (a *App) refreshColumnEpics() {
+	if len(a.availableEpics) == 0 {
+		return
+	}
+
+	// Build epic lookup map
+	epicMap := make(map[string]EpicOption, len(a.availableEpics))
+	for _, epic := range a.availableEpics {
+		epicMap[epic.ID] = epic
+	}
+
+	// Update each column's items
+	for colIdx := range a.columns {
+		items := a.columns[colIdx].Items()
+		for itemIdx, item := range items {
+			if task, ok := item.(TaskItem); ok && task.EpicID != "" {
+				if epic, found := epicMap[task.EpicID]; found {
+					task.Epic = epic
+					task.EpicTitle = epic.Title
+					items[itemIdx] = task
+				}
+			}
+		}
+		a.columns[colIdx].SetItems(items)
+	}
 }
 
 // getTotalTaskCount returns the total number of tasks across all columns (unfiltered).

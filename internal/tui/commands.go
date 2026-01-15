@@ -236,11 +236,14 @@ func loadDefaultBoard() tea.Cmd {
 
 // switchBoard returns a command sequence for switching to a new board.
 // It loads the board's tasks and columns, then saves it as the last-used board.
+// Also loads epics and labels for filtering and badge display.
 func switchBoard(app *pocketbase.PocketBase, boardID string) tea.Cmd {
 	return tea.Batch(
 		loadBoardTasks(app, boardID),
 		loadBoardColumns(app, boardID),
 		saveLastBoard(boardID),
+		CmdLoadEpics(app, boardID),
+		CmdLoadLabels(app, boardID),
 	)
 }
 

@@ -30,6 +30,9 @@ type TaskItem struct {
 	// Computed fields
 	IsBlocked bool
 	BlockedBy []string
+
+	// Resolved epic information (for badge display)
+	Epic EpicOption
 }
 
 // FilterValue returns the string used for filtering in the list.
@@ -83,9 +86,15 @@ func (t TaskItem) renderTitle() string {
 }
 
 // renderDescription creates the secondary info line.
-// Shows labels and other metadata.
+// Shows epic badge, labels, and other metadata.
 func (t TaskItem) renderDescription() string {
 	var parts []string
+
+	// Epic badge (color-coded)
+	if t.Epic.ID != "" && t.Epic.Title != "" {
+		epicBadge := RenderEpicBadge(t.Epic, 15)
+		parts = append(parts, epicBadge)
+	}
 
 	// Labels (show first 3)
 	if len(t.Labels) > 0 {
@@ -228,4 +237,32 @@ func Truncate(s string, maxLen int) string {
 		return s[:maxLen]
 	}
 	return s[:maxLen-3] + "..."
+}
+
+// SetEpic sets the resolved epic information for badge display.
+func (t *TaskItem) SetEpic(epic EpicOption) {
+	t.Epic = epic
+	t.EpicTitle = epic.Title
+}
+
+// ResolveEpics sets epic information on tasks from available epics.
+// This is used after loading tasks to add color-coded epic badges.
+func ResolveEpics(tasks []TaskItem, epics []EpicOption) []TaskItem {
+	// Build lookup map
+	epicMap := make(map[string]EpicOption, len(epics))
+	for _, epic := range epics {
+		epicMap[epic.ID] = epic
+	}
+
+	// Resolve epics on tasks
+	for i := range tasks {
+		if tasks[i].EpicID != "" {
+			if epic, ok := epicMap[tasks[i].EpicID]; ok {
+				tasks[i].Epic = epic
+				tasks[i].EpicTitle = epic.Title
+			}
+		}
+	}
+
+	return tasks
 }
