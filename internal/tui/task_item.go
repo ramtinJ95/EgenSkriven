@@ -55,7 +55,7 @@ func (t TaskItem) Description() string {
 }
 
 // renderTitle creates the formatted title line for display.
-// Format: [PRIORITY] DISPLAY_ID Title [TYPE] [BLOCKED]
+// Format: [PRIORITY] DISPLAY_ID Title [TYPE] [BLOCKED] [DUE DATE]
 func (t TaskItem) renderTitle() string {
 	var parts []string
 
@@ -80,6 +80,14 @@ func (t TaskItem) renderTitle() string {
 	if t.IsBlocked {
 		blocked := blockedIndicatorStyle.Render("[BLOCKED]")
 		parts = append(parts, blocked)
+	}
+
+	// Due date with urgency highlighting
+	if t.DueDate != "" {
+		dueStr := RenderDueDate(t.DueDate)
+		if dueStr != "" {
+			parts = append(parts, dueStr)
+		}
 	}
 
 	return strings.Join(parts, " ")
