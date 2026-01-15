@@ -1698,7 +1698,7 @@ func (m *App) renderStatusBar() string {
 
 ---
 
-### 5.7 Add Keybindings for Filters
+### 5.7 Add Keybindings for Filters ✅ COMPLETED
 
 **What**: Define and document all filter-related keybindings.
 
@@ -1916,7 +1916,7 @@ Filter Commands:
 
 ---
 
-### 5.8 Show Active Filter Count in Header
+### 5.8 Show Active Filter Count in Header ✅ COMPLETED
 
 **What**: Display the number of active filters in the board header.
 
