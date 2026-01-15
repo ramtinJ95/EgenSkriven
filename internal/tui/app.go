@@ -93,6 +93,9 @@ type App struct {
 	// Cached filter data
 	availableLabels []string
 	availableEpics  []EpicOption
+
+	// Help overlay
+	helpOverlay *HelpOverlay
 }
 
 // NewApp creates a new TUI application.
@@ -122,6 +125,7 @@ func NewApp(pb *pocketbase.PocketBase, boardRef string) *App {
 		searchOverlay:    NewSearchOverlay(filterState),
 		filterSelector:   NewFilterSelector(),
 		pendingFilterKey: false,
+		helpOverlay:      NewHelpOverlay(),
 	}
 }
 
@@ -560,6 +564,16 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, cmd
 		}
 
+		// Handle help overlay - only ? or Esc to close
+		if a.helpOverlay != nil && a.helpOverlay.IsVisible() {
+			switch msg.String() {
+			case "?", "esc", "q":
+				a.helpOverlay.Hide()
+				return a, nil
+			}
+			return a, nil // Ignore all other keys when help is visible
+		}
+
 		switch a.view {
 		case ViewBoard:
 			return a.handleBoardKeys(msg)
@@ -646,7 +660,7 @@ func (a *App) handleBoardKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	// Help toggle
 	case matchKey(msg, a.keys.Help):
-		a.help.ShowAll = !a.help.ShowAll
+		a.helpOverlay.Toggle()
 		return a, nil
 	}
 
@@ -1046,6 +1060,12 @@ func (a *App) View() string {
 	// Overlay filter selector if active
 	if a.filterSelector.IsActive() {
 		view = a.overlayCenter(view, a.filterSelector.View())
+	}
+
+	// Overlay help if visible
+	if a.helpOverlay != nil && a.helpOverlay.IsVisible() {
+		a.helpOverlay.SetSize(a.width, a.height)
+		view = a.helpOverlay.View()
 	}
 
 	return view
