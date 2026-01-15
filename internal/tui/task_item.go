@@ -40,6 +40,9 @@ type TaskItem struct {
 	SubtaskCount     int        // Number of direct child tasks
 	SubtasksExpanded bool       // True if subtasks are shown expanded
 	Subtasks         []TaskItem // Loaded subtasks (when expanded)
+
+	// Selection state
+	IsSelected bool // True if this task is selected in multi-select mode
 }
 
 // FilterValue returns the string used for filtering in the list.
@@ -62,9 +65,14 @@ func (t TaskItem) Description() string {
 }
 
 // renderTitle creates the formatted title line for display.
-// Format: [PRIORITY] DISPLAY_ID [+N] Title [TYPE] [BLOCKED] [DUE DATE]
+// Format: [x] [PRIORITY] DISPLAY_ID [+N] Title [TYPE] [BLOCKED] [DUE DATE]
 func (t TaskItem) renderTitle() string {
 	var parts []string
+
+	// Selection indicator (if selected)
+	if t.IsSelected {
+		parts = append(parts, RenderSelectionIndicator(true))
+	}
 
 	// Priority indicator (colored dot or exclamation marks)
 	if indicator := GetPriorityIndicator(t.Priority); indicator != "" {

@@ -100,6 +100,9 @@ type App struct {
 	// Subtask state
 	subtaskCounts      map[string]int        // taskID -> subtask count
 	expandedSubtaskView *ExpandedSubtaskView // Tracks which tasks have expanded subtasks
+
+	// Multi-select state
+	selectionState *SelectionState
 }
 
 // NewApp creates a new TUI application.
@@ -132,6 +135,7 @@ func NewApp(pb *pocketbase.PocketBase, boardRef string) *App {
 		helpOverlay:         NewHelpOverlay(),
 		subtaskCounts:       make(map[string]int),
 		expandedSubtaskView: NewExpandedSubtaskView(),
+		selectionState:      NewSelectionState(),
 	}
 }
 
@@ -755,6 +759,22 @@ func (a *App) handleBoardKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "tab":
 		// Toggle subtask expansion for current task
 		return a.toggleSubtaskExpansion()
+
+	case " ":
+		// Space toggles task selection
+		return a.toggleTaskSelection()
+
+	case "ctrl+a":
+		// Select all tasks in current column
+		return a.selectAllInColumn()
+
+	case "esc":
+		// Clear selection if in selection mode
+		if a.selectionState != nil && a.selectionState.IsActive() {
+			a.selectionState.Clear()
+			a.refreshColumnSelections()
+			return a, showStatus("Selection cleared", false, 2*time.Second)
+		}
 	}
 
 	return a, nil
@@ -1044,6 +1064,69 @@ func (a *App) updateTaskSubtaskExpansion(taskID string, expanded bool) {
 	}
 }
 
+// toggleTaskSelection toggles selection for the current task.
+func (a *App) toggleTaskSelection() (tea.Model, tea.Cmd) {
+	task := a.getSelectedTask()
+	if task == nil {
+		return a, nil
+	}
+
+	a.selectionState.ToggleTask(task.ID)
+	// Update the selection visual in columns
+	a.refreshColumnSelections()
+	return a, nil
+}
+
+// selectAllInColumn selects all tasks in the current column.
+func (a *App) selectAllInColumn() (tea.Model, tea.Cmd) {
+	if a.focusedCol < 0 || a.focusedCol >= len(a.columns) {
+		return a, nil
+	}
+
+	col := a.columns[a.focusedCol]
+	items := col.Items()
+	tasks := make([]TaskItem, 0, len(items))
+	for _, item := range items {
+		if task, ok := item.(TaskItem); ok {
+			tasks = append(tasks, task)
+		}
+	}
+
+	if len(tasks) == 0 {
+		return a, showStatus("No tasks in column", false, 2*time.Second)
+	}
+
+	a.selectionState.SelectAllInColumn(tasks)
+	// Update the selection visual in columns
+	a.refreshColumnSelections()
+	return a, showStatus(fmt.Sprintf("Selected %d tasks", len(tasks)), false, 2*time.Second)
+}
+
+// refreshColumnSelections updates IsSelected flag on all tasks based on selection state.
+func (a *App) refreshColumnSelections() {
+	if a.selectionState == nil {
+		return
+	}
+
+	for colIdx := range a.columns {
+		items := a.columns[colIdx].Items()
+		changed := false
+		for itemIdx, item := range items {
+			if task, ok := item.(TaskItem); ok {
+				isSelected := a.selectionState.IsSelected(task.ID)
+				if task.IsSelected != isSelected {
+					task.IsSelected = isSelected
+					items[itemIdx] = task
+					changed = true
+				}
+			}
+		}
+		if changed {
+			a.columns[colIdx].SetItems(items)
+		}
+	}
+}
+
 // =============================================================================
 // View Rendering
 // =============================================================================
@@ -1305,19 +1388,30 @@ func (a *App) renderStatusBar() string {
 		}
 		left = style.Render(a.statusMessage)
 	} else {
-		// Show key hints based on current view
+		// Show key hints based on current view and selection state
 		var hints []string
 		switch a.view {
 		case ViewBoard:
-			hints = []string{
-				"h/l: columns",
-				"j/k: tasks",
-				"n: new",
-				"e: edit",
-				"d: delete",
-				"b: boards",
-				"enter: details",
-				"q: quit",
+			// Check if in selection mode
+			if a.selectionState != nil && a.selectionState.IsActive() {
+				hints = []string{
+					"space: toggle",
+					"ctrl+a: select all",
+					"esc: clear",
+					"d: delete selected",
+				}
+			} else {
+				hints = []string{
+					"h/l: columns",
+					"j/k: tasks",
+					"space: select",
+					"n: new",
+					"e: edit",
+					"d: delete",
+					"b: boards",
+					"enter: details",
+					"q: quit",
+				}
 			}
 		case ViewTaskDetail:
 			hints = []string{
@@ -1347,9 +1441,12 @@ func (a *App) renderStatusBar() string {
 		left = statusBarStyle.Render(strings.Join(hints, " | "))
 	}
 
-	// Right side: board info
+	// Right side: selection count or board info
 	var right string
-	if a.currentBoard != nil {
+	if a.selectionState != nil && a.selectionState.IsActive() {
+		// Show selection count
+		right = RenderSelectionCount(a.selectionState.Count())
+	} else if a.currentBoard != nil {
 		right = statusBarStyle.Render(a.currentBoard.GetString("prefix"))
 	}
 
@@ -1441,6 +1538,10 @@ func (a *App) recordsToListItems(records []*core.Record, boardPrefix string) []l
 			if a.expandedSubtaskView != nil {
 				taskItem.SubtasksExpanded = a.expandedSubtaskView.IsExpanded(taskItem.ID)
 			}
+		}
+		// Apply selection state
+		if a.selectionState != nil {
+			taskItem.IsSelected = a.selectionState.IsSelected(taskItem.ID)
 		}
 		items[i] = taskItem
 	}
