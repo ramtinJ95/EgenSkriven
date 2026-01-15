@@ -140,6 +140,84 @@ func NewTaskItemFromRecord(record *core.Record, displayID string) TaskItem {
 	}
 }
 
+// NewTaskItemFromMap creates a TaskItem from a map (used for realtime events).
+// The map comes from PocketBase SSE events which provide record data as JSON.
+func NewTaskItemFromMap(m map[string]interface{}, boardPrefix string) TaskItem {
+	getString := func(key string) string {
+		if v, ok := m[key].(string); ok {
+			return v
+		}
+		return ""
+	}
+
+	getFloat := func(key string) float64 {
+		switch v := m[key].(type) {
+		case float64:
+			return v
+		case int:
+			return float64(v)
+		case int64:
+			return float64(v)
+		default:
+			return 0
+		}
+	}
+
+	getInt := func(key string) int {
+		switch v := m[key].(type) {
+		case float64:
+			return int(v)
+		case int:
+			return v
+		case int64:
+			return int(v)
+		default:
+			return 0
+		}
+	}
+
+	getStringSlice := func(key string) []string {
+		switch v := m[key].(type) {
+		case []interface{}:
+			result := make([]string, 0, len(v))
+			for _, item := range v {
+				if s, ok := item.(string); ok {
+					result = append(result, s)
+				}
+			}
+			return result
+		case []string:
+			return v
+		default:
+			return nil
+		}
+	}
+
+	// Build display ID from prefix and seq
+	seq := getInt("seq")
+	displayID := fmt.Sprintf("%s-%d", boardPrefix, seq)
+
+	// Extract blocked_by to determine if task is blocked
+	blockedBy := getStringSlice("blocked_by")
+	isBlocked := len(blockedBy) > 0
+
+	return TaskItem{
+		ID:              getString("id"),
+		TaskTitle:       getString("title"),
+		TaskDescription: getString("description"),
+		Type:            getString("type"),
+		Priority:        getString("priority"),
+		Column:          getString("column"),
+		Labels:          getStringSlice("labels"),
+		Position:        getFloat("position"),
+		DueDate:         getString("due_date"),
+		EpicID:          getString("epic"),
+		DisplayID:       displayID,
+		IsBlocked:       isBlocked,
+		BlockedBy:       blockedBy,
+	}
+}
+
 // Truncate truncates a string to maxLen, adding "..." if truncated.
 // Used to fit long titles in limited space.
 func Truncate(s string, maxLen int) string {
