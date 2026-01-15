@@ -58,6 +58,10 @@ func (s *StatusIndicator) View() string {
 		// Gray dot for disconnected
 		style = lipgloss.NewStyle().Foreground(lipgloss.Color("240")) // Gray
 		indicator = "○"
+	default:
+		// Unknown status - fallback to gray question mark
+		style = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+		indicator = "?"
 	}
 
 	result := style.Render(indicator)
@@ -83,6 +87,8 @@ func (s *StatusIndicator) ViewWithLabel() string {
 		label = "Reconnecting..."
 	case ConnectionDisconnected:
 		label = "Offline"
+	default:
+		label = "Unknown"
 	}
 
 	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
