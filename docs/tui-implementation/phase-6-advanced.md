@@ -2614,7 +2614,7 @@ Complete each section in order. Check off each item as you verify it.
 
 ### Status Bar
 
-- [ ] **Context-sensitive hints**
+- [x] **Context-sensitive hints**
   - In normal mode, verify standard hints
   - Select tasks, verify selection hints
   - Open detail view, verify detail hints
