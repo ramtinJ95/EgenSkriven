@@ -19,6 +19,15 @@ type keyMap struct {
 	// Board operations
 	Board key.Binding
 
+	// Filtering - search and filter operations
+	// Note: fp, ft, fl, fe, fc are two-key sequences handled by pendingFilterKey
+	Search         key.Binding
+	FilterPriority key.Binding
+	FilterType     key.Binding
+	FilterLabel    key.Binding
+	FilterEpic     key.Binding
+	ClearFilters   key.Binding
+
 	// Global - application-level controls
 	Quit   key.Binding
 	Help   key.Binding
@@ -59,6 +68,36 @@ func defaultKeyMap() keyMap {
 			key.WithKeys("b"),
 			key.WithHelp("b", "switch board"),
 		),
+		// Search opens the search overlay
+		Search: key.NewBinding(
+			key.WithKeys("/"),
+			key.WithHelp("/", "search"),
+		),
+		// FilterPriority opens priority filter (two-key: f then p)
+		FilterPriority: key.NewBinding(
+			key.WithKeys("f"),
+			key.WithHelp("fp", "filter priority"),
+		),
+		// FilterType opens type filter (two-key: f then t)
+		FilterType: key.NewBinding(
+			key.WithKeys("f"),
+			key.WithHelp("ft", "filter type"),
+		),
+		// FilterLabel opens label filter (two-key: f then l)
+		FilterLabel: key.NewBinding(
+			key.WithKeys("f"),
+			key.WithHelp("fl", "filter label"),
+		),
+		// FilterEpic opens epic filter (two-key: f then e)
+		FilterEpic: key.NewBinding(
+			key.WithKeys("f"),
+			key.WithHelp("fe", "filter epic"),
+		),
+		// ClearFilters clears all active filters (two-key: f then c)
+		ClearFilters: key.NewBinding(
+			key.WithKeys("f"),
+			key.WithHelp("fc", "clear filters"),
+		),
 		// Quit exits the TUI
 		Quit: key.NewBinding(
 			key.WithKeys("q", "ctrl+c"),
@@ -80,15 +119,29 @@ func defaultKeyMap() keyMap {
 // ShortHelp returns the keybindings to show in the short help view.
 // These are displayed in the status bar.
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Left, k.Right, k.Up, k.Down, k.Enter, k.Board, k.Quit, k.Help}
+	return []key.Binding{k.Left, k.Right, k.Up, k.Down, k.Enter, k.Search, k.Board, k.Quit, k.Help}
 }
 
 // FullHelp returns all keybindings grouped for the full help view.
 // Used when the user presses '?' to see all available keys.
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.Up, k.Down, k.Left, k.Right},          // Navigation
-		{k.Enter, k.Board, k.Quit, k.Help},       // Actions
-		{k.Escape},                               // Global
+		{k.Up, k.Down, k.Left, k.Right},                                              // Navigation
+		{k.Enter, k.Board, k.Quit, k.Help},                                           // Actions
+		{k.Search, k.FilterPriority, k.FilterType, k.FilterLabel, k.ClearFilters},    // Filtering
+		{k.Escape},                                                                   // Global
+	}
+}
+
+// FilterHelp returns the filter-related keybindings.
+// Used for displaying filter shortcuts in the status bar when appropriate.
+func (k keyMap) FilterHelp() []key.Binding {
+	return []key.Binding{
+		k.Search,
+		k.FilterPriority,
+		k.FilterType,
+		k.FilterLabel,
+		k.FilterEpic,
+		k.ClearFilters,
 	}
 }
