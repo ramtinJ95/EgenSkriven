@@ -473,6 +473,10 @@ func (a *App) handleBoardKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
 	// Quit
 	case matchKey(msg, a.keys.Quit):
+		// Clean up realtime connection before exiting
+		if a.realtimeClient != nil {
+			a.realtimeClient.Disconnect()
+		}
 		return a, tea.Quit
 
 	// Column navigation - left
