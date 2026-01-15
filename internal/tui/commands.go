@@ -244,6 +244,7 @@ func switchBoard(app *pocketbase.PocketBase, boardID string) tea.Cmd {
 		saveLastBoard(boardID),
 		CmdLoadEpics(app, boardID),
 		CmdLoadLabels(app, boardID),
+		CmdLoadSubtaskCounts(app, boardID),
 	)
 }
 
@@ -1050,5 +1051,28 @@ func CmdLoadEpics(app *pocketbase.PocketBase, boardID string) tea.Cmd {
 		})
 
 		return EpicsLoadedMsg{Epics: epics}
+	}
+}
+
+// CmdLoadSubtaskCounts loads subtask counts for all tasks in a board
+func CmdLoadSubtaskCounts(app *pocketbase.PocketBase, boardID string) tea.Cmd {
+	return func() tea.Msg {
+		counts, err := GetSubtaskCounts(app, boardID)
+		if err != nil {
+			return SubtaskCountsLoadedMsg{Counts: make(map[string]int)}
+		}
+		return SubtaskCountsLoadedMsg{Counts: counts}
+	}
+}
+
+// CmdLoadSubtasks loads subtasks for a parent task
+func CmdLoadSubtasks(app *pocketbase.PocketBase, parentID, boardPrefix string) tea.Cmd {
+	return func() tea.Msg {
+		subtasks, err := LoadSubtasks(app, parentID, boardPrefix)
+		return SubtasksExpandedMsg{
+			ParentID: parentID,
+			Subtasks: subtasks,
+			Err:      err,
+		}
 	}
 }

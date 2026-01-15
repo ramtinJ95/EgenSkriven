@@ -346,3 +346,24 @@ type LoadEpicsMsg struct{}
 type EpicsLoadedMsg struct {
 	Epics []EpicOption
 }
+
+// =============================================================================
+// Subtask Messages
+// =============================================================================
+
+// SubtaskCountsLoadedMsg contains subtask counts for tasks
+type SubtaskCountsLoadedMsg struct {
+	Counts map[string]int
+}
+
+// ToggleSubtasksMsg requests expanding/collapsing subtasks for a task
+type ToggleSubtasksMsg struct {
+	TaskID string
+}
+
+// SubtasksExpandedMsg contains loaded subtasks for a parent task
+type SubtasksExpandedMsg struct {
+	ParentID string
+	Subtasks []TaskItem
+	Err      error
+}
