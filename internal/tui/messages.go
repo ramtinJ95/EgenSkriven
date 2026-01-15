@@ -295,3 +295,54 @@ type serverOnlineMsg struct{}
 
 // serverOfflineMsg is sent when server becomes unreachable.
 type serverOfflineMsg struct{}
+
+// =============================================================================
+// Filter Messages
+// =============================================================================
+
+// FilterChangedMsg indicates filters have been updated
+type FilterChangedMsg struct {
+	FilterState *FilterState
+}
+
+// QuickFilterMsg triggers a quick filter key sequence
+type QuickFilterMsg struct {
+	Prefix rune // 'f' for filter commands
+	Key    rune // 'p', 't', 'l', 'e', 'c'
+}
+
+// ShowSearchMsg triggers the search overlay
+type ShowSearchMsg struct{}
+
+// HideSearchMsg closes the search overlay
+type HideSearchMsg struct{}
+
+// ShowFilterSelectorMsg opens a filter selector
+type ShowFilterSelectorMsg struct {
+	Type FilterSelectorType
+}
+
+// ClearFiltersMsg clears all active filters
+type ClearFiltersMsg struct{}
+
+// ToggleFilterBarFocusMsg toggles focus on the filter bar
+type ToggleFilterBarFocusMsg struct{}
+
+// RefreshFilteredTasksMsg triggers re-filtering of tasks
+type RefreshFilteredTasksMsg struct{}
+
+// LoadLabelsMsg requests loading available labels
+type LoadLabelsMsg struct{}
+
+// LabelsLoadedMsg contains available labels
+type LabelsLoadedMsg struct {
+	Labels []string
+}
+
+// LoadEpicsMsg requests loading available epics
+type LoadEpicsMsg struct{}
+
+// EpicsLoadedMsg contains available epics
+type EpicsLoadedMsg struct {
+	Epics []EpicOption
+}
