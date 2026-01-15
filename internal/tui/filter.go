@@ -222,3 +222,15 @@ func (f *FilterState) FromJSON(data []byte) error {
 	f.searchQuery = parsed.SearchQuery
 	return nil
 }
+
+// MarshalJSON implements json.Marshaler for FilterState.
+// This allows FilterState to be serialized as part of SessionState.
+func (f *FilterState) MarshalJSON() ([]byte, error) {
+	return f.ToJSON()
+}
+
+// UnmarshalJSON implements json.Unmarshaler for FilterState.
+// This allows FilterState to be deserialized as part of SessionState.
+func (f *FilterState) UnmarshalJSON(data []byte) error {
+	return f.FromJSON(data)
+}
