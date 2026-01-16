@@ -38,6 +38,46 @@ func TestEpicBadgeStyle(t *testing.T) {
 	}
 }
 
+func TestIsLightColor(t *testing.T) {
+	tests := []struct {
+		name     string
+		hexColor string
+		expected bool
+	}{
+		// Light colors - should return true (need dark text)
+		{name: "white", hexColor: "#FFFFFF", expected: true},
+		{name: "yellow", hexColor: "#FFFF00", expected: true},
+		{name: "cyan", hexColor: "#00FFFF", expected: true},
+		{name: "light gray", hexColor: "#CCCCCC", expected: true},
+		{name: "light green", hexColor: "#90EE90", expected: true},
+
+		// Dark colors - should return false (need white text)
+		{name: "black", hexColor: "#000000", expected: false},
+		{name: "dark blue", hexColor: "#000080", expected: false},
+		{name: "dark red", hexColor: "#8B0000", expected: false},
+		{name: "purple", hexColor: "#6366F1", expected: false},
+		{name: "dark green", hexColor: "#006400", expected: false},
+
+		// Edge cases - pure colors
+		{name: "pure red", hexColor: "#FF0000", expected: false},    // luminance ~76
+		{name: "pure green", hexColor: "#00FF00", expected: true},   // luminance ~150
+		{name: "pure blue", hexColor: "#0000FF", expected: false},   // luminance ~29
+
+		// Invalid formats - should return false (assume dark)
+		{name: "invalid - no hash", hexColor: "FFFFFF", expected: false},
+		{name: "invalid - short", hexColor: "#FFF", expected: false},
+		{name: "invalid - empty", hexColor: "", expected: false},
+		{name: "invalid - gibberish", hexColor: "#GGGGGG", expected: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isLightColor(tt.hexColor)
+			assert.Equal(t, tt.expected, result, "isLightColor(%q) should return %v", tt.hexColor, tt.expected)
+		})
+	}
+}
+
 func TestRenderEpicBadge(t *testing.T) {
 	tests := []struct {
 		name     string

@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"strconv"
+
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -17,20 +19,43 @@ func EpicBadgeStyle(epic EpicOption) lipgloss.Style {
 	bgColor := lipgloss.Color(bgColorStr)
 
 	// Use white text for darker colors, black for lighter
-	// Simple heuristic based on first byte of hex
+	// Based on relative luminance calculation
 	fgColor := lipgloss.Color("#FFFFFF")
-	if len(bgColorStr) == 7 && bgColorStr[0] == '#' {
-		// Very rough brightness check based on red channel
-		r := bgColorStr[1:3]
-		if r >= "AA" || r >= "aa" {
-			fgColor = lipgloss.Color("#000000")
-		}
+	if isLightColor(bgColorStr) {
+		fgColor = lipgloss.Color("#000000")
 	}
 
 	return lipgloss.NewStyle().
 		Background(bgColor).
 		Foreground(fgColor).
 		Padding(0, 1)
+}
+
+// isLightColor determines if a hex color is light enough to need dark text.
+// Uses the relative luminance formula: 0.299*R + 0.587*G + 0.114*B
+// Returns true if the color is light (luminance > 128).
+func isLightColor(hexColor string) bool {
+	if len(hexColor) != 7 || hexColor[0] != '#' {
+		return false // Invalid format, assume dark
+	}
+
+	r, err := strconv.ParseInt(hexColor[1:3], 16, 64)
+	if err != nil {
+		return false
+	}
+	g, err := strconv.ParseInt(hexColor[3:5], 16, 64)
+	if err != nil {
+		return false
+	}
+	b, err := strconv.ParseInt(hexColor[5:7], 16, 64)
+	if err != nil {
+		return false
+	}
+
+	// Calculate relative luminance using standard coefficients
+	// These weights account for human perception of brightness
+	luminance := 0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b)
+	return luminance > 128
 }
 
 // RenderEpicBadge renders a compact epic badge for task cards.
