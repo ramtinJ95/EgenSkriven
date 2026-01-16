@@ -106,6 +106,9 @@ type App struct {
 
 	// Multi-select state
 	selectionState *SelectionState
+
+	// Command palette
+	commandPalette *CommandPalette
 }
 
 // NewApp creates a new TUI application.
@@ -117,7 +120,7 @@ func NewApp(pb *pocketbase.PocketBase, boardRef string) *App {
 	serverURL := DefaultServerURL
 	filterState := NewFilterState()
 
-	return &App{
+	app := &App{
 		pb:                  pb,
 		serverURL:           serverURL,
 		realtimeClient:      NewRealtimeClient(serverURL),
@@ -140,6 +143,11 @@ func NewApp(pb *pocketbase.PocketBase, boardRef string) *App {
 		expandedSubtaskView: NewExpandedSubtaskView(),
 		selectionState:      NewSelectionState(),
 	}
+
+	// Initialize command palette with actions
+	app.commandPalette = NewCommandPalette(DefaultCommands(app.createCommandActions()))
+
+	return app
 }
 
 // Init implements tea.Model.
@@ -609,7 +617,14 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// =================================================================
 
 	case tea.KeyMsg:
-		// Handle filter overlays first (they capture input)
+		// Handle command palette first (it captures input when visible)
+		if a.commandPalette != nil && a.commandPalette.IsVisible() {
+			palette, cmd := a.commandPalette.Update(msg)
+			a.commandPalette = palette
+			return a, cmd
+		}
+
+		// Handle filter overlays (they capture input)
 		if a.searchOverlay.IsActive() {
 			overlay, cmd := a.searchOverlay.Update(msg)
 			a.searchOverlay = overlay
@@ -824,6 +839,13 @@ func (a *App) handleBoardKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "ctrl+a":
 		// Select all tasks in current column
 		return a.selectAllInColumn()
+
+	case "ctrl+k":
+		// Open command palette
+		if a.commandPalette != nil {
+			a.commandPalette.Show()
+		}
+		return a, nil
 
 	case "esc":
 		// Clear selection if in selection mode
@@ -1090,6 +1112,132 @@ func (a *App) moveTaskToColumnIndex(index int) (tea.Model, tea.Cmd) {
 	return a, moveTaskToColumn(a.pb, task.ID, targetColumn)
 }
 
+// createCommandActions creates CommandActions that wire to app methods.
+func (a *App) createCommandActions() *CommandActions {
+	return &CommandActions{
+		NewTask: func() tea.Cmd {
+			return func() tea.Msg {
+				return openTaskFormMsg{mode: FormModeAdd}
+			}
+		},
+		EditTask: func() tea.Cmd {
+			task := a.getSelectedTask()
+			if task == nil {
+				return nil
+			}
+			return func() tea.Msg {
+				return openTaskFormMsg{
+					mode:   FormModeEdit,
+					taskID: task.ID,
+					task:   task,
+				}
+			}
+		},
+		DeleteTask: func() tea.Cmd {
+			task := a.getSelectedTask()
+			if task == nil {
+				return nil
+			}
+			a.pendingDeleteTaskID = task.ID
+			a.confirmDialog = NewDeleteConfirmDialog(task.TaskTitle)
+			a.view = ViewConfirm
+			return nil
+		},
+		ViewTask: func() tea.Cmd {
+			task := a.getSelectedTask()
+			if task == nil {
+				return nil
+			}
+			return func() tea.Msg {
+				return openTaskDetailMsg{task: *task}
+			}
+		},
+		MoveTaskLeft: func() tea.Cmd {
+			_, cmd := a.moveTaskLeft()
+			return cmd
+		},
+		MoveTaskRight: func() tea.Cmd {
+			_, cmd := a.moveTaskRight()
+			return cmd
+		},
+		MoveToColumn: func(column string) func() tea.Cmd {
+			return func() tea.Cmd {
+				idx := a.getColumnIndex(column)
+				if idx >= 0 {
+					_, cmd := a.moveTaskToColumnIndex(idx)
+					return cmd
+				}
+				return nil
+			}
+		},
+		Search: func() tea.Cmd {
+			return a.searchOverlay.Show()
+		},
+		FilterByPriority: func() tea.Cmd {
+			return a.filterSelector.ShowPriority()
+		},
+		FilterByType: func() tea.Cmd {
+			return a.filterSelector.ShowType()
+		},
+		FilterByEpic: func() tea.Cmd {
+			if len(a.availableEpics) == 0 {
+				return showStatus("No epics available", true, 2*time.Second)
+			}
+			return a.filterSelector.ShowEpic(a.availableEpics)
+		},
+		FilterByLabel: func() tea.Cmd {
+			if len(a.availableLabels) == 0 {
+				return showStatus("No labels available", true, 2*time.Second)
+			}
+			return a.filterSelector.ShowLabel(a.availableLabels)
+		},
+		ClearFilters: func() tea.Cmd {
+			a.filterState.Clear()
+			a.refreshFilteredColumns()
+			return showStatus("Filters cleared", false, 2*time.Second)
+		},
+		SwitchBoard: func() tea.Cmd {
+			a.openBoardSelector()
+			return nil
+		},
+		Refresh: func() tea.Cmd {
+			if a.currentBoard != nil {
+				return tea.Batch(
+					loadTasks(a.pb, a.currentBoard.Id),
+					showStatus("Refreshing...", false, 2*time.Second),
+				)
+			}
+			return nil
+		},
+		ToggleHelp: func() tea.Cmd {
+			a.helpOverlay.Toggle()
+			return nil
+		},
+		SelectAll: func() tea.Cmd {
+			_, cmd := a.selectAllInColumn()
+			return cmd
+		},
+		BulkMove: func() tea.Cmd {
+			if a.selectionState != nil && a.selectionState.IsActive() {
+				a.pendingBulkMove = a.selectionState.GetSelected()
+				a.pendingBulkMoveKey = true
+				return showStatus("Move to column: 1-6", false, 5*time.Second)
+			}
+			return showStatus("No tasks selected", true, 2*time.Second)
+		},
+		BulkDelete: func() tea.Cmd {
+			if a.selectionState != nil && a.selectionState.IsActive() {
+				count := a.selectionState.Count()
+				a.pendingBulkDelete = a.selectionState.GetSelected()
+				a.confirmDialog = NewBulkDeleteConfirmDialog(count)
+				a.view = ViewConfirm
+				return nil
+			}
+			return showStatus("No tasks selected", true, 2*time.Second)
+		},
+	}
+}
+
 func (a *App) getColumnIndex(column string) int {
 	for i, col := range a.columnOrder {
 		if col == column {
@@ -1304,6 +1452,12 @@ func (a *App) View() string {
 		view = a.overlayCenter(view, a.filterSelector.View())
 	}
 
+	// Overlay command palette if visible
+	if a.commandPalette != nil && a.commandPalette.IsVisible() {
+		a.commandPalette.SetSize(a.width, a.height)
+		view = a.overlayCenter(view, a.commandPalette.View())
+	}
+
 	// Overlay help if visible
 	if a.helpOverlay != nil && a.helpOverlay.IsVisible() {
 		a.helpOverlay.SetSize(a.width, a.height)
@@ -1497,7 +1651,7 @@ func (a *App) renderStatusBar() string {
 					"e: edit",
 					"d: delete",
 					"b: boards",
-					"enter: details",
+					"ctrl+k: cmds",
 					"q: quit",
 				}
 			}

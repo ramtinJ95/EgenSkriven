@@ -2621,15 +2621,15 @@ Complete each section in order. Check off each item as you verify it.
 
 ### Command Palette (if implemented)
 
-- [ ] **Ctrl+K opens palette**
+- [x] **Ctrl+K opens palette**
   - Press Ctrl+K
   - Verify palette appears with input focused
 
-- [ ] **Fuzzy search works**
+- [x] **Fuzzy search works**
   - Type partial command name
   - Verify matching commands filtered
 
-- [ ] **Execute command**
+- [x] **Execute command**
   - Select a command, press Enter
   - Verify action executes
 
