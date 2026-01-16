@@ -249,6 +249,15 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.boardSelector = nil
 		}
 
+		// Clear selection state and expanded subtasks when switching boards
+		// to avoid stale state from the previous board
+		if a.selectionState != nil {
+			a.selectionState.Clear()
+		}
+		if a.expandedSubtaskView != nil {
+			a.expandedSubtaskView.Clear()
+		}
+
 		// Load the new board's data
 		return a, switchBoard(a.pb, msg.boardID)
 
